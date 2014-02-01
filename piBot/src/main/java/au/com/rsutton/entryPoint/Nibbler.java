@@ -30,15 +30,18 @@ public class Nibbler
 	{
 
 		// split out the 3 nibbles
-		long tnibbles[] = new long[] { ((percent >> 0) & 0x0F), ((percent >> 4) & 0x0F), ((percent >> 8) & 0x0F), };
+		long nibbles[] = new long[] {
+				((percent >> 8) & 0x0F), ((percent >> 4) & 0x0F),
+				((percent >> 0) & 0x0F), };
 
-		long nibbles[] = new long[3];
-		int c = 0;
+		// long nibbles[] = new long[3];
+		// int c = 0;
 		// invert the nibbles
-		for (long nibble : tnibbles)
-		{
-			nibbles[c++] = ((nibble & 1) << 3) + ((nibble & 2) << 1) + ((nibble & 4) >> 1) + ((nibble & 8) >> 3);
-		}
+		// for (long nibble : tnibbles)
+		// {
+		// nibbles[c++] = ((nibble & 1) << 3) + ((nibble & 2) << 1) + ((nibble &
+		// 4) >> 1) + ((nibble & 8) >> 3);
+		// }
 
 		// insert the nibbles into the byte array
 		for (int i = 0; i < 3; i++)
@@ -46,9 +49,9 @@ public class Nibbler
 			long pos = (pin * 3) + i;
 			int b = (int) (pos / 2);
 			int n = (int) (pos % 2);
-			long mask = 0x0F << (((n + 1) % 2) * 4);
+			long mask = 0x0F << (((n) % 2) * 4);
 
-			bytes[b] = (bytes[b] & mask | nibbles[i] << (n * 4));
+			bytes[b] = (bytes[b] & mask | nibbles[i] << (((n + 1) % 2) * 4));
 		}
 	}
 }
