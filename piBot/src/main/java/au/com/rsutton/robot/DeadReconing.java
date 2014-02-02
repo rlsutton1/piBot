@@ -12,9 +12,6 @@ public class DeadReconing
 
 	private final static DistanceUnit unit = DistanceUnit.MM;
 
-
-
-
 	double initialX = 0;
 	double initialY = 0;
 	int heading;
@@ -24,8 +21,6 @@ public class DeadReconing
 	double currentLeftWheelReading = 0;
 	double currentRightWheelReading = 0;
 
-
-	
 	public synchronized void resetLocation(Distance x, Distance y, int heading)
 	{
 		initialX = x.convert(unit);
@@ -38,6 +33,10 @@ public class DeadReconing
 	public synchronized void updateLocation(Distance distance,
 			Distance distance2, int heading)
 	{
+		if (heading != this.heading)
+		{
+			resetLocation(getX(), getY(), heading);
+		}
 		if (distance != null)
 		{
 			currentLeftWheelReading = distance.convert(unit);
@@ -46,12 +45,7 @@ public class DeadReconing
 		{
 			currentRightWheelReading = distance2.convert(unit);
 		}
-		if (heading != this.heading)
-		{
-			resetLocation(getX(), getY(), heading);
-		}
 
-		
 	}
 
 	public synchronized Distance getX()
@@ -75,7 +69,5 @@ public class DeadReconing
 
 		return heading;
 	}
-
-	
 
 }

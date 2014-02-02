@@ -26,8 +26,6 @@ public class VehicleSpeedController implements Runnable
 		this.left = left;
 		this.right = right;
 
-		pid = new Pid(.4, .2, .1, 100, 100, -100, false);
-
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
 				100, 100, TimeUnit.MILLISECONDS);
 
@@ -48,7 +46,6 @@ public class VehicleSpeedController implements Runnable
 	public void setSpeed(Speed speedPercent)
 	{
 		setSpeed = speedPercent.getSpeed(dUnit, tUnit);
-		System.out.println("Speed set to " + setSpeed);
 
 	}
 
@@ -73,7 +70,24 @@ public class VehicleSpeedController implements Runnable
 		try
 		{
 
-			double power = pid.computePid(setSpeed, actualSpeed);
+			if (setSpeed < 10 && (actualSpeed < 10 && actualSpeed > -10))
+			{
+				if (pid != null)
+				{
+					System.out.println("Stopping speed controller pid");
+					pid = null;
+				}
+
+			} else if (pid == null)
+			{
+				System.out.println("creating new speed controller pid");
+				pid = new Pid(.4, .2, .1, 100, 100, -100, false);
+			}
+			double power = 0;
+			if (pid != null)
+			{
+				power = pid.computePid(setSpeed, actualSpeed);
+			}
 			if (actualSpeed > 0.1 || actualSpeed < -0.1 || power > 30
 					|| power < -30)
 			{

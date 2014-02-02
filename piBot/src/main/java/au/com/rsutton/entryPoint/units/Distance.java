@@ -8,12 +8,12 @@ public class Distance implements Serializable
 {
 
 	private static final long serialVersionUID = -3878188969665027416L;
-	final private long value;
+	final private double value;
 	final private DistanceUnit units = DistanceUnit.MM;
 
 	public Distance(double value, DistanceUnit units)
 	{
-		this.value = (long) units.convert(value, DistanceUnit.MM);
+		this.value =  units.convert(value, DistanceUnit.MM);
 	}
 
 	@Override
@@ -21,7 +21,9 @@ public class Distance implements Serializable
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (value ^ (value >>> 32));
+		long temp;
+		temp = Double.doubleToLongBits(value);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
 		return result;
 	}
 
@@ -35,7 +37,8 @@ public class Distance implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		Distance other = (Distance) obj;
-		if (value != other.value)
+		if (Double.doubleToLongBits(value) != Double
+				.doubleToLongBits(other.value))
 			return false;
 		return true;
 	}
