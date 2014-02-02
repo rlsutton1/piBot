@@ -19,6 +19,7 @@ public enum HazelCastInstance
 		TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
         tcpIpConfig.setEnabled(true);
         tcpIpConfig.addMember("192.168.0.115");
+        tcpIpConfig.addMember("192.168.0.108");
         
         
 		h = Hazelcast.newHazelcastInstance(config);

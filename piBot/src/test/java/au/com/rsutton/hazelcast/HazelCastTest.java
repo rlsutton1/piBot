@@ -28,10 +28,12 @@ public class HazelCastTest implements MessageListener<RobotLocation>
 		TargetLocation targeter = new TargetLocation();
 		
 		
+		int size = 50;
+		
 		//222/71.5 // quadrature/cm
-		targeter.gotoTarget(new Distance(0,unit),new Distance( 80,unit));
-		targeter.gotoTarget(new Distance(80,unit),new Distance( 80,unit));
-		targeter.gotoTarget(new Distance(80,unit), new Distance(0,unit));
+		targeter.gotoTarget(new Distance(0,unit),new Distance( size,unit));
+		targeter.gotoTarget(new Distance(size,unit),new Distance( size,unit));
+		targeter.gotoTarget(new Distance(size,unit), new Distance(0,unit));
 		targeter.gotoTarget(new Distance(0,unit), new Distance(0,unit));
 		
 		SetMotion message = new SetMotion();

@@ -12,7 +12,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 
 import com.pi4j.gpio.extension.adafruit.GyroProvider;
 
-public class VehicleController implements Runnable
+public class VehicleHeadingController implements Runnable
 {
 
 	private HBridgeController left;
@@ -22,8 +22,9 @@ public class VehicleController implements Runnable
 	private VehicleSpeedController vsc;
 	private Pid pid;
 
-	public VehicleController(HBridgeController left, HBridgeController right,
-			GyroProvider gyro) throws IOException, InterruptedException
+	public VehicleHeadingController(HBridgeController left,
+			HBridgeController right, GyroProvider gyro) throws IOException,
+			InterruptedException
 	{
 		this.left = left;
 		this.right = right;
@@ -115,17 +116,22 @@ public class VehicleController implements Runnable
 	{
 		// System.out.println("\f");
 		// System.out.println("actual heading "+gyro.getZ()+" setHeading "+setHeading);
+
+		double changeInHeading = HeadingHelper.getChangeInHeading(gyro.getZ(),
+				setHeading);
+
+
 		if (vsc.getSetSpeed().getSpeed(DistanceUnit.MM, TimeUnit.SECONDS) > 4
 				|| vsc.getSetSpeed()
 						.getSpeed(DistanceUnit.MM, TimeUnit.SECONDS) < -4
 				|| gyro.getZ() > setHeading + 1 || gyro.getZ() < setHeading - 1)
 		{
 			// we're either moving or our heading is off by more than 1 degree
-			vsc.setDirectionAdjustment(pid.computePid(setHeading, gyro.getZ()));
+			vsc.setDirectionAdjustment(pid.computePid(0, changeInHeading));
 		} else
 		{
 			// allow the pid to compute so it doesnt build up an error
-			pid.computePid(setHeading, gyro.getZ());
+			pid.computePid(0, changeInHeading);
 			// motors off!
 			vsc.setDirectionAdjustment(0);
 		}

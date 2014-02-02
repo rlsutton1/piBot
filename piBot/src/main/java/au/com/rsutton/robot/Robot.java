@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.ServoController;
-import au.com.rsutton.entryPoint.controllers.VehicleController;
+import au.com.rsutton.entryPoint.controllers.VehicleHeadingController;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncoding;
 import au.com.rsutton.entryPoint.quadrature.QuadratureListener;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -29,7 +29,7 @@ import com.pi4j.io.gpio.RaspiPin;
 
 public class Robot implements Runnable, GyroListener
 {
-	private VehicleController controller;
+	private VehicleHeadingController controller;
 	volatile private long lastMessageReceived;
 	volatile private long lastLocationPublished;
 	DeadReconing reconing = new DeadReconing();
@@ -170,7 +170,7 @@ public class Robot implements Runnable, GyroListener
 		rightWheel.addListener(oneWheelListener);
 	}
 
-	private VehicleController setupVehicleController(GyroProvider gyro,
+	private VehicleHeadingController setupVehicleController(GyroProvider gyro,
 			Adafruit16PwmProvider provider) throws IOException,
 			InterruptedException
 	{
@@ -194,7 +194,7 @@ public class Robot implements Runnable, GyroListener
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);
 
-		VehicleController controller = new VehicleController(leftServo,
+		VehicleHeadingController controller = new VehicleHeadingController(leftServo,
 				rightServo, gyro);
 
 		controller.autoConfigure();

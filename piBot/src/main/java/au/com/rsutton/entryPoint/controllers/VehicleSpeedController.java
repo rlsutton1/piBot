@@ -81,7 +81,7 @@ public class VehicleSpeedController implements Runnable
 			} else if (pid == null)
 			{
 				System.out.println("creating new speed controller pid");
-				pid = new Pid(.4, .2, .1, 100, 100, -100, false);
+				pid = new Pid(.1, .05, .025, 100, 100, -100, false);
 			}
 			double power = 0;
 			if (pid != null)

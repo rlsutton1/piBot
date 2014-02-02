@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.ServoController;
-import au.com.rsutton.entryPoint.controllers.VehicleController;
+import au.com.rsutton.entryPoint.controllers.VehicleHeadingController;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncoding;
 import au.com.rsutton.entryPoint.sonar.FullScan;
 import au.com.rsutton.entryPoint.sonar.Sonar;
@@ -114,7 +114,7 @@ public class Main
 
 	}
 
-	private static VehicleController setupVehicleController(GyroProvider gyro,
+	private static VehicleHeadingController setupVehicleController(GyroProvider gyro,
 			Adafruit16PwmProvider provider) throws IOException,
 			InterruptedException
 	{
@@ -138,7 +138,7 @@ public class Main
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);
 
-		VehicleController controller = new VehicleController(leftServo,
+		VehicleHeadingController controller = new VehicleHeadingController(leftServo,
 				rightServo, gyro);
 
 		controller.autoConfigure();
@@ -377,7 +377,7 @@ public class Main
 			rightServo = new HBridgeController(rightServoPin,
 					rightDirectionPin, ServoController.NORMAL);
 
-			VehicleController controller = new VehicleController(leftServo,
+			VehicleHeadingController controller = new VehicleHeadingController(leftServo,
 					rightServo, gyro);
 
 			controller.autoConfigure();

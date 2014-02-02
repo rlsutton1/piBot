@@ -6,7 +6,7 @@ import java.util.Map;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.ServoController;
-import au.com.rsutton.entryPoint.controllers.VehicleController;
+import au.com.rsutton.entryPoint.controllers.VehicleHeadingController;
 import au.com.rsutton.entryPoint.sonar.RangeDataListener;
 import au.com.rsutton.entryPoint.sonar.RangeRateData;
 import au.com.rsutton.entryPoint.sonar.RateOfCloseRanger;
@@ -29,7 +29,7 @@ public class Controller
 	double forwardPressure = 0;
 	double latteralPressure = 0;
 	int speed = 0;
-	private VehicleController controller;
+	private VehicleHeadingController controller;
 
 	public Controller() throws InterruptedException, IOException
 	{
@@ -141,7 +141,7 @@ public class Controller
 
 	}
 
-	private VehicleController setupVehicleController(GyroProvider gyro,
+	private VehicleHeadingController setupVehicleController(GyroProvider gyro,
 			Adafruit16PwmProvider provider) throws IOException,
 			InterruptedException
 	{
@@ -165,7 +165,7 @@ public class Controller
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);
 
-		VehicleController controller = new VehicleController(leftServo,
+		VehicleHeadingController controller = new VehicleHeadingController(leftServo,
 				rightServo, gyro);
 
 		controller.autoConfigure();
