@@ -15,10 +15,10 @@ public class VehicleControlerCalibrator {
 	private GyroProvider gyro;
 
 	public VehicleControlerCalibrator(HBridgeController left,
-			HBridgeController right, GyroProvider gyro) throws IOException {
+			HBridgeController right, GyroProvider gyro2) throws IOException {
 		this.left = left;
 		this.right = right;
-		this.gyro = gyro;
+		this.gyro = gyro2;
 
 		// loadCalibrationData();
 	}
@@ -31,32 +31,32 @@ public class VehicleControlerCalibrator {
 
 	private void checkOrientation() throws InterruptedException {
 		// check orientation of the left servo
-		int z = gyro.getZ();
+		int z = gyro.getHeading();
 		left.setOutput(.80);
 		Thread.sleep(1000);
 		left.setOutput(0);
 		Thread.sleep(500);
-		if (gyro.getZ() == z) {
+		if (gyro.getHeading() == z) {
 			left.setOutput(0);
 			throw new RuntimeException("Didn't move when testing left servo");
 		}
-		if (gyro.getZ() - z < 0) {
+		if (gyro.getHeading() - z < 0) {
 			left.setDirection(ServoController.REVERSED);
 		} else {
 			left.setDirection(ServoController.NORMAL);
 		}
 
 		// check orientation of the right servo
-		z = gyro.getZ();
+		z = gyro.getHeading();
 		right.setOutput(.80);
 		Thread.sleep(1000);
 		right.setOutput(0);
 		Thread.sleep(500);
-		if (gyro.getZ() == z) {
+		if (gyro.getHeading() == z) {
 			right.setOutput(0);
 			throw new RuntimeException("Didn't move when testing right servo");
 		}
-		if (gyro.getZ() - z > 0) {
+		if (gyro.getHeading() - z > 0) {
 			right.setDirection(ServoController.REVERSED);
 		} else {
 			right.setDirection(ServoController.NORMAL);

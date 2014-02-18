@@ -1,13 +1,9 @@
 package au.com.rsutton.robot;
 
-import java.util.concurrent.TimeUnit;
-
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 
-public class DeadReconing
+public class DeadReconingWithGyro
 {
 
 	private final static DistanceUnit unit = DistanceUnit.MM;

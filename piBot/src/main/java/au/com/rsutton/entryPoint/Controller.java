@@ -166,9 +166,9 @@ public class Controller
 		rightServo.setOutput(0);
 
 		VehicleHeadingController controller = new VehicleHeadingController(leftServo,
-				rightServo, gyro);
+				rightServo, gyro, gyro);
 
-		controller.autoConfigure();
+		controller.autoConfigure(gyro);
 		return controller;
 	}
 

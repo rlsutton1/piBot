@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.robot.HeadingProvider;
 
 import com.pi4j.gpio.extension.adafruit.GyroProvider;
 
@@ -17,34 +18,34 @@ public class VehicleHeadingController implements Runnable
 
 	private HBridgeController left;
 	private HBridgeController right;
-	private GyroProvider gyro;
+	private HeadingProvider headingProvider;
 	volatile private int setHeading;
 	private VehicleSpeedController vsc;
 	private Pid pid;
 
 	public VehicleHeadingController(HBridgeController left,
-			HBridgeController right, GyroProvider gyro) throws IOException,
+			HBridgeController right, HeadingProvider headingProvider,HeadingProvider gyro) throws IOException,
 			InterruptedException
 	{
 		this.left = left;
 		this.right = right;
-		this.gyro = gyro;
-		waitForGyro();
+		this.headingProvider = headingProvider;
+		waitForGyro(gyro);
 	}
 
 	public void loadConfig() throws IOException
 	{
 		loadCalibrationData();
 		vsc = new VehicleSpeedController(left, right);
-		pid = new Pid(2, .20, .1, 100, 50, -50, false);
+		pid = new Pid(1, .10, .1, 100, 50, -50, true);
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
 				100, 100, TimeUnit.MILLISECONDS);
 
 	}
 
-	public void autoConfigure() throws InterruptedException, IOException
+	public void autoConfigure(GyroProvider gyro) throws InterruptedException, IOException
 	{
-		waitForGyro();
+		waitForGyro(gyro);
 
 		VehicleControlerCalibrator configurator = new VehicleControlerCalibrator(
 				left, right, gyro);
@@ -52,7 +53,7 @@ public class VehicleHeadingController implements Runnable
 
 	}
 
-	private void waitForGyro() throws InterruptedException
+	private void waitForGyro(HeadingProvider gyro) throws InterruptedException
 	{
 		left.setOutput(0);
 		right.setOutput(0);// stopped
@@ -117,14 +118,14 @@ public class VehicleHeadingController implements Runnable
 		// System.out.println("\f");
 		// System.out.println("actual heading "+gyro.getZ()+" setHeading "+setHeading);
 
-		double changeInHeading = HeadingHelper.getChangeInHeading(gyro.getZ(),
+		double changeInHeading = HeadingHelper.getChangeInHeading(headingProvider.getHeading(),
 				setHeading);
 
 
 		if (vsc.getSetSpeed().getSpeed(DistanceUnit.MM, TimeUnit.SECONDS) > 4
 				|| vsc.getSetSpeed()
 						.getSpeed(DistanceUnit.MM, TimeUnit.SECONDS) < -4
-				|| gyro.getZ() > setHeading + 1 || gyro.getZ() < setHeading - 1)
+				|| headingProvider.getHeading() > setHeading + 5 || headingProvider.getHeading() < setHeading - 5)
 		{
 			// we're either moving or our heading is off by more than 1 degree
 			vsc.setDirectionAdjustment(pid.computePid(0, changeInHeading));

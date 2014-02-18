@@ -1,7 +1,5 @@
 package au.com.rsutton.robot;
 
-import java.util.concurrent.TimeUnit;
-
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
@@ -32,36 +30,37 @@ public class DifferentialSpeedMonitor
 		}
 
 		double pps = leftPulsesPerSecond + rightPulsesPerSecond;
-		pps = ((lastPps * 0.30d) + (pps * 0.70d)) / 2.0d;
+		pps = ((lastPps * 0.70d) + (pps * 0.30d)) ;
 		lastPps = pps;
 		QuadratureToDistance qts = new QuadratureToDistance();
 		Distance dist = qts.scale((int) pps);
-		return new Speed(dist, new Time(1, TimeUnit.SECONDS));
+		return new Speed(dist,Time.perSecond());
 
 	}
 
 	synchronized void pulseOnLeft(int value)
 	{
 		long now = System.currentTimeMillis();
-		long duration = Math.max(MINIMUM_POSSIBLE_DURATION, now - lastLeftPulse);
-		float dir = Math.signum(value - lastLeftValue);
-		if (dir == 0)
-			dir = 1;
-		leftPulsesPerSecond = (long) ((1000 / duration) * dir);
-		lastLeftPulse = now;
-		lastLeftValue = value;
+		long duration = now - lastLeftPulse;
+		if (duration > 50)
+		{
+			float distance = value - lastLeftValue;
+			leftPulsesPerSecond = (long) ((1000 / duration) * distance);
+			lastLeftPulse = now;
+			lastLeftValue = value;
+		}
 	}
 
 	synchronized void pulseOnRight(int value)
 	{
 		long now = System.currentTimeMillis();
-		long duration = Math.max(MINIMUM_POSSIBLE_DURATION, now - lastRightPulse);
-		float dir = Math.signum(value - lastRightValue);
-		if (dir == 0)
-			dir = 1;
-		rightPulsesPerSecond = (long) ((1000 / duration) * dir);
-		lastRightPulse = now;
-		lastRightValue = value;
-
+		long duration = now - lastRightPulse;
+		if (duration > 50)
+		{
+			float distance = value - lastRightValue;
+			rightPulsesPerSecond = (long) ((1000 / duration) * distance);
+			lastRightPulse = now;
+			lastRightValue = value;
+		}
 	}
 }

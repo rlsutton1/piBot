@@ -81,19 +81,19 @@ public class VehicleSpeedController implements Runnable
 			} else if (pid == null)
 			{
 				System.out.println("creating new speed controller pid");
-				pid = new Pid(.1, .05, .025, 100, 100, -100, false);
+				pid = new Pid(.1, .01, .01, 100, 100, -100, false);
 			}
 			double power = 0;
 			if (pid != null)
 			{
 				power = pid.computePid(setSpeed, actualSpeed);
 			}
-			if (actualSpeed > 0.1 || actualSpeed < -0.1 || power > 30
-					|| power < -30)
-			{
-				System.out.println("set:" + setSpeed + " actual:" + actualSpeed
-						+ " power:" + power);
-			}
+//			if (actualSpeed > 0.1 || actualSpeed < -0.1 || power > 30
+//					|| power < -30)
+//			{
+//				System.out.println("set:" + setSpeed + " actual:" + actualSpeed
+//						+ " power:" + power);
+//			}
 
 			double leftPower = power + directionAdjustment;
 			double rightPower = power - directionAdjustment;

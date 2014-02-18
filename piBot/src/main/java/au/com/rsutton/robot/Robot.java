@@ -21,21 +21,21 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
-import com.pi4j.gpio.extension.adafruit.GyroListener;
 import com.pi4j.gpio.extension.adafruit.GyroProvider;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
 import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.RaspiPin;
 
-public class Robot implements Runnable, GyroListener
+public class Robot implements Runnable, HeadingListener
 {
 	private VehicleHeadingController controller;
 	volatile private long lastMessageReceived;
 	volatile private long lastLocationPublished;
-	DeadReconing reconing = new DeadReconing();
+	//DeadReconingWithGyro reconing = new DeadReconingWithGyro();
+	DeadReconingWithQuadrature reconing = new DeadReconingWithQuadrature();
 	QuadratureToDistance quadtratureScaler = new QuadratureToDistance();
 	final private GyroProvider gyro;
-	private int heading;
+	volatile private int heading;
 	DifferentialSpeedMonitor speedMonitor = new DifferentialSpeedMonitor();
 
 	public Robot() throws IOException, InterruptedException
@@ -45,11 +45,11 @@ public class Robot implements Runnable, GyroListener
 
 		Adafruit16PwmProvider provider = setupPwm();
 
-		controller = setupVehicleController(gyro, provider);
+		controller = setupVehicleController(reconing, provider,gyro);
 
 		controller.loadConfig();
 
-		gyro.addGryoListener(this);
+		reconing.addHeadingListener(this);
 
 		setupQuadrature();
 
@@ -76,8 +76,8 @@ public class Robot implements Runnable, GyroListener
 					SetMotion motion = message.getMessageObject();
 					try
 					{
-						System.out.println("Message received "
-								+ message.getMessageObject().toString());
+//						System.out.println("Message received "
+//								+ message.getMessageObject().toString());
 
 						controller.setSpeed(motion.getSpeed());
 					} catch (InterruptedException e)
@@ -102,7 +102,7 @@ public class Robot implements Runnable, GyroListener
 			{
 
 				ResetCoords messageObject = message.getMessageObject();
-				gyro.setCorrectedHeading(messageObject.getHeading());
+				reconing.setCorrectedHeading(messageObject.getHeading());
 				reconing.resetLocation(messageObject.getX(),
 						messageObject.getY(), messageObject.getHeading());
 
@@ -116,7 +116,7 @@ public class Robot implements Runnable, GyroListener
 	{
 
 		reconing.updateLocation(quadtratureScaler.scale(leftWheel),
-				quadtratureScaler.scale(rightWheel), heading);
+				quadtratureScaler.scale(rightWheel));
 		if (lastLocationPublished < System.currentTimeMillis() - 250)
 		{
 			RobotLocation message = new RobotLocation();
@@ -132,6 +132,7 @@ public class Robot implements Runnable, GyroListener
 
 	private void setupQuadrature()
 	{
+		System.out.println("LHS");
 		// LHS
 		// 04 = 23 - ok
 		// 05 = 24 - ok
@@ -143,6 +144,7 @@ public class Robot implements Runnable, GyroListener
 			@Override
 			public void quadraturePosition(int offset)
 			{
+//				System.out.println("LHS pulse");
 				speedMonitor.pulseOnLeft(offset);
 				updateLocation(offset, null);
 
@@ -170,9 +172,9 @@ public class Robot implements Runnable, GyroListener
 		rightWheel.addListener(oneWheelListener);
 	}
 
-	private VehicleHeadingController setupVehicleController(GyroProvider gyro,
-			Adafruit16PwmProvider provider) throws IOException,
-			InterruptedException
+	private VehicleHeadingController setupVehicleController(
+			HeadingProvider headingProvider, Adafruit16PwmProvider provider, GyroProvider gyro3)
+			throws IOException, InterruptedException
 	{
 		provider.export(Adafruit16PwmPin.GPIO_00, PinMode.PWM_OUTPUT);
 		provider.export(Adafruit16PwmPin.GPIO_01, PinMode.PWM_OUTPUT);
@@ -194,10 +196,10 @@ public class Robot implements Runnable, GyroListener
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);
 
-		VehicleHeadingController controller = new VehicleHeadingController(leftServo,
-				rightServo, gyro);
+		VehicleHeadingController controller = new VehicleHeadingController(
+				leftServo, rightServo, headingProvider,gyro);
 
-		controller.autoConfigure();
+		controller.autoConfigure(gyro3);
 		return controller;
 	}
 
@@ -237,7 +239,7 @@ public class Robot implements Runnable, GyroListener
 	}
 
 	@Override
-	public void gyroChanged(int outx, int outy, int outz)
+	public void headingChanged(int outz)
 	{
 		heading = outz;
 

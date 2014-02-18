@@ -1,5 +1,6 @@
 package au.com.rsutton.hazelcast;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -29,12 +30,12 @@ public class TargetLocation implements MessageListener<RobotLocation>
 		locationMessage.addMessageListener(this);
 
 		double distance = 1000d;
-		double newHeading = Math.toDegrees(Math.atan2(-(targetX - x),
-				(targetY - y)));
+//		double newHeading = Math.toDegrees(Math.atan2(-(targetX - x),
+//				(targetY - y)));
 		while (distance > accuracy.convert(unit))
 		{
 
-			newHeading = Math.toDegrees(Math.atan2(-(targetX - x),
+			double newHeading = Math.toDegrees(Math.atan2(-(targetX - x),
 					(targetY - y)));
 
 			message.setHeading(newHeading);
@@ -45,8 +46,9 @@ public class TargetLocation implements MessageListener<RobotLocation>
 
 			// speed is a product of accurace of desired heading and distance to
 			// the target
-			double speed = Math.max(400 - Math.abs(newHeading - heading), 0);
-			speed = Math.min(distance / 3, speed);
+			double changeInHeading = HeadingHelper.getChangeInHeading(newHeading,heading);
+			double speed = Math.max(400 - Math.abs(changeInHeading), 0);
+			speed = Math.min(distance / 1, speed);
 
 			message.setSpeed(new Speed(new Distance(speed, DistanceUnit.MM),
 					Time.perSecond()));

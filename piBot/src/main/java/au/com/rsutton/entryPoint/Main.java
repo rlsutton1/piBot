@@ -139,9 +139,9 @@ public class Main
 		rightServo.setOutput(0);
 
 		VehicleHeadingController controller = new VehicleHeadingController(leftServo,
-				rightServo, gyro);
+				rightServo, gyro,gyro);
 
-		controller.autoConfigure();
+		controller.autoConfigure(gyro);
 		return controller;
 	}
 
@@ -378,9 +378,9 @@ public class Main
 					rightDirectionPin, ServoController.NORMAL);
 
 			VehicleHeadingController controller = new VehicleHeadingController(leftServo,
-					rightServo, gyro);
+					rightServo, gyro,gyro);
 
-			controller.autoConfigure();
+			controller.autoConfigure(gyro);
 
 		} catch (IOException | InterruptedException e)
 		{
