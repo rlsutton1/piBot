@@ -115,7 +115,7 @@ public class DeadReconingWithQuadrature implements HeadingProvider
 					}
 				}
 			}
-		} catch (Throwable e)
+		} catch (Exception e)
 		{
 			e.printStackTrace();
 		}

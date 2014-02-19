@@ -29,13 +29,13 @@ import com.pi4j.io.gpio.RaspiPin;
 public class Robot implements Runnable, HeadingListener
 {
 	private VehicleHeadingController controller;
-	volatile private long lastMessageReceived;
-	volatile private long lastLocationPublished;
-	//DeadReconingWithGyro reconing = new DeadReconingWithGyro();
+	private volatile long lastMessageReceived;
+	private volatile long lastLocationPublished;
+	// DeadReconingWithGyro reconing = new DeadReconingWithGyro();
 	DeadReconingWithQuadrature reconing = new DeadReconingWithQuadrature();
 	QuadratureToDistance quadtratureScaler = new QuadratureToDistance();
-	final private GyroProvider gyro;
-	volatile private int heading;
+	private final GyroProvider gyro;
+	private volatile int heading;
 	DifferentialSpeedMonitor speedMonitor = new DifferentialSpeedMonitor();
 
 	public Robot() throws IOException, InterruptedException
@@ -45,7 +45,7 @@ public class Robot implements Runnable, HeadingListener
 
 		Adafruit16PwmProvider provider = setupPwm();
 
-		controller = setupVehicleController(reconing, provider,gyro);
+		controller = setupVehicleController(reconing, provider, gyro);
 
 		controller.loadConfig();
 
@@ -76,13 +76,10 @@ public class Robot implements Runnable, HeadingListener
 					SetMotion motion = message.getMessageObject();
 					try
 					{
-//						System.out.println("Message received "
-//								+ message.getMessageObject().toString());
 
 						controller.setSpeed(motion.getSpeed());
 					} catch (InterruptedException e)
 					{
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					controller.setHeading(motion.getHeading().intValue());
@@ -132,7 +129,6 @@ public class Robot implements Runnable, HeadingListener
 
 	private void setupQuadrature()
 	{
-		System.out.println("LHS");
 		// LHS
 		// 04 = 23 - ok
 		// 05 = 24 - ok
@@ -144,7 +140,6 @@ public class Robot implements Runnable, HeadingListener
 			@Override
 			public void quadraturePosition(int offset)
 			{
-//				System.out.println("LHS pulse");
 				speedMonitor.pulseOnLeft(offset);
 				updateLocation(offset, null);
 
@@ -173,8 +168,8 @@ public class Robot implements Runnable, HeadingListener
 	}
 
 	private VehicleHeadingController setupVehicleController(
-			HeadingProvider headingProvider, Adafruit16PwmProvider provider, GyroProvider gyro3)
-			throws IOException, InterruptedException
+			HeadingProvider headingProvider, Adafruit16PwmProvider provider,
+			GyroProvider gyro3) throws IOException, InterruptedException
 	{
 		provider.export(Adafruit16PwmPin.GPIO_00, PinMode.PWM_OUTPUT);
 		provider.export(Adafruit16PwmPin.GPIO_01, PinMode.PWM_OUTPUT);
@@ -196,11 +191,11 @@ public class Robot implements Runnable, HeadingListener
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);
 
-		VehicleHeadingController controller = new VehicleHeadingController(
-				leftServo, rightServo, headingProvider,gyro);
+		VehicleHeadingController lcontroller = new VehicleHeadingController(
+				leftServo, rightServo, headingProvider, gyro);
 
-		controller.autoConfigure(gyro3);
-		return controller;
+		lcontroller.autoConfigure(gyro3);
+		return lcontroller;
 	}
 
 	private Adafruit16PwmProvider setupPwm() throws IOException,
@@ -222,13 +217,10 @@ public class Robot implements Runnable, HeadingListener
 			// no messages for 2 seconds, so stop.
 			try
 			{
-				// System.out.println("Stopping " + lastMessageReceived + " < "
-				// + (System.currentTimeMillis() - 5000));
 				controller.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
 						new Time(1, TimeUnit.SECONDS)));
 			} catch (InterruptedException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

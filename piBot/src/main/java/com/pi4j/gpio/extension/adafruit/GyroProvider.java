@@ -178,7 +178,6 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 					|| values.compareToIgnoreCase(previousValues) != 0)
 			{
 
-				// System.out.println(values);
 				previousValues = values;
 				for (GyroListener listener : gyroListeners)
 				{

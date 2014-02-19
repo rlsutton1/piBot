@@ -6,8 +6,8 @@ import com.google.common.base.Objects;
 
 public class Point
 {
-	final public Distance x;
-	final public Distance y;
+	final private Distance x;
+	final private Distance y;
 
 	public Point(Distance x, Distance y)
 	{
@@ -55,5 +55,15 @@ public class Point
 	{
 		return Objects.toStringHelper(Point.class).add("x", x).add("y", y)
 				.toString();
+	}
+
+	public Distance getX()
+	{
+		return x;
+	}
+
+	public Distance getY()
+	{
+		return y;
 	}
 }

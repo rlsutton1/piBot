@@ -91,14 +91,6 @@ public class Controller
 				heading -= agregateHeadingChange;
 				System.out.println("Speed: " + speed + " heading: " + heading);
 				controller.setHeading(heading);
-//				try
-//				{
-//					controller.setSpeed(speed);
-//				} catch (InterruptedException e)
-//				{
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
 			}
 
 		};

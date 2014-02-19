@@ -10,11 +10,11 @@ public class TrigMath
 	{
 		// H = SQR(A^2 + B^2)
 		double a2 = Math.pow(
-				p1.x.convert(DistanceUnit.MM) - p2.x.convert(DistanceUnit.MM),
+				p1.getX().convert(DistanceUnit.MM) - p2.getX().convert(DistanceUnit.MM),
 				2);
 
 		double b2 = Math.pow(
-				p1.y.convert(DistanceUnit.MM) - p2.y.convert(DistanceUnit.MM),
+				p1.getY().convert(DistanceUnit.MM) - p2.getY().convert(DistanceUnit.MM),
 				2);
 
 		Distance h = new Distance(Math.sqrt(a2 + b2), DistanceUnit.MM);

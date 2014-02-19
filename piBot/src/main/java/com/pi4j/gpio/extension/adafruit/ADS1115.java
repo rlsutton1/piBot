@@ -173,8 +173,6 @@ public class ADS1115 implements Runnable {
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(i2cAddress));
 
-		// worker =
-		// GpioFactory.getExecutorServiceFactory().getScheduledExecutorService();
 		worker = Executors.newScheduledThreadPool(1);
 		worker.scheduleAtFixedRate(this, 20, 20, TimeUnit.MILLISECONDS);
 

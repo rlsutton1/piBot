@@ -208,7 +208,6 @@ public class Adafruit16PwmProvider extends GpioProviderBase implements GpioProvi
 			throw new InvalidPinException(pin);
 
 		// determine pin address
-	//	System.out.println("address: " + pin.getAddress());
 		int pinAddress = pin.getAddress();
 
 		try
