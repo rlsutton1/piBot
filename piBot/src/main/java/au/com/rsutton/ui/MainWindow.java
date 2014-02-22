@@ -18,7 +18,6 @@ import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.ResetCoords;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 
@@ -29,6 +28,9 @@ public class MainWindow extends JFrame implements
 		MessageListener<RobotLocation>
 {
 
+	
+	
+	private static final long serialVersionUID = -4490943128993707547L;
 	private JTextField heading;
 	private JLabel xLocationLabel;
 	private JLabel yLocationLabel;
@@ -85,7 +87,6 @@ public class MainWindow extends JFrame implements
 		JButton forwardButton = createForwardButton();
 		controlPanel.add(createStopButton());
 		controlPanel.add(forwardButton);
-		controlPanel.add(createResetHeadingButton());
 		this.setVisible(true);
 	}
 
@@ -112,27 +113,7 @@ public class MainWindow extends JFrame implements
 		return b;
 	}
 	
-	private JButton createResetHeadingButton()
-	{
-		JButton b = new JButton("Reset Gyro");
-		b.setSize(50, 30);
-		b.addActionListener(new ActionListener()
-		{
 
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				ResetCoords message = new ResetCoords();
-				
-				message.publish();
-
-			}
-		});
-
-		return b;
-	}
-	
-	
 	private JButton createStopButton()
 	{
 		JButton b = new JButton("Stop");

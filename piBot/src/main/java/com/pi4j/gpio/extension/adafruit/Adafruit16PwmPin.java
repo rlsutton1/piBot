@@ -67,13 +67,19 @@ public class Adafruit16PwmPin
 	public static final Pin GPIO_14 = createDigitalPin(14, "GPIO 14");
 	public static final Pin GPIO_15 = createDigitalPin(15, "GPIO 15");
 
-	public static Pin[] ALL = { Adafruit16PwmPin.GPIO_00, Adafruit16PwmPin.GPIO_01, Adafruit16PwmPin.GPIO_02, Adafruit16PwmPin.GPIO_03,
-			Adafruit16PwmPin.GPIO_04, Adafruit16PwmPin.GPIO_05, Adafruit16PwmPin.GPIO_06, Adafruit16PwmPin.GPIO_07,
-			Adafruit16PwmPin.GPIO_08, Adafruit16PwmPin.GPIO_09, Adafruit16PwmPin.GPIO_10, Adafruit16PwmPin.GPIO_11,
-			Adafruit16PwmPin.GPIO_12, Adafruit16PwmPin.GPIO_13, Adafruit16PwmPin.GPIO_14, Adafruit16PwmPin.GPIO_15 };
+	public static Pin[] ALL = {
+			Adafruit16PwmPin.GPIO_00, Adafruit16PwmPin.GPIO_01,
+			Adafruit16PwmPin.GPIO_02, Adafruit16PwmPin.GPIO_03,
+			Adafruit16PwmPin.GPIO_04, Adafruit16PwmPin.GPIO_05,
+			Adafruit16PwmPin.GPIO_06, Adafruit16PwmPin.GPIO_07,
+			Adafruit16PwmPin.GPIO_08, Adafruit16PwmPin.GPIO_09,
+			Adafruit16PwmPin.GPIO_10, Adafruit16PwmPin.GPIO_11,
+			Adafruit16PwmPin.GPIO_12, Adafruit16PwmPin.GPIO_13,
+			Adafruit16PwmPin.GPIO_14, Adafruit16PwmPin.GPIO_15 };
 
 	private static Pin createDigitalPin(int address, String name)
 	{
-		return new PinImpl(Adafruit16PwmProvider.NAME, address, name, EnumSet.of(PinMode.PWM_OUTPUT), null);
+		return new PinImpl(Adafruit16PwmProvider.NAME, address, name,
+				EnumSet.of(PinMode.PWM_OUTPUT), null);
 	}
 }

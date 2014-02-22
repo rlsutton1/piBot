@@ -53,9 +53,9 @@ public class Main
 				Adafruit16PwmPin.GPIO_05);
 
 		HBridgeController leftServo = new HBridgeController(leftServoPin,
-				leftDirectionPin, ServoController.NORMAL);
+				leftDirectionPin, false);
 		HBridgeController rightServo = new HBridgeController(rightServoPin,
-				rightDirectionPin, ServoController.NORMAL);
+				rightDirectionPin, false);
 
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);
@@ -111,9 +111,9 @@ public class Main
 				Adafruit16PwmPin.GPIO_04);
 
 		HBridgeController leftServo = new HBridgeController(leftServoPin,
-				leftDirectionPin, ServoController.NORMAL);
+				leftDirectionPin, false);
 		HBridgeController rightServo = new HBridgeController(rightServoPin,
-				rightDirectionPin, ServoController.NORMAL);
+				rightDirectionPin, false);
 
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);

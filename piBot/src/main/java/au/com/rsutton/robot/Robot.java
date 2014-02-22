@@ -5,7 +5,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
-import au.com.rsutton.entryPoint.controllers.ServoController;
 import au.com.rsutton.entryPoint.controllers.VehicleHeadingController;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncoding;
 import au.com.rsutton.entryPoint.quadrature.QuadratureListener;
@@ -13,7 +12,6 @@ import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.ResetCoords;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 
@@ -53,7 +51,6 @@ public class Robot implements Runnable, HeadingListener
 
 		setupQuadrature();
 
-		createResetCoordsListener();
 		createMotionListener();
 
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
@@ -88,25 +85,7 @@ public class Robot implements Runnable, HeadingListener
 		});
 	}
 
-	private void createResetCoordsListener()
-	{
-		ResetCoords message = new ResetCoords();
-		message.addMessageListener(new MessageListener<ResetCoords>()
-		{
-
-			@Override
-			public void onMessage(Message<ResetCoords> message)
-			{
-
-				ResetCoords messageObject = message.getMessageObject();
-				reconing.setCorrectedHeading(messageObject.getHeading());
-				reconing.resetLocation(messageObject.getX(),
-						messageObject.getY(), messageObject.getHeading());
-
-			}
-
-		});
-	}
+	
 
 	private void updateLocation(final Integer leftWheel,
 			final Integer rightWheel)
@@ -184,9 +163,9 @@ public class Robot implements Runnable, HeadingListener
 				Adafruit16PwmPin.GPIO_04);
 
 		HBridgeController leftServo = new HBridgeController(leftServoPin,
-				leftDirectionPin, ServoController.NORMAL);
+				leftDirectionPin, false);
 		HBridgeController rightServo = new HBridgeController(rightServoPin,
-				rightDirectionPin, ServoController.NORMAL);
+				rightDirectionPin, false);
 
 		leftServo.setOutput(0);
 		rightServo.setOutput(0);

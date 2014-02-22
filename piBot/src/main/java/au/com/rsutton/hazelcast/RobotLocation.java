@@ -1,6 +1,7 @@
 package au.com.rsutton.hazelcast;
 
 import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.Speed;
 
 import com.google.common.base.Objects;
 
@@ -11,6 +12,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private int heading;
 	private Distance x;
 	private Distance y;
+	private Speed speed;
 
 	public RobotLocation()
 	{
@@ -56,5 +58,11 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	public int getHeading()
 	{
 		return heading;
+	}
+
+	public void setSpeed(Speed speed)
+	{
+		this.speed = speed;
+		
 	}
 }

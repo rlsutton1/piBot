@@ -30,8 +30,6 @@ public class TargetLocation implements MessageListener<RobotLocation>
 		locationMessage.addMessageListener(this);
 
 		double distance = 1000d;
-//		double newHeading = Math.toDegrees(Math.atan2(-(targetX - x),
-//				(targetY - y)));
 		while (distance > accuracy.convert(unit))
 		{
 

@@ -8,7 +8,7 @@ public class QuadratureToDistance
 
 	private double scale = 715d/222.0d ; // quadrature/mm
 
-	Distance scale(Integer quadrature)
+	public Distance scale(Integer quadrature)
 	{
 		if (quadrature == null)
 			return null;

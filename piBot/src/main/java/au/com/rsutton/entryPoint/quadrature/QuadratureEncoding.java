@@ -22,9 +22,9 @@ public class QuadratureEncoding
 
 	private Set<QuadratureListener> listeners = new HashSet<QuadratureListener>();
 
-	public QuadratureEncoding(Pin a, Pin b, boolean direction)
+	public QuadratureEncoding(Pin a, Pin b, boolean invertDirection)
 	{
-		if (direction)
+		if (invertDirection)
 		{
 			this.direction *= -1;
 		}
