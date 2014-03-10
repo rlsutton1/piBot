@@ -125,7 +125,7 @@ public class Robot implements Runnable, HeadingListener
 			}
 
 		};
-		leftWheel.addListener(leftWheelListener);
+//		leftWheel.addListener(leftWheelListener);
 
 		// RHS
 		// 03 = 22 - ok
@@ -143,7 +143,7 @@ public class Robot implements Runnable, HeadingListener
 
 			}
 		};
-		rightWheel.addListener(oneWheelListener);
+//		rightWheel.addListener(oneWheelListener);
 	}
 
 	private VehicleHeadingController setupVehicleController(

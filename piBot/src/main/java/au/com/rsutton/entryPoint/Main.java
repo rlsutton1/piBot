@@ -10,6 +10,7 @@ import au.com.rsutton.entryPoint.sonar.FullScan;
 import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.robot.Robot;
+import au.com.rsutton.robot.rover.Rover;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
@@ -28,7 +29,7 @@ public class Main
 	public static void main(String[] args) throws InterruptedException,
 			IOException
 	{
-		new Robot();
+		new Rover();
 		while (true)
 		{
 			Thread.sleep(1000);

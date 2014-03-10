@@ -16,6 +16,7 @@ import com.hazelcast.core.MessageListener;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
+import com.pi4j.gpio.extension.lsm303.CompassLSM303;
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.RaspiPin;
@@ -23,27 +24,43 @@ import com.pi4j.io.gpio.RaspiPin;
 public class Rover implements Runnable
 {
 
-	private WheelController leftWheel;
 	private WheelController rightWheel;
+	private WheelController leftWheel;
 	final private DeadReconing reconing;
 	final private SpeedHeadingController speedHeadingController;
-	final private Compass compass;
 	private RobotLocation previousLocation;
 	final DistanceUnit distUnit = DistanceUnit.MM;
 	final TimeUnit timeUnit = TimeUnit.SECONDS;
 	private long lastTime;
 	final private Adafruit16PwmProvider provider;
+	private CompassLSM303 compass;
 
-	Rover() throws IOException, InterruptedException
+	public Rover() throws IOException, InterruptedException
 	{
+		compass = new CompassLSM303();
+		compass.setup();
+
 		provider = new Adafruit16PwmProvider(1, 0x40);
 		provider.setPWMFreq(30);
 
-		setupLeftWheel();
 		setupRightWheel();
+
+		setupLeftWheel();
+		
+		 
+
+
 		reconing = new DeadReconing();
-		compass = new Compass();
-		speedHeadingController = new SpeedHeadingController(leftWheel, rightWheel);
+		 previousLocation = new RobotLocation();
+		 previousLocation.setHeading(0);
+		 previousLocation.setX(reconing.getX());
+		 previousLocation.setY(reconing.getY());
+		 previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
+		
+		
+		
+		speedHeadingController = new SpeedHeadingController(rightWheel,
+				leftWheel,compass.getHeading());
 
 		// listen for motion commands thru Hazelcast
 		SetMotion message = new SetMotion();
@@ -54,63 +71,71 @@ public class Rover implements Runnable
 			public void onMessage(Message<SetMotion> message)
 			{
 				SetMotion data = message.getMessageObject();
+			//	System.out.println("Setting speed" + data.getSpeed());
 				speedHeadingController.setDesiredMotion(data);
 			}
 		});
-		
+
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
 				100, 100, TimeUnit.MILLISECONDS);
 
-
-	}
-
-	private void setupRightWheel()
-	{
-		provider.export(Adafruit16PwmPin.GPIO_04, PinMode.PWM_OUTPUT);
-		provider.export(Adafruit16PwmPin.GPIO_05, PinMode.PWM_OUTPUT);
-
-		Pin rightQuadratureA = RaspiPin.GPIO_02;
-		PwmPin rightDirectionPin = (PwmPin) Adafruit16PwmPin.GPIO_04;
-		PwmPin rightPwmPin = (PwmPin) Adafruit16PwmPin.GPIO_05;
-		Pin rightQuadreatureB = RaspiPin.GPIO_03;
-		rightWheel = new WheelController(rightPwmPin, rightDirectionPin,
-				rightQuadratureA, rightQuadreatureB, false, false);
 	}
 
 	private void setupLeftWheel()
 	{
+		provider.export(Adafruit16PwmPin.GPIO_04, PinMode.PWM_OUTPUT);
+		provider.export(Adafruit16PwmPin.GPIO_05, PinMode.PWM_OUTPUT);
+
+		Pin quadratureA = RaspiPin.GPIO_02;
+		PwmPin directionPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_05);
+		PwmPin pwmPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_04);
+		Pin quadreatureB = RaspiPin.GPIO_03;
+		leftWheel = new WheelController(pwmPin, directionPin, quadratureA,
+				quadreatureB, false, true);
+	}
+
+	private void setupRightWheel()
+	{
 		provider.export(Adafruit16PwmPin.GPIO_00, PinMode.PWM_OUTPUT);
 		provider.export(Adafruit16PwmPin.GPIO_01, PinMode.PWM_OUTPUT);
 
-		Pin leftQuadratureA = RaspiPin.GPIO_05;
-		PwmPin leftPwmPin = (PwmPin) Adafruit16PwmPin.GPIO_00;
-		Pin leftQuadreatureB = RaspiPin.GPIO_04;
-		PwmPin leftDirectionPin = (PwmPin) Adafruit16PwmPin.GPIO_01;
-		leftWheel = new WheelController(leftPwmPin, leftDirectionPin,
-				leftQuadratureA, leftQuadreatureB, false, false);
+		Pin quadratureA = RaspiPin.GPIO_05;
+		PwmPin pwmPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_01);
+
+		Pin quadreatureB = RaspiPin.GPIO_04;
+		PwmPin directionPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_00);
+		rightWheel = new WheelController(pwmPin, directionPin, quadratureA,
+				quadreatureB, false, false);
 	}
 
 	@Override
 	public void run()
 	{
-		int heading = compass.getHeading();
-		speedHeadingController.setActualHeading(heading);
-		reconing.setHeading(heading);
-		reconing.updateLocation(leftWheel.getDistance(),
-				rightWheel.getDistance());
+		try
+		{
+			
+			int heading = (int) compass.getHeading();
+			speedHeadingController.setActualHeading(heading);
+			reconing.setHeading(heading);
+			reconing.updateLocation(rightWheel.getDistance(),
+					leftWheel.getDistance());
 
-		Speed speed = calculateSpeed();
+			Speed speed = calculateSpeed();
 
+			// send location out on HazelCast
+			RobotLocation currentLocation = new RobotLocation();
+			currentLocation.setHeading(heading);
+			currentLocation.setX(reconing.getX());
+			currentLocation.setY(reconing.getY());
+			currentLocation.setSpeed(speed);
+			currentLocation.publish();
 
-		// send location out on HazelCast
-		RobotLocation currentLocation = new RobotLocation();
-		currentLocation.setHeading(heading);
-		currentLocation.setX(reconing.getX());
-		currentLocation.setY(reconing.getY());
-		currentLocation.setSpeed(speed);
-		currentLocation.publish();
-
-		previousLocation = currentLocation;
+			previousLocation = currentLocation;
+		} catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 

@@ -19,8 +19,8 @@ public class QuadratureEncoding
 	volatile int direction = 1;
 	volatile QuadratureState lastState = QuadratureState.ONE;
 	volatile int lastChange = 0;
-
-	private Set<QuadratureListener> listeners = new HashSet<QuadratureListener>();
+	private double errors;
+	private double steps;
 
 	public QuadratureEncoding(Pin a, Pin b, boolean invertDirection)
 	{
@@ -77,15 +77,27 @@ public class QuadratureEncoding
 	{
 		QuadratureState newState = QuadratureState.getState(a, b);
 
-		lastChange = newState.getChange(lastState, lastChange);
+		try
+		{
+			steps++;
+			lastChange = newState.getChange(lastState);
+		} catch (QuadratureException e)
+		{
+			errors++;
+
+			offset += lastChange * direction;
+			// errors diminishes every click, after 8 clicks an error will have
+			// diminished to 0.5.
+			// so 2 errors in 8 clicks becomes 1.5/8 = 0.1875
+			if (errors / steps > 0.05)
+			{
+				System.out.println("Quad errors " + errors + " / " + steps
+						+ " = " + errors / steps);
+			}
+		}
+
 		lastState = newState;
 		offset += lastChange * direction;
-		System.out.println(offset);
-
-		for (QuadratureListener listener : listeners)
-		{
-			listener.quadraturePosition(offset);
-		}
 	}
 
 	public short getValue()
@@ -93,9 +105,4 @@ public class QuadratureEncoding
 		return (short) offset;
 	}
 
-	public void addListener(QuadratureListener listener)
-	{
-		listeners.add(listener);
-
-	}
 }

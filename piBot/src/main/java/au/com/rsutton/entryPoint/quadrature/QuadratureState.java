@@ -88,7 +88,7 @@ public enum QuadratureState
 		return state;
 	}
 
-	int getChange(QuadratureState lastState, int lastChange)
+	int getChange(QuadratureState lastState) throws QuadratureException
 	{
 		int ret = 0;
 
@@ -106,9 +106,11 @@ public enum QuadratureState
 			ret = -1;
 		} else
 		{
-			// skipped a state, assume same direction as last step
-			ret = (int) (Math.signum(lastChange) * 2);
-			System.out.println("Skipped from "+lastState+" to "+this);
+			throw new QuadratureException();
+//			// skipped a state, assume same direction as last step
+//			ret = (int) (Math.signum(lastChange) * 2);
+//			System.out.println("s");
+//			//System.out.println("Skipped from "+lastState+" to "+this);
 		}
 
 		return ret;

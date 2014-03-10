@@ -15,7 +15,7 @@ public class DeadReconingWithQuadrature implements HeadingProvider
 
 	private static final double WHEEL_RADIUS = 21; // MM
 
-	private static final double DISTANCE_BETWEEN_WHEELS = 155; // MM
+	private static final double DISTANCE_BETWEEN_WHEELS = 220; // MM
 
 	private static final double TICKS_PER_ROTATION = 2.0d * WHEEL_RADIUS
 			* Math.PI; // MM

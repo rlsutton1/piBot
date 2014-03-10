@@ -29,6 +29,7 @@ public class HBridgeController
 	{
 		if (percent > 1 || percent < -1)
 		{
+			System.out.println("Rejected speed "+percent);
 			throw new RuntimeException("Cant set HBridge to -1<x>1");
 		}
 

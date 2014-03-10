@@ -29,23 +29,23 @@ public class WheelController implements Runnable
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
 
 	WheelController(PwmPin pwmPin, PwmPin directionPin, Pin quadratureA,
-			Pin quadreatureB,boolean invertPwm,boolean invertQuadrature)
+			Pin quadreatureB, boolean invertPwm, boolean invertQuadrature)
 	{
 
-		hBridge = new HBridgeController(pwmPin, directionPin,
-				invertPwm);
+		hBridge = new HBridgeController(pwmPin, directionPin, invertPwm);
 
 		hBridge.setOutput(0);
 
-		quadrature = new QuadratureEncoding(quadratureA, quadreatureB, invertQuadrature);
+		quadrature = new QuadratureEncoding(quadratureA, quadreatureB,
+				invertQuadrature);
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
 				100, 100, TimeUnit.MILLISECONDS);
-
 
 	}
 
 	/**
 	 * set the speed that this wheel should travel at
+	 * 
 	 * @param speed
 	 */
 	public void setSpeed(Speed speed)
@@ -55,6 +55,7 @@ public class WheelController implements Runnable
 
 	/**
 	 * get the distance covered by this wheel
+	 * 
 	 * @return
 	 */
 	public Distance getDistance()
@@ -70,24 +71,27 @@ public class WheelController implements Runnable
 		{
 			double actualSpeed = getActualSpeed();
 
-			if (setSpeed < 10 && (actualSpeed < 10 && actualSpeed > -10))
+			if (Math.abs(setSpeed) < 10 && Math.abs(actualSpeed) < 10)
 			{
 				if (pid != null)
 				{
-					System.out.println("Stopping speed controller pid");
+					//System.out.println("Stopping speed controller pid");
 					pid = null;
 				}
 
 			} else if (pid == null)
 			{
-				System.out.println("creating new speed controller pid");
-				pid = new Pid(.1, .01, .01, 100, 100, -100, false);
+				//System.out.println("creating new speed controller pid");
+				pid = new Pid(.25, .05, .01, 100, 99, -99, false);
 			}
 			double power = 0;
 			if (pid != null)
 			{
 				power = pid.computePid(setSpeed, actualSpeed);
 			}
+
+//			System.out.println("A " + actualSpeed + " S " + setSpeed + " P "
+//					+ power);
 
 			hBridge.setOutput(power / 100.0d);
 		} catch (Throwable e)
@@ -99,11 +103,16 @@ public class WheelController implements Runnable
 
 	private double getActualSpeed()
 	{
-		double change = (int) (quadrature.getValue() - lastQuadratureOffset);
+		short currentQuadrature = quadrature.getValue();
+		double change = (int) (currentQuadrature - lastQuadratureOffset);
 		long now = System.currentTimeMillis();
 
 		long elapsed = now - lastCalcuationTime;
-		lastCalcuationTime = now;
+		if (Math.abs(change) > 0)
+		{
+			lastCalcuationTime = now;
+			lastQuadratureOffset = currentQuadrature;
+		}
 
 		change = change / (((double) elapsed) / 1000.0d);
 

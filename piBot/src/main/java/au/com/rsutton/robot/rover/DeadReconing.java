@@ -35,7 +35,7 @@ public class DeadReconing
 			double t1 = initialLeftWheelReading - currentLeftWheelReading;
 			double t2 = initialRightWheelReading - currentRightWheelReading;
 
-			initialX += Math.sin(Math.toRadians(heading)) * ((t1 + t2) / 2.0d);
+			initialX += -Math.sin(Math.toRadians(heading)) * ((t1 + t2) / 2.0d);
 			initialY += -Math.cos(Math.toRadians(heading)) * ((t1 + t2) / 2.0d);
 
 			initialLeftWheelReading = currentLeftWheelReading;
