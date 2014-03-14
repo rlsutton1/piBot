@@ -9,7 +9,6 @@ import au.com.rsutton.entryPoint.quadrature.QuadratureEncoding;
 import au.com.rsutton.entryPoint.sonar.FullScan;
 import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.robot.Robot;
 import au.com.rsutton.robot.rover.Rover;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;

@@ -81,7 +81,7 @@ public class Rover implements Runnable
 
 	}
 
-	private void setupLeftWheel()
+	private void setupLeftWheel() throws IOException
 	{
 		provider.export(Adafruit16PwmPin.GPIO_04, PinMode.PWM_OUTPUT);
 		provider.export(Adafruit16PwmPin.GPIO_05, PinMode.PWM_OUTPUT);
@@ -94,7 +94,7 @@ public class Rover implements Runnable
 				quadreatureB, false, true);
 	}
 
-	private void setupRightWheel()
+	private void setupRightWheel() throws IOException
 	{
 		provider.export(Adafruit16PwmPin.GPIO_00, PinMode.PWM_OUTPUT);
 		provider.export(Adafruit16PwmPin.GPIO_01, PinMode.PWM_OUTPUT);

@@ -12,7 +12,7 @@ import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 
-public class QuadratureEncoding
+public class QuadratureEncoding implements QuadratureProvider
 {
 
 	volatile int offset = 0;
@@ -100,7 +100,8 @@ public class QuadratureEncoding
 		offset += lastChange * direction;
 	}
 
-	public short getValue()
+	@Override
+	public long getValue()
 	{
 		return (short) offset;
 	}

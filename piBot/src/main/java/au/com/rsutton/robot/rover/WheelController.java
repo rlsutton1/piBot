@@ -1,11 +1,14 @@
 package au.com.rsutton.robot.rover;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.Pid;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncoding;
+import au.com.rsutton.entryPoint.quadrature.QuadratureEncodingCBridge;
+import au.com.rsutton.entryPoint.quadrature.QuadratureProvider;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -19,9 +22,9 @@ public class WheelController implements Runnable
 {
 
 	final private HBridgeController hBridge;
-	final private QuadratureEncoding quadrature;
+	final private QuadratureProvider quadrature;
 	private volatile double setSpeed;
-	private volatile int lastQuadratureOffset;
+	private volatile long lastQuadratureOffset;
 	private volatile long lastCalcuationTime = System.currentTimeMillis();
 	private volatile Pid pid;
 	final QuadratureToDistance distanceConverter = new QuadratureToDistance();
@@ -29,14 +32,14 @@ public class WheelController implements Runnable
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
 
 	WheelController(PwmPin pwmPin, PwmPin directionPin, Pin quadratureA,
-			Pin quadreatureB, boolean invertPwm, boolean invertQuadrature)
+			Pin quadreatureB, boolean invertPwm, boolean invertQuadrature) throws IOException
 	{
 
 		hBridge = new HBridgeController(pwmPin, directionPin, invertPwm);
 
 		hBridge.setOutput(0);
 
-		quadrature = new QuadratureEncoding(quadratureA, quadreatureB,
+		quadrature = new QuadratureEncodingCBridge(quadratureA, quadreatureB,
 				invertQuadrature);
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
 				100, 100, TimeUnit.MILLISECONDS);
@@ -60,7 +63,16 @@ public class WheelController implements Runnable
 	 */
 	public Distance getDistance()
 	{
-		return distanceConverter.scale((int) quadrature.getValue());
+		try
+		{
+			return distanceConverter.scale((int) quadrature.getValue());
+		} catch (IOException e)
+		{
+			//TODO: 
+			e.printStackTrace();
+
+		}
+		return new Distance(0, DistanceUnit.MM);
 
 	}
 
@@ -75,13 +87,13 @@ public class WheelController implements Runnable
 			{
 				if (pid != null)
 				{
-					//System.out.println("Stopping speed controller pid");
+					// System.out.println("Stopping speed controller pid");
 					pid = null;
 				}
 
 			} else if (pid == null)
 			{
-				//System.out.println("creating new speed controller pid");
+				// System.out.println("creating new speed controller pid");
 				pid = new Pid(.25, .05, .01, 100, 99, -99, false);
 			}
 			double power = 0;
@@ -90,8 +102,8 @@ public class WheelController implements Runnable
 				power = pid.computePid(setSpeed, actualSpeed);
 			}
 
-//			System.out.println("A " + actualSpeed + " S " + setSpeed + " P "
-//					+ power);
+			// System.out.println("A " + actualSpeed + " S " + setSpeed + " P "
+			// + power);
 
 			hBridge.setOutput(power / 100.0d);
 		} catch (Throwable e)
@@ -103,7 +115,15 @@ public class WheelController implements Runnable
 
 	private double getActualSpeed()
 	{
-		short currentQuadrature = quadrature.getValue();
+		long currentQuadrature=0;
+		try
+		{
+			currentQuadrature = quadrature.getValue();
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		double change = (int) (currentQuadrature - lastQuadratureOffset);
 		long now = System.currentTimeMillis();
 

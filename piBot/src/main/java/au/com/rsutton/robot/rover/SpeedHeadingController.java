@@ -71,12 +71,7 @@ public class SpeedHeadingController implements Runnable
 				// + " d " + desiredHeading);
 				double speed = desiredSpeed.getSpeed(distUnit, timeUnit);
 
-				// cap speed at 100mm/second
-				int maxSpeed = 75;
-				if (speed > 0)
-					speed = Math.min(maxSpeed, speed);
-				else
-					speed = Math.max(-maxSpeed, speed);
+				
 
 				double left = speed * ((100.0d + offset) / 100.0d);
 				double right = speed * ((100.0d - offset) / 100.0d);
