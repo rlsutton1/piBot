@@ -68,6 +68,8 @@ public class CompassLSM303
 	int maxY = Integer.MIN_VALUE;
 	int minY = Integer.MAX_VALUE;
 
+	private double[] last = new double[2];
+
 	public void setup() throws IOException
 	{
 
@@ -80,6 +82,11 @@ public class CompassLSM303
 
 		initLSM303(SCALE); // Initialize the LSM303, using a SCALE full-scale
 							// range
+		for (int i = 0; i < 5; i++)
+		{
+			// allow smoothing to settle
+			getHeading();
+		}
 	}
 
 	public void loop() throws IOException, InterruptedException
@@ -166,7 +173,7 @@ public class CompassLSM303
 	{
 
 		getLSM303_mag(mag);
-		
+
 		// capture data for calabration purposes
 		maxX = Math.max(maxX, mag[X]);
 		minX = Math.min(minX, mag[X]);
@@ -177,6 +184,11 @@ public class CompassLSM303
 		mag[X] = mag[X] + 160;
 		mag[Y] = mag[Y] + 320;
 
+		mag[X] = (int) ((mag[X] * 0.5) + (last[X] * 0.5));
+		mag[Y] = (int) ((mag[Y] * 0.5) + (last[Y] * 0.5));
+
+		last[X] = mag[X];
+		last[Y] = mag[Y];
 
 		// see section 1.2 in app note AN3192
 		float heading = (float) Math.toDegrees(Math.atan2(mag[Y], mag[X])); // assume

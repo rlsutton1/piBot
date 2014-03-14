@@ -28,13 +28,12 @@ public class MainWindow extends JFrame implements
 		MessageListener<RobotLocation>
 {
 
-	
-	
 	private static final long serialVersionUID = -4490943128993707547L;
 	private JTextField heading;
 	private JLabel xLocationLabel;
 	private JLabel yLocationLabel;
 	private JLabel headingLabel;
+	private JLabel spaceLabel;
 
 	public static void main(String[] args) throws InterruptedException,
 			IOException
@@ -58,21 +57,23 @@ public class MainWindow extends JFrame implements
 		this.add(telemetryPanel);
 
 		xLocationLabel = new JLabel("X: 0");
-		xLocationLabel.setPreferredSize(new Dimension(80,30));
+		xLocationLabel.setPreferredSize(new Dimension(80, 30));
 		yLocationLabel = new JLabel("Y: 0");
-		yLocationLabel.setPreferredSize(new Dimension(80,30));
+		yLocationLabel.setPreferredSize(new Dimension(80, 30));
 		headingLabel = new JLabel("H: 0");
-		headingLabel.setPreferredSize(new Dimension(80,30));
+		headingLabel.setPreferredSize(new Dimension(80, 30));
+		spaceLabel = new JLabel("S: 0");
+		spaceLabel.setPreferredSize(new Dimension(80, 30));
 
 		telemetryPanel.add(xLocationLabel);
 		telemetryPanel.add(yLocationLabel);
 		telemetryPanel.add(headingLabel);
+		telemetryPanel.add(spaceLabel);
 		this.add(telemetryPanel);
-		
+
 		RobotLocation locationMessage = new RobotLocation();
 		locationMessage.addMessageListener(this);
 
-		
 		FlowLayout controlLayout = new FlowLayout();
 		JPanel controlPanel = new JPanel(controlLayout);
 		controlPanel.setName("Control");
@@ -112,7 +113,6 @@ public class MainWindow extends JFrame implements
 
 		return b;
 	}
-	
 
 	private JButton createStopButton()
 	{
@@ -165,8 +165,12 @@ public class MainWindow extends JFrame implements
 	{
 		RobotLocation m = message.getMessageObject();
 
-		xLocationLabel.setText("X:" + (int)m.getX().convert(DistanceUnit.CM)+"cm");
-		yLocationLabel.setText("Y:" + (int)m.getY().convert(DistanceUnit.CM)+"cm");
-		headingLabel.setText("H:" + (int)m.getHeading());
+		xLocationLabel.setText("X:" + (int) m.getX().convert(DistanceUnit.CM)
+				+ "cm");
+		yLocationLabel.setText("Y:" + (int) m.getY().convert(DistanceUnit.CM)
+				+ "cm");
+		headingLabel.setText("H:" + (int) m.getHeading());
+		spaceLabel.setText("S:"
+				+ (int) m.getClearSpaceAhead().convert(DistanceUnit.CM) + "cm");
 	}
 }

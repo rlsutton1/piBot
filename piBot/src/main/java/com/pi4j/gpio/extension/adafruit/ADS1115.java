@@ -2,18 +2,23 @@ package com.pi4j.gpio.extension.adafruit;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
+import com.google.common.base.Preconditions;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 
-public class ADS1115 implements Runnable {
+public class ADS1115 implements Runnable
+{
 
 	private static int ADS1115_CONVERSIONDELAY = 8;
 	/*
@@ -162,9 +167,9 @@ public class ADS1115 implements Runnable {
 	int m_i2cAddress;
 	private I2CBus bus;
 	private I2CDevice device;
-	private ScheduledExecutorService worker;
 
-	public ADS1115(int busNumber, int i2cAddress) throws IOException {
+	public ADS1115(int busNumber, int i2cAddress) throws IOException
+	{
 		m_i2cAddress = i2cAddress;
 
 		// create I2C communications bus instance
@@ -173,87 +178,116 @@ public class ADS1115 implements Runnable {
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(i2cAddress));
 
-		worker = Executors.newScheduledThreadPool(1);
-		worker.scheduleAtFixedRate(this, 20, 20, TimeUnit.MILLISECONDS);
+		new Thread(this).start();
 
 	}
 
-	public void addListener(ChannelListener listener) {
-		listeners.add(listener);
+	private class Request
+	{
+		public Request(int port2, AnalogueValueCallback callback2)
+		{
+			this.port = port2;
+			this.callback = callback2;
+		}
+
+		int port;
+		AnalogueValueCallback callback;
 	}
 
-	public int[] readPolledValues() {
-		return polledValues;
+	LinkedBlockingQueue<Request> queue = new LinkedBlockingQueue<>();
+
+	private boolean stop;
+
+	public void getValue(int port, AnalogueValueCallback callback)
+	{
+		Preconditions.checkArgument(port >= 0 && port <= 3,
+				"valid ports are 0 - 4");
+		if (queue.size() < 10)
+		{
+			queue.add(new Request(port, callback));
+		}
 	}
-
-	private int lastAddress = 0;
-
-	private volatile int[] polledValues = new int[4];
-	private Set<ChannelListener> listeners = new HashSet<ChannelListener>();
 
 	@Override
-	public void run() {
+	public void run()
+	{
 
-		// read the values converted from the last config
-		try {
-			polledValues[lastAddress] = read16Bits(ADS1015_REG_POINTER_CONVERT);
-		} catch (IOException e1) {
-			e1.printStackTrace();
+		while (!stop)
+		{
+			try
+			{
+				Request request = queue.take();
+				// read the values converted from the last config
+
+				Integer config = getConfigDefaults();
+
+				// Set single-ended input channel
+				switch (request.port)
+				{
+				case (0):
+					config |= ADS1015_REG_CONFIG_MUX_SINGLE_0;
+					break;
+				case (1):
+					config |= ADS1015_REG_CONFIG_MUX_SINGLE_1;
+					break;
+				case (2):
+					config |= ADS1015_REG_CONFIG_MUX_SINGLE_2;
+					break;
+				case (3):
+					config |= ADS1015_REG_CONFIG_MUX_SINGLE_3;
+					break;
+				}
+
+				// Set 'start single-conversion' bit
+				config |= ADS1015_REG_CONFIG_OS_SINGLE;
+
+				// Write config register to the ADC
+
+				write16Bits(ADS1015_REG_POINTER_CONFIG, config);
+				Thread.sleep(10);
+				request.callback
+						.analogValue(read16Bits(ADS1015_REG_POINTER_CONVERT));
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+			} catch (InterruptedException e)
+			{
+				stop = true;
+			}
 		}
-
-		for (ChannelListener listener : listeners) {
-			listener.recievedValue(lastAddress, polledValues[lastAddress]);
-		}
-		// configure the registers for the next read
-		lastAddress++;
-		lastAddress %= 4;
-
-		// Start with default values
-		Integer config = ADS1015_REG_CONFIG_CQUE_NONE | // Disable the
-														// comparator (default
-														// val)
-				ADS1015_REG_CONFIG_CLAT_NONLAT | // Non-latching (default val)
-				ADS1015_REG_CONFIG_CPOL_ACTVLOW | // Alert/Rdy active low
-													// (default val)
-				ADS1015_REG_CONFIG_CMODE_TRAD | // Traditional comparator
-												// (default val)
-				ADS1015_REG_CONFIG_DR_920SPS | // 1600 samples per second
-												// (default)
-				ADS1015_REG_CONFIG_MODE_SINGLE; // Single-shot mode (default)
-
-		// Set PGA/voltage range
-		config |= ADS1015_REG_CONFIG_PGA_4_096V; // +/- 6.144V range (limited to
-													// VDD +0.3V max!)
-
-		// Set single-ended input channel
-		switch (lastAddress) {
-		case (0):
-			config |= ADS1015_REG_CONFIG_MUX_SINGLE_0;
-			break;
-		case (1):
-			config |= ADS1015_REG_CONFIG_MUX_SINGLE_1;
-			break;
-		case (2):
-			config |= ADS1015_REG_CONFIG_MUX_SINGLE_2;
-			break;
-		case (3):
-			config |= ADS1015_REG_CONFIG_MUX_SINGLE_3;
-			break;
-		}
-
-		// Set 'start single-conversion' bit
-		config |= ADS1015_REG_CONFIG_OS_SINGLE;
-
-		// Write config register to the ADC
-		try {
-			write16Bits(ADS1015_REG_POINTER_CONFIG, config);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
 	}
 
-	int read16Bits(int address) throws IOException {
+	private Integer getConfigDefaults()
+	{
+		// Start with default values
+		Integer config = ADS1015_REG_CONFIG_CQUE_NONE | // Disable the
+														// comparator
+														// (default
+														// val)
+				ADS1015_REG_CONFIG_CLAT_NONLAT | // Non-latching
+													// (default
+													// val)
+				ADS1015_REG_CONFIG_CPOL_ACTVLOW | // Alert/Rdy active
+													// low
+													// (default val)
+				ADS1015_REG_CONFIG_CMODE_TRAD | // Traditional
+												// comparator
+												// (default val)
+				ADS1015_REG_CONFIG_DR_920SPS | // 1600 samples per
+												// second
+												// (default)
+				ADS1015_REG_CONFIG_MODE_SINGLE; // Single-shot mode
+												// (default)
+
+		// Set PGA/voltage range
+		config |= ADS1015_REG_CONFIG_PGA_4_096V; // +/- 6.144V range
+		// (limited to
+		// VDD +0.3V max!)
+		return config;
+	}
+
+	int read16Bits(int address) throws IOException
+	{
 		byte[] buffer = new byte[2];
 		device.read(address, buffer, 0, buffer.length);
 		int msb = buffer[0];
@@ -265,7 +299,8 @@ public class ADS1115 implements Runnable {
 
 	}
 
-	void write16Bits(int address, int value) throws IOException {
+	void write16Bits(int address, int value) throws IOException
+	{
 		byte[] buffer = new byte[2];
 		buffer[0] = (byte) (value << 8);// msb
 		buffer[1] = (byte) (value & 0xFF); // lsb

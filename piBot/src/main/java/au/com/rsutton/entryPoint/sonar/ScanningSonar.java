@@ -34,8 +34,8 @@ public class ScanningSonar implements Runnable
 
 		ADS1115 ads = new ADS1115(1, 0x48);
 
-		sonar = new Sonar(0.1, 2880, 0);
-		ads.addListener(sonar);
+//		sonar = new Sonar(0.1, 2880, 0);
+//		ads.addListener(sonar);
 
 		provider.export(Adafruit16PwmPin.GPIO_08, PinMode.PWM_OUTPUT);
 
@@ -59,16 +59,16 @@ public class ScanningSonar implements Runnable
 
 		try
 		{
-			int p = pos[idx];
-			RangeData data = new RangeData(p,
-					sonar.getCurrentDistance(), new Time(
-							System.currentTimeMillis(), TimeUnit.MILLISECONDS));
-			System.out.println(data);
-			listener.notifiyDistance(data);
-
-			controller1.setOutput(p);
-			idx++;
-			idx = idx % pos.length;
+//			int p = pos[idx];
+//			RangeData data = new RangeData(p,
+//					sonar.getCurrentDistance(), new Time(
+//							System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+//			System.out.println(data);
+//			listener.notifiyDistance(data);
+//
+//			controller1.setOutput(p);
+//			idx++;
+//			idx = idx % pos.length;
 		} catch (Throwable e)
 		{
 			e.printStackTrace();

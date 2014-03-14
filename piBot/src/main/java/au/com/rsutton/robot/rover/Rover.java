@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -13,8 +14,10 @@ import au.com.rsutton.hazelcast.SetMotion;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
+import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
+import com.pi4j.gpio.extension.adafruit.AnalogueValueCallback;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
 import com.pi4j.gpio.extension.lsm303.CompassLSM303;
 import com.pi4j.io.gpio.Pin;
@@ -34,6 +37,12 @@ public class Rover implements Runnable
 	private long lastTime;
 	final private Adafruit16PwmProvider provider;
 	private CompassLSM303 compass;
+	final private ADS1115 ads;
+	final private Sonar sonar;
+
+	private SetMotion lastData;
+
+	volatile private Distance clearSpaceAhead = new Distance(0, DistanceUnit.MM);
 
 	public Rover() throws IOException, InterruptedException
 	{
@@ -43,36 +52,43 @@ public class Rover implements Runnable
 		provider = new Adafruit16PwmProvider(1, 0x40);
 		provider.setPWMFreq(30);
 
+		ads = new ADS1115(1, 0x48);
+		sonar = new Sonar(0.1, 2880);
+
 		setupRightWheel();
 
 		setupLeftWheel();
-		
-		 
-
 
 		reconing = new DeadReconing();
-		 previousLocation = new RobotLocation();
-		 previousLocation.setHeading(0);
-		 previousLocation.setX(reconing.getX());
-		 previousLocation.setY(reconing.getY());
-		 previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
-		
-		
-		
+		previousLocation = new RobotLocation();
+		previousLocation.setHeading(0);
+		previousLocation.setX(reconing.getX());
+		previousLocation.setY(reconing.getY());
+		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
+				Time.perSecond()));
+
 		speedHeadingController = new SpeedHeadingController(rightWheel,
-				leftWheel,compass.getHeading());
+				leftWheel, compass.getHeading());
 
 		// listen for motion commands thru Hazelcast
 		SetMotion message = new SetMotion();
 		message.addMessageListener(new MessageListener<SetMotion>()
 		{
 
+
 			@Override
 			public void onMessage(Message<SetMotion> message)
 			{
 				SetMotion data = message.getMessageObject();
-			//	System.out.println("Setting speed" + data.getSpeed());
+				if (clearSpaceAhead.convert(DistanceUnit.CM) < 20)
+				{
+					data.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
+							Time.perSecond()));
+				}
+
+				// System.out.println("Setting speed" + data.getSpeed());
 				speedHeadingController.setDesiredMotion(data);
+				lastData = data;
 			}
 		});
 
@@ -108,12 +124,35 @@ public class Rover implements Runnable
 				quadreatureB, false, false);
 	}
 
+	void getSpaceAhead()
+	{
+
+		ads.getValue(0, new AnalogueValueCallback()
+		{
+
+			@Override
+			public void analogValue(int value)
+			{
+				clearSpaceAhead = sonar.getCurrentDistance(value);
+				if (lastData != null && clearSpaceAhead.convert(DistanceUnit.CM) < 30)
+				{
+					lastData.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
+							Time.perSecond()));
+					speedHeadingController.setDesiredMotion(lastData);
+				}
+
+			}
+		});
+
+	}
+
 	@Override
 	public void run()
 	{
 		try
 		{
-			
+
+			getSpaceAhead();
 			int heading = (int) compass.getHeading();
 			speedHeadingController.setActualHeading(heading);
 			reconing.setHeading(heading);
@@ -128,6 +167,7 @@ public class Rover implements Runnable
 			currentLocation.setX(reconing.getX());
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
+			currentLocation.setClearSpaceAhead(clearSpaceAhead);
 			currentLocation.publish();
 
 			previousLocation = currentLocation;

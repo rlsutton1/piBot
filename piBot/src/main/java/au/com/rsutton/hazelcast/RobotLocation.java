@@ -13,6 +13,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private Distance x;
 	private Distance y;
 	private Speed speed;
+	private Distance clearSpaceAhead;
 
 	public RobotLocation()
 	{
@@ -63,6 +64,17 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	public void setSpeed(Speed speed)
 	{
 		this.speed = speed;
-		
+
+	}
+
+	public void setClearSpaceAhead(Distance clearSpaceAhead)
+	{
+		this.clearSpaceAhead = clearSpaceAhead;
+
+	}
+
+	public Distance getClearSpaceAhead()
+	{
+		return clearSpaceAhead;
 	}
 }
