@@ -7,8 +7,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-import au.com.rsutton.robot.HeadingListener;
-import au.com.rsutton.robot.HeadingProvider;
 
 import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioProvider;
@@ -61,7 +59,7 @@ import com.pi4j.io.i2c.I2CFactory;
  * 
  */
 public class GyroProvider extends GpioProviderBase implements GpioProvider,
-		Runnable, HeadingProvider
+		Runnable
 {
 	public static final String NAME = GyroProvider.class.getCanonicalName();
 	public static final String DESCRIPTION = "Adafruit 16 channel PWM Provider";
@@ -94,7 +92,6 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 	boolean calabrated = false;
 	private volatile boolean setZero;
 	private Set<GyroListener> gyroListeners = new HashSet<GyroListener>();
-	private Set<HeadingListener> headingListeners = new HashSet<HeadingListener>();
 
 	@Override
 	public void run()
@@ -183,10 +180,6 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 				{
 					listener.gyroChanged(outx, outy, outz);
 				}
-				for (HeadingListener listener:headingListeners)
-				{
-					listener.headingChanged(outz);
-				}
 			}
 		} catch (IOException i)
 		{
@@ -272,13 +265,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 
 	}
 
-	@Override
-	public void addHeadingListener(HeadingListener robot)
-	{
-		headingListeners .add(robot);
-		
-	}
-
+	
 	
 
 	
