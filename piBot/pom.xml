@@ -10,12 +10,13 @@
 			<artifactId>pi4j-core</artifactId>
 			<version>0.0.5</version>
 		</dependency>
-<!-- 		<dependency>
-			<groupId>com.googlecode.javacv</groupId>
-			<artifactId>javacv</artifactId>
-			<version>0.5</version>
+		<dependency>
+			<groupId>com.pi4j</groupId>
+			<artifactId>pi4j-gpio-extension</artifactId>
+			<version>0.0.5</version>
 		</dependency>
- -->
+		<!-- <dependency> <groupId>com.googlecode.javacv</groupId> <artifactId>javacv</artifactId> 
+			<version>0.5</version> </dependency> -->
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
@@ -23,12 +24,8 @@
 		</dependency>
 
 
-<!-- 		<dependency>
-			<groupId>org.ros.rosjava_core</groupId>
-			<artifactId>rosjava</artifactId>
-			<version>0.1.6</version>
-		</dependency>
- -->
+		<!-- <dependency> <groupId>org.ros.rosjava_core</groupId> <artifactId>rosjava</artifactId> 
+			<version>0.1.6</version> </dependency> -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>

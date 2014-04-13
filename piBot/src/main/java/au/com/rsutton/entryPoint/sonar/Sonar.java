@@ -13,11 +13,15 @@ public class Sonar
 	{
 		this.scalar = scalar;
 		this.baseOffset = baseOffset;
+
 	}
 
 	public Distance getCurrentDistance(int rawValue)
 	{
-		int distance = rawValue + baseOffset;
+		int distance = 0;
+
+		distance = rawValue + baseOffset;
+
 		distance *= scalar;
 
 		return new Distance(distance, DistanceUnit.CM);

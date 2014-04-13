@@ -2,6 +2,7 @@ package au.com.rsutton.robot.rover;
 
 import java.io.IOException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
@@ -30,6 +31,7 @@ public class WheelController implements Runnable
 	final QuadratureToDistance distanceConverter = new QuadratureToDistance();
 	final private DistanceUnit distUnit = DistanceUnit.MM;
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
+	final private ScheduledFuture<?> worker;
 
 	WheelController(PwmPin pwmPin, PwmPin directionPin, Pin quadratureA,
 			Pin quadreatureB, boolean invertPwm, boolean invertQuadrature) throws IOException
@@ -41,7 +43,7 @@ public class WheelController implements Runnable
 
 		quadrature = new QuadratureEncodingCBridge(quadratureA, quadreatureB,
 				invertQuadrature);
-		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
+		worker = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
 				100, 100, TimeUnit.MILLISECONDS);
 
 	}
@@ -68,8 +70,9 @@ public class WheelController implements Runnable
 			return distanceConverter.scale((int) quadrature.getValue());
 		} catch (IOException e)
 		{
-			//TODO: 
+			worker.cancel(false);
 			e.printStackTrace();
+			hBridge.setOutput(0);
 
 		}
 		return new Distance(0, DistanceUnit.MM);
@@ -121,7 +124,8 @@ public class WheelController implements Runnable
 			currentQuadrature = quadrature.getValue();
 		} catch (IOException e)
 		{
-			// TODO Auto-generated catch block
+			worker.cancel(false);
+			hBridge.setOutput(0);
 			e.printStackTrace();
 		}
 		double change = (int) (currentQuadrature - lastQuadratureOffset);

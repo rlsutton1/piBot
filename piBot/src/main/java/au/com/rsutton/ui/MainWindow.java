@@ -86,8 +86,10 @@ public class MainWindow extends JFrame implements
 		controlPanel.add(createHeadingButton());
 
 		JButton forwardButton = createForwardButton();
+		JButton backButton = createBackwardButton();
 		controlPanel.add(createStopButton());
 		controlPanel.add(forwardButton);
+		controlPanel.add(backButton);
 		this.setVisible(true);
 	}
 
@@ -102,7 +104,30 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(50, DistanceUnit.CM),
+				message.setSpeed(new Speed(new Distance(2, DistanceUnit.CM),
+						Time.perSecond()));
+				int v = Integer.parseInt(heading.getText());
+				message.setHeading((double) v);
+				message.publish();
+
+			}
+		});
+
+		return b;
+	}
+	
+	private JButton createBackwardButton()
+	{
+		JButton b = new JButton("Backward");
+		b.setSize(50, 30);
+		b.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				SetMotion message = new SetMotion();
+				message.setSpeed(new Speed(new Distance(-5, DistanceUnit.CM),
 						Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);

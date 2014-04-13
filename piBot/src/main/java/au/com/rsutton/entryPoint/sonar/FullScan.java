@@ -2,16 +2,11 @@ package au.com.rsutton.entryPoint.sonar;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import au.com.rsutton.entryPoint.controllers.ServoController;
-import au.com.rsutton.entryPoint.sonar.SonarResolver.PointData;
 import au.com.rsutton.entryPoint.trig.Point;
-import au.com.rsutton.entryPoint.trig.TrigMath;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;

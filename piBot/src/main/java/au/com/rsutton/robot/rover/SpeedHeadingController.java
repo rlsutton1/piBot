@@ -63,15 +63,13 @@ public class SpeedHeadingController implements Runnable
 				// degree
 				if (pid == null)
 				{
-					//System.out.println("new heading pid");
+					// System.out.println("new heading pid");
 					pid = new Pid(4, .10, .1, 100, 99, -99, true);
 				}
 				double offset = pid.computePid(0, changeInHeading);
 				// System.out.println("o " + offset + " c" + changeInHeading
 				// + " d " + desiredHeading);
 				double speed = desiredSpeed.getSpeed(distUnit, timeUnit);
-
-				
 
 				double left = speed * ((100.0d + offset) / 100.0d);
 				double right = speed * ((100.0d - offset) / 100.0d);
@@ -81,8 +79,17 @@ public class SpeedHeadingController implements Runnable
 				{
 					// we are almost stationary so scaling the speed doesn't
 					// work.
-					left = speed + offset;
-					right = speed - offset;
+					left = speed + (offset * 2);
+					right = speed - (offset * 2);
+				} else
+
+				if (speed < 0)
+				{
+					// reversing, so reverse to direction compensation
+					double temp = right;
+					right = left;
+					left = temp;
+					
 				}
 
 				Speed leftSpeed = new Speed(new Distance(left, distUnit),
