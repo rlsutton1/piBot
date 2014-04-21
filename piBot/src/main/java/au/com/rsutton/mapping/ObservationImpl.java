@@ -1,5 +1,7 @@
 package au.com.rsutton.mapping;
 
+import com.google.common.base.Preconditions;
+
 public class ObservationImpl implements Observation
 {
 
@@ -8,11 +10,15 @@ public class ObservationImpl implements Observation
 	double accuracy;
 
 	// if it's not an object it must be clear space
-	boolean isObject = true;
-	
-	ObservationImpl(double x, double y, double accuracy)
+	LocationStatus status = LocationStatus.UNOBSERVED;
+	private int seen = 1;
+
+	ObservationImpl(double x, double y, double accuracy, LocationStatus status)
 	{
-		this.x= x;
+		Preconditions.checkArgument(status != LocationStatus.UNOBSERVED,
+				"Location status can not be UNOBSERVED");
+		this.status = status;
+		this.x = x;
 		this.y = y;
 		this.accuracy = accuracy;
 	}
@@ -36,8 +42,15 @@ public class ObservationImpl implements Observation
 	}
 
 	@Override
-	public boolean isObject()
+	public void seenAgain()
 	{
-		return isObject;
+		seen++;
+
+	}
+
+	@Override
+	public LocationStatus getStatus()
+	{
+		return status;
 	}
 }

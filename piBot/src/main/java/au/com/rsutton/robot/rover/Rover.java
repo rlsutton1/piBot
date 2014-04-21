@@ -2,6 +2,7 @@ package au.com.rsutton.robot.rover;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
@@ -24,6 +25,8 @@ import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
 import com.pi4j.gpio.extension.adafruit.AnalogueValueCallback;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
 import com.pi4j.gpio.extension.lsm303.CompassLSM303;
+import com.pi4j.gpio.extension.pixy.PixyCmu5;
+import com.pi4j.gpio.extension.pixy.PixyCmu5.Frame;
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.RaspiPin;
@@ -55,9 +58,32 @@ public class Rover implements Runnable
 	private SharpIR rightSonar;
 	protected Distance clearSpaceLeft;
 	protected Distance clearSpaceRight;
+	private PixyCmu5 pixy;
 
 	public Rover() throws IOException, InterruptedException
 	{
+
+		pixy = new PixyCmu5();
+		pixy.setup();
+		int ctr = 0;
+		List<Frame> frames = null;
+		while (ctr < 20)
+		{
+			frames = pixy.getFrames();
+			System.out.println("pixy frames = " + frames.size());
+			for (Frame frame : frames)
+			{
+				System.out.println("X " + frame.xCenter + " Y " + frame.yCenter
+						+ " w " + frame.width + " h " + frame.height + "s "
+						+ frame.signature);
+			}
+			ctr++;
+			Thread.sleep(100);
+		}
+
+		if (frames.size() == 0)
+			throw new RuntimeException("exiting");
+
 		compass = new CompassLSM303();
 		compass.setup();
 
@@ -162,42 +188,42 @@ public class Rover implements Runnable
 			speedHeadingController.setDesiredMotion(lastData);
 		}
 
-//		value = ads.getValue(ADS1115Pin.INPUT_A1);
-//
-//		int sm = (int) clearSpaceAhead.convert(DistanceUnit.CM);
-//		Integer val = distVal.get(sm);
-//		if (val == null)
-//		{
-//			distVal.put(sm, (int) value);
-//			val = (int) value;
-//		}
-//		distVal.put(sm, (int) ((val * 0.9) + (value * 0.1)));
-//		lc++;
-//		if (lc % 400 == 0)
-//		{
-//			for (Entry<Integer, Integer> kv : distVal.entrySet())
-//			{
-//				System.out.println(kv.getKey() + "," + kv.getValue());
-//			}
-//		}
+		// value = ads.getValue(ADS1115Pin.INPUT_A1);
+		//
+		// int sm = (int) clearSpaceAhead.convert(DistanceUnit.CM);
+		// Integer val = distVal.get(sm);
+		// if (val == null)
+		// {
+		// distVal.put(sm, (int) value);
+		// val = (int) value;
+		// }
+		// distVal.put(sm, (int) ((val * 0.9) + (value * 0.1)));
+		// lc++;
+		// if (lc % 400 == 0)
+		// {
+		// for (Entry<Integer, Integer> kv : distVal.entrySet())
+		// {
+		// System.out.println(kv.getKey() + "," + kv.getValue());
+		// }
+		// }
 		// code to collect raw data for calabration
 		//
 		// double sm = clearSpaceAhead.convert(DistanceUnit.CM);
 		// lastDistance = (int) sm;
 		// System.out.println("d,v," + lastDistance + "," + value);
 
-//		clearSpaceLeft = leftSonar.getCurrentDistance((int) value);
-//		// System.out.println("L: " + value + " " + clearSpaceLeft);
-//		if (lastData != null && clearSpaceLeft.convert(DistanceUnit.CM) < 30)
-//		{
-//			lastData.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
-//					.perSecond()));
-//			speedHeadingController.setDesiredMotion(lastData);
-//
-//		}
-//		System.out.println(clearSpaceAhead + " " + clearSpaceLeft);
-//
-//		value = ads.getValue(ADS1115Pin.INPUT_A2);
+		// clearSpaceLeft = leftSonar.getCurrentDistance((int) value);
+		// // System.out.println("L: " + value + " " + clearSpaceLeft);
+		// if (lastData != null && clearSpaceLeft.convert(DistanceUnit.CM) < 30)
+		// {
+		// lastData.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
+		// .perSecond()));
+		// speedHeadingController.setDesiredMotion(lastData);
+		//
+		// }
+		// System.out.println(clearSpaceAhead + " " + clearSpaceLeft);
+		//
+		// value = ads.getValue(ADS1115Pin.INPUT_A2);
 		// System.out.println("R: " + value);
 		// clearSpaceRight = rightSonar.getCurrentDistance((int) value);
 		// if (lastData != null && clearSpaceRight.convert(DistanceUnit.CM) <

@@ -9,6 +9,8 @@ public interface Observation
 
 	double getY();
 
-	boolean isObject();
+	LocationStatus getStatus();
+
+	void seenAgain();
 
 }

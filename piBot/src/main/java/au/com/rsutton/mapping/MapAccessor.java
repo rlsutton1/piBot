@@ -1,14 +1,12 @@
 package au.com.rsutton.mapping;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MapAccessor
 {
-	Map<XY, List<Observation>> map = new ConcurrentHashMap<XY, List<Observation>>();
+	Map<XY, Observation> map = new ConcurrentHashMap<XY, Observation>();
 
 	/**
 	 * add this observation to all map locations that fit into the accuracy
@@ -18,40 +16,23 @@ public class MapAccessor
 	 */
 	public void addObservation(Observation observation)
 	{
-		int minX = (int) (observation.getX() - 5);
-		int maxX = (int) (observation.getX() + 5);
-
-		int minY = (int) (observation.getY() - 5);
-		int maxY = (int) (observation.getY() + 5);
-
-		for (int y = minY; y <= maxY; y++)
+		XY xy = new XY((int) observation.getX(), (int) observation.getY());
+		Observation previousObservation = map.get(xy);
+		if (previousObservation == null)
 		{
-			for (int x = minX; x <= maxX; x++)
+
+			map.put(xy, observation);
+		} else
+		{
+			if (previousObservation.getStatus() == observation.getStatus())
 			{
-				XY xy = new XY(x, y);
-				List<Observation> observations = map.get(xy);
-				if (observations == null)
-				{
-					observations = new LinkedList<Observation>();
-					map.put(xy, observations);
-				}
-				observations.add(observation);
+				previousObservation.seenAgain();
+			} else
+			{
+				map.put(xy, observation);
 			}
 		}
 
-	}
-
-	/**
-	 * check if there is any data for the given location
-	 * 
-	 * @param x
-	 * @param y
-	 * @return
-	 */
-	boolean hasMapLocationBeenObserved(int x, int y)
-	{
-		XY xy = new XY(x, y);
-		return map.get(xy) != null;
 	}
 
 	/**
@@ -62,33 +43,33 @@ public class MapAccessor
 	 * @param y
 	 * @return
 	 */
-	boolean isMapLocationClear(int x, int y)
+	LocationStatus isMapLocationClear(int x, int y, int spread)
 	{
-		XY xy = new XY(x, y);
-		List<Observation> observations = map.get(xy);
-		double status = 0.5;
-		double count = 1;
-		double allowableSpread = 5.0d;
-		for (Observation observation : observations)
+		LocationStatus status = LocationStatus.UNOBSERVED;
+
+		for (int xl = x - spread; xl <= x + spread; xl++)
 		{
-			double deltaXY = (Math.abs(x - observation.getX()) + Math.abs(y
-					- observation.getY()));
-			if (deltaXY < allowableSpread)
+
+			for (int yl = y - spread; yl <= y + spread; yl++)
 			{
-				if (observation.isObject())
+				XY xy = new XY(xl, yl);
+				Observation observation = map.get(xy);
+				if (observation != null)
 				{
-					// values between 0.5 and 1.0
-					status += ((allowableSpread - deltaXY) / (allowableSpread * 2.0d)) + 0.5d;
-				} else
-				{
-					status -= ((allowableSpread - deltaXY) / (allowableSpread * 2.0d)) + 0.5d;
+					status = observation.getStatus();
+					if (status == LocationStatus.OCCUPIED)
+					{
+						break;
+					}
 				}
-				count++;
+			}
+			if (status == LocationStatus.OCCUPIED)
+			{
+				break;
 			}
 		}
-		status = status / count;
 
-		return status < 0.5;
+		return status;
 	}
 
 	public Set<XY> getEntries()

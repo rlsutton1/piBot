@@ -24,7 +24,7 @@ public class Graph extends JPanel implements Runnable,
 {
 
 	private MapAccessor map;
-	private int mheading=0;
+	private int mheading = 0;
 
 	protected void paintComponent(Graphics g)
 	{
@@ -34,27 +34,38 @@ public class Graph extends JPanel implements Runnable,
 
 		int h = getHeight();
 		int w = getWidth();
-		
+
 		double minxy = Math.min(h, w);
 		double offset = 600;
-		double scale = minxy/(offset*2.0d);
+		double scale = minxy / (offset * 2.0d);
 		// Draw axeX.
-		g2.draw(new Line2D.Double(0, (offset*scale) , w, (offset*scale) )); // to make axisX in the
-														// middle
+		g2.draw(new Line2D.Double(0, (offset * scale), w, (offset * scale))); // to
+																				// make
+																				// axisX
+																				// in
+																				// the
+		// middle
 		// Draw axeY.
-		g2.draw(new Line2D.Double((offset*scale) , h, (offset*scale) , 0));// to make axisY in the
-														// middle of the panel
-
+		g2.draw(new Line2D.Double((offset * scale), h, (offset * scale), 0));// to
+																				// make
+																				// axisY
+																				// in
+																				// the
+		// middle of the panel
 		
-		for (XY location : map.getEntries())
+		int blockSize = 10;
+
+		for (int x = (int) -offset; x < offset; x += blockSize)
 		{
-			int x = location.getX();
-			int y = location.getY();
-			if (!map.isMapLocationClear(x, y))
+			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				int r = (int) Math.min(1, (1 * scale) / 2);
-				g.drawOval((int) ((x + offset) * scale) - r,
-						(int) ((y + offset) * scale) - r, r, r);
+				if (map.isMapLocationClear(x, y, blockSize/2) == LocationStatus.OCCUPIED)
+				{
+					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
+					g.drawRect((int) ((x + offset) * scale) - r,
+							(int) ((y + offset) * scale) - r, r*2, r*2);
+
+				}
 			}
 		}
 
@@ -92,7 +103,7 @@ public class Graph extends JPanel implements Runnable,
 			this.repaint();
 			map.addObservation(new ObservationImpl(rand.nextDouble() * domain,
 					rand.nextDouble() * domain, rand.nextDouble()
-							* (domain / 3)));
+							* (domain / 3), LocationStatus.OCCUPIED));
 			try
 			{
 				Thread.sleep(100);
@@ -116,16 +127,14 @@ public class Graph extends JPanel implements Runnable,
 		double y = Math.cos(Math.toRadians(heading))
 				* distance.convert(DistanceUnit.CM);
 
-		map.addObservation(new ObservationImpl(x, y, 1));
+		map.addObservation(new ObservationImpl(x, y, 1, LocationStatus.OCCUPIED));
 		this.repaint();
-		
-		
-		
+
 		SetMotion message2 = new SetMotion();
-		message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
-				Time.perSecond()));
-		
-		message2.setHeading((double) heading+10);
+		message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
+				.perSecond()));
+
+		message2.setHeading((double) heading + 10);
 		message2.publish();
 
 	}
