@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -19,21 +18,20 @@ import au.com.rsutton.hazelcast.SetMotion;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
-import com.pi4j.gpio.extension.adafruit.AnalogueValueCallback;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
+import com.pi4j.gpio.extension.ads.ADS1115GpioProvider;
+import com.pi4j.gpio.extension.ads.ADS1115Pin;
+import com.pi4j.gpio.extension.ads.ADS1x15GpioProvider.ProgrammableGainAmplifierValue;
 import com.pi4j.gpio.extension.lsm303.CompassLSM303;
 import com.pi4j.gpio.extension.pixy.PixyCmu5;
 import com.pi4j.gpio.extension.pixy.PixyCmu5.Frame;
+import com.pi4j.gpio.extension.pixy.PixyLaserRange;
+import com.pi4j.gpio.extension.pixy.PixyLaserRange.DistanceVector;
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.RaspiPin;
-import com.pi4j.io.gpio.event.PinEvent;
-import com.pi4j.io.gpio.event.PinListener;
-import com.pi4j.gpio.extension.ads.*;
-import com.pi4j.gpio.extension.ads.ADS1x15GpioProvider.ProgrammableGainAmplifierValue;
 
 public class Rover implements Runnable
 {
@@ -59,30 +57,13 @@ public class Rover implements Runnable
 	protected Distance clearSpaceLeft;
 	protected Distance clearSpaceRight;
 	private PixyCmu5 pixy;
+	PixyLaserRange ranger = new PixyLaserRange();
 
 	public Rover() throws IOException, InterruptedException
 	{
 
 		pixy = new PixyCmu5();
 		pixy.setup();
-		int ctr = 0;
-		List<Frame> frames = null;
-		while (ctr < 20)
-		{
-			frames = pixy.getFrames();
-			System.out.println("pixy frames = " + frames.size());
-			for (Frame frame : frames)
-			{
-				System.out.println("X " + frame.xCenter + " Y " + frame.yCenter
-						+ " w " + frame.width + " h " + frame.height + "s "
-						+ frame.signature);
-			}
-			ctr++;
-			Thread.sleep(100);
-		}
-
-		if (frames.size() == 0)
-			throw new RuntimeException("exiting");
 
 		compass = new CompassLSM303();
 		compass.setup();
@@ -181,7 +162,9 @@ public class Rover implements Runnable
 
 		double value = ads.getValue(ADS1115Pin.INPUT_A0);
 		clearSpaceAhead = forwardSonar.getCurrentDistance((int) value);
-		if (lastData != null && clearSpaceAhead.convert(DistanceUnit.CM) < 30)
+		if (lastData != null
+				&& lastData.getSpeed().getSpeed(distUnit, timeUnit) > 0
+				&& clearSpaceAhead.convert(DistanceUnit.CM) < 30)
 		{
 			lastData.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
 					.perSecond()));
@@ -236,11 +219,19 @@ public class Rover implements Runnable
 
 	}
 
+	int pixymod = 0;
+
 	@Override
 	public void run()
 	{
 		try
 		{
+
+			pixymod++;
+			if (pixymod % 10 == 0)
+			{
+				readPixyData();
+			}
 
 			getSpaceAhead();
 			int heading = (int) compass.getHeading();
@@ -287,6 +278,25 @@ public class Rover implements Runnable
 				Time.perSecond());
 		lastTime = now;
 		return speed;
+	}
+
+	void readPixyData() throws IOException
+	{
+		List<Frame> frames = null;
+		frames = pixy.getFrames();
+		System.out.println("pixy frames = " + frames.size());
+		for (Frame frame : frames)
+		{
+
+			DistanceVector data = ranger.convertFrameToRangeData(frame);
+			if (data != null)
+			{
+				System.out.println("Vector " + data.distance + "cm @ "
+						+ data.angle + "degrees");
+			}
+
+		}
+
 	}
 
 }

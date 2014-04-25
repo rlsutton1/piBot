@@ -104,7 +104,7 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(2, DistanceUnit.CM),
+				message.setSpeed(new Speed(new Distance(10, DistanceUnit.CM),
 						Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);
@@ -127,7 +127,7 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(-5, DistanceUnit.CM),
+				message.setSpeed(new Speed(new Distance(-10, DistanceUnit.CM),
 						Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);

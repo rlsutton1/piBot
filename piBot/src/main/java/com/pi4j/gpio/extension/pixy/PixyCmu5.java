@@ -12,9 +12,10 @@ import com.pi4j.io.i2c.I2CFactory;
 
 public class PixyCmu5
 {
-	private static final int MAX_FRAMES = 10;
+	private static final int FRAME_SIZE = 14;
+	private static final int MAX_FRAMES = 20;
 	private I2CBus bus;
-	private I2CDevice magDevice;
+	private I2CDevice pixyDevice;
 
 	public void setup() throws IOException
 	{
@@ -23,7 +24,7 @@ public class PixyCmu5
 		bus = I2CFactory.getInstance(1);
 
 		// create I2C device instance
-		magDevice = new SynchronizedDeviceWrapper(bus.getDevice(0x54));
+		pixyDevice = new SynchronizedDeviceWrapper(bus.getDevice(0x54));
 
 	}
 
@@ -46,74 +47,81 @@ public class PixyCmu5
 		public int height;
 	}
 
+	public Frame getFrame(byte[] bytes)
+	{
+		Frame frame = new Frame();
+		frame.sync = convertBytesToInt(bytes[1], bytes[0]);
+		// System.out.println("\nsync: "+Integer.toHexString(frame.sync));
+		frame.checksum = convertBytesToInt(bytes[3], bytes[2]);
+
+		// if the checksum is 0 or the checksum is a sync byte, then there
+		// are no more frames.
+		if (frame.checksum == 0 || frame.checksum == 0xaa55)
+		{
+			return null;
+		}
+		frame.signature = convertBytesToInt(bytes[5], bytes[4]);
+		frame.xCenter = convertBytesToInt(bytes[7], bytes[6]);
+		frame.yCenter = convertBytesToInt(bytes[9], bytes[8]);
+		frame.width = convertBytesToInt(bytes[11], bytes[10]);
+		frame.height = convertBytesToInt(bytes[13], bytes[12]);
+
+		return frame;
+	}
+
 	public List<Frame> getFrames() throws IOException
 	{
 
 		List<Frame> frames = new LinkedList<Frame>();
-		byte[] bytes = new byte[14 * MAX_FRAMES];
-		for (int i = 0; i < bytes.length; i++)
+		byte[] bytes = new byte[FRAME_SIZE * MAX_FRAMES];
+
+		// read data from pixy
+		int bytesRead = pixyDevice.read(bytes, 0, bytes.length);
+
+		System.out.println("Bytes read " + bytesRead);
+
+		// search for sync
+		for (int byteOffset = 0; byteOffset < bytesRead - (FRAME_SIZE - 1);)
 		{
-			bytes[i] = 0;
-		}
-
-		// wait for sync byte
-		if (magDevice.read() != 0x55)
-		{
-			return frames;
-		}
-
-		if (magDevice.read() != 0xaa)
-		{
-			return frames;
-		}
-
-		// don't lose the sync byte
-		// bytes[0] = (byte) 0x55;
-		int offset = 0;
-
-		// read frames.
-		int read = magDevice.read(bytes, offset, bytes.length);
-		for (int r = 0; r < read; r += 14)
-		{
-			// System.out.print("f ");
-			// for (int y = 0;y < 14;y++)
-			// {
-			// int t = bytes[r+y];
-			// if (t < 0)
-			// t = t + 256;
-			// System.out.print(" " + Integer.toHexString(t));
-			// }
-			// System.out.println("");
-			Frame frame = new Frame();
-			frame.sync = convertBytesToInt(bytes[r + 1], bytes[r + 0]);
-			// System.out.println("\nsync: "+Integer.toHexString(frame.sync));
-			frame.checksum = convertBytesToInt(bytes[r + 3], bytes[r + 2]);
-			frame.signature = convertBytesToInt(bytes[r + 5], bytes[r + 4]);
-			frame.xCenter = convertBytesToInt(bytes[r + 7], bytes[r + 6]);
-			frame.yCenter = convertBytesToInt(bytes[r + 9], bytes[r + 8]);
-			frame.width = convertBytesToInt(bytes[r + 11], bytes[r + 10]);
-			frame.height = convertBytesToInt(bytes[r + 13], bytes[r + 12]);
-
-			if (frames.size() > MAX_FRAMES)
+			
+			int b1 = bytes[byteOffset];
+			if (b1 < 0)
 			{
-				break;
+				b1+=256;
 			}
-			// sync must equal =0x55aa;
-			if (frame.sync != 0xaa55)
+			int b2 = bytes[byteOffset+1];
+			if (b2 < 0)
 			{
-				// System.out.println("Bad Pixy frame sync = " +
-				// frame.sync+" "+frame.checksum);
-				break;
+				b2+=256;
 			}
-			// if the checksum is 0 or the checksum is a sync byte, then there
-			// are no more frames.
-			if (frame.checksum == 0 || frame.checksum == 0xaa55)
+
+			if (b1 == 0x55 && b2 == 0xaa)
 			{
-				break;
+				// found sync
+				byte[] tempBytes = new byte[FRAME_SIZE];
+				for (int tempByteOffset = 0; tempByteOffset < FRAME_SIZE; tempByteOffset++)
+				{
+					tempBytes[tempByteOffset] = bytes[byteOffset
+							+ tempByteOffset];
+				}
+				Frame frame = getFrame(tempBytes);
+				if (frame != null)
+				{
+					// it was a valid frame!
+					frames.add(frame);
+					// skip to next frame -1 as byteOffset will be incremented
+					// at the end
+					// of the loop block
+					byteOffset += FRAME_SIZE - 1;
+				} else
+				{
+					// it wasn't a valid frame, we can skip 2 bytes
+					byteOffset++;
+				}
 			}
-			frames.add(frame);
-			offset = 0;
+			byteOffset++;
 		}
+
 		return frames;
 	}
 
