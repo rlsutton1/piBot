@@ -3,14 +3,11 @@ package au.com.rsutton.mapping;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
+import java.util.Collection;
 import java.util.Random;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -18,6 +15,10 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
+
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+import com.pi4j.gpio.extension.pixy.DistanceVector;
 
 public class Graph extends JPanel implements Runnable,
 		MessageListener<RobotLocation>
@@ -52,18 +53,18 @@ public class Graph extends JPanel implements Runnable,
 																				// in
 																				// the
 		// middle of the panel
-		
+
 		int blockSize = 10;
 
 		for (int x = (int) -offset; x < offset; x += blockSize)
 		{
 			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				if (map.isMapLocationClear(x, y, blockSize/2) == LocationStatus.OCCUPIED)
+				if (map.isMapLocationClear(x, y, blockSize / 2) == LocationStatus.OCCUPIED)
 				{
 					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
 					g.drawRect((int) ((x + offset) * scale) - r,
-							(int) ((y + offset) * scale) - r, r*2, r*2);
+							(int) ((y + offset) * scale) - r, r * 2, r * 2);
 
 				}
 			}
@@ -81,8 +82,8 @@ public class Graph extends JPanel implements Runnable,
 		f.setLocation(200, 200);
 		f.setVisible(true);
 
-//		 Thread th = new Thread(graph);
-//		 th.start();
+		// Thread th = new Thread(graph);
+		// th.start();
 	}
 
 	Graph()
@@ -127,7 +128,24 @@ public class Graph extends JPanel implements Runnable,
 		double y = Math.cos(Math.toRadians(heading))
 				* distance.convert(DistanceUnit.CM);
 
-		map.addObservation(new ObservationImpl(x, y, 1, LocationStatus.OCCUPIED));
+///		map.addObservation(new ObservationImpl(x, y, 1, LocationStatus.OCCUPIED));
+
+		Collection<DistanceVector> laserData = message.getMessageObject()
+				.getLaserData();
+		for (DistanceVector vector : laserData)
+		{
+			double offsetHeading = vector.angle + heading;
+			x = Math.sin(Math.toRadians(heading))
+					* distance.convert(DistanceUnit.CM);
+			y = Math.cos(Math.toRadians(heading))
+					* distance.convert(DistanceUnit.CM);
+
+			map.addObservation(new ObservationImpl(x, y, 1,
+					LocationStatus.OCCUPIED));
+
+			System.out.println(vector);
+		}
+
 		this.repaint();
 
 		SetMotion message2 = new SetMotion();
