@@ -1,14 +1,7 @@
 package com.pi4j.gpio.extension.adafruit;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 

@@ -2,17 +2,10 @@ package au.com.rsutton.entryPoint;
 
 import java.io.IOException;
 
-import au.com.rsutton.entryPoint.controllers.ServoController;
-import au.com.rsutton.entryPoint.sonar.FullScan;
-import au.com.rsutton.entryPoint.sonar.Sonar;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.robot.rover.Rover;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;
-import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
-import com.pi4j.gpio.extension.adafruit.PwmPin;
-import com.pi4j.io.gpio.PinMode;
 
 public class Main
 {

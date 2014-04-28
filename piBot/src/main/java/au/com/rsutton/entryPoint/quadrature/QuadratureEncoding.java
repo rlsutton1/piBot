@@ -1,8 +1,5 @@
 package au.com.rsutton.entryPoint.quadrature;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioPinDigitalInput;

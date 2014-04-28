@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.Pid;
-import au.com.rsutton.entryPoint.quadrature.QuadratureEncoding;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncodingCBridge;
 import au.com.rsutton.entryPoint.quadrature.QuadratureProvider;
 import au.com.rsutton.entryPoint.units.Distance;

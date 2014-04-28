@@ -29,6 +29,7 @@ package com.pi4j.gpio.extension.ads;
 
 
 import java.util.EnumSet;
+
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.impl.PinImpl;
