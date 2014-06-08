@@ -57,8 +57,6 @@ public class Rover implements Runnable
 	public Rover() throws IOException, InterruptedException
 	{
 
-		pixy = new PixyLaserRangeService(new int[]{0,0,0});
-		
 
 		compass = new CompassLSM303();
 		compass.setup();
@@ -73,12 +71,17 @@ public class Rover implements Runnable
 				ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A1);
 		ads.setProgrammableGainAmplifier(
 				ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A2);
-
 		// ads = new ADS1115(1, 0x48);
 		forwardSonar = new Sonar(0.1, -340);
 		leftSonar = new SharpIR(40000000, 440, 0);
 		// rightSonar = new SharpIR(1, 1800);
 
+		pixy = new PixyLaserRangeService(new int[] {
+				0, 0, 0 });
+		getSpaceAhead();
+		pixy.getCurrentData((int)clearSpaceAhead.convert(DistanceUnit.CM));
+
+	
 		setupRightWheel();
 
 		setupLeftWheel();
@@ -166,10 +169,7 @@ public class Rover implements Runnable
 			speedHeadingController.setDesiredMotion(lastData);
 		}
 
-
-
 	}
-
 
 	@Override
 	public void run()
@@ -193,7 +193,9 @@ public class Rover implements Runnable
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
-			currentLocation.setLaserData(pixy.getCurrentData());
+			currentLocation.setLaserData(pixy
+					.getCurrentData((int) clearSpaceAhead
+							.convert(DistanceUnit.CM)));
 			currentLocation.publish();
 
 			previousLocation = currentLocation;
@@ -225,5 +227,4 @@ public class Rover implements Runnable
 		return speed;
 	}
 
-	
 }

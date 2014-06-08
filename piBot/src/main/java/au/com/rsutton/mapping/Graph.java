@@ -25,11 +25,12 @@ public class Graph extends JPanel implements Runnable,
 {
 
 	private MapAccessor map;
-	private int mheading = 0;
 
+	volatile int currentX = 0;
+	volatile int currentY = 0;
+	
 	protected void paintComponent(Graphics g)
 	{
-		int YP1, YP2;
 		super.paintComponent(g);
 		Graphics2D g2 = (Graphics2D) g;
 
@@ -60,7 +61,7 @@ public class Graph extends JPanel implements Runnable,
 		{
 			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				if (map.isMapLocationClear(x, y, blockSize / 2) == LocationStatus.OCCUPIED)
+				if (map.isMapLocationClear(x+currentX, -y+currentY, blockSize / 2) == LocationStatus.OCCUPIED)
 				{
 					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
 					g.drawRect((int) ((x + offset) * scale) - r,
@@ -117,43 +118,61 @@ public class Graph extends JPanel implements Runnable,
 
 	}
 
+	Double lastHeading = null;
+
 	@Override
 	public void onMessage(Message<RobotLocation> message)
 	{
-		int heading = message.getMessageObject().getHeading();
-		Distance distance = message.getMessageObject().getClearSpaceAhead();
+		RobotLocation messageObject = message.getMessageObject();
+		int heading = messageObject.getHeading();
+		if (lastHeading == null)
+		{
+			lastHeading = (double) heading;
+		}
+		// Distance distance = message.getMessageObject().getClearSpaceAhead();
+		//
+		// double x = Math.sin(Math.toRadians(heading))
+		// * distance.convert(DistanceUnit.CM);
+		// double y = Math.cos(Math.toRadians(heading))
+		// * distance.convert(DistanceUnit.CM);
 
-		double x = Math.sin(Math.toRadians(heading))
-				* distance.convert(DistanceUnit.CM);
-		double y = Math.cos(Math.toRadians(heading))
-				* distance.convert(DistanceUnit.CM);
+		// / map.addObservation(new ObservationImpl(x, y, 1,
+		// LocationStatus.OCCUPIED));
 
-///		map.addObservation(new ObservationImpl(x, y, 1, LocationStatus.OCCUPIED));
-
-		Collection<DistanceVector> laserData = message.getMessageObject()
-				.getLaserData();
+		Collection<DistanceVector> laserData = null;//messageObject.getLaserData();
 		for (DistanceVector vector : laserData)
 		{
-			double offsetHeading = vector.angle + heading;
-			x = Math.sin(Math.toRadians(heading))
-					* distance.convert(DistanceUnit.CM);
-			y = Math.cos(Math.toRadians(heading))
-					* distance.convert(DistanceUnit.CM);
+			double observationAngle = heading + vector.angle;
+			// if (vector.angle > -10 && vector.angle < 30)
+			{
+				Distance distance = new Distance(vector.distance,
+						DistanceUnit.CM);
 
-			map.addObservation(new ObservationImpl(x, y, 1,
-					LocationStatus.OCCUPIED));
+				double x = Math.sin(Math.toRadians(observationAngle))
+						* distance.convert(DistanceUnit.CM);
+				double y = Math.cos(Math.toRadians(observationAngle))
+						* distance.convert(DistanceUnit.CM);
 
-			System.out.println(vector);
+				System.out.println("angle " + vector.angle + "x " + x + " y "
+						+ y);
+				map.addObservation(new ObservationImpl(x
+						+ messageObject.getX().convert(DistanceUnit.CM), y
+						+ messageObject.getY().convert(DistanceUnit.CM), 1,
+						LocationStatus.OCCUPIED));
+			}
 		}
 
 		this.repaint();
+		currentX = (int) messageObject.getX().convert(DistanceUnit.CM);
+		currentY = (int) messageObject.getY().convert(DistanceUnit.CM);
 
-		SetMotion message2 = new SetMotion();
-		message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
-
-		message2.setHeading((double) heading + 10);
-		message2.publish();
+		// SetMotion message2 = new SetMotion();
+		// message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
+		// .perSecond()));
+		//
+		// lastHeading += 2;
+		// message2.setHeading(lastHeading);
+		// message2.publish();
 
 	}
 }

@@ -28,6 +28,7 @@ public class MainWindow extends JFrame implements
 		MessageListener<RobotLocation>
 {
 
+	private static final int SPEED = 3;
 	private static final long serialVersionUID = -4490943128993707547L;
 	private JTextField heading;
 	private JLabel xLocationLabel;
@@ -104,7 +105,7 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(10, DistanceUnit.CM),
+				message.setSpeed(new Speed(new Distance(SPEED, DistanceUnit.CM),
 						Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);
@@ -127,7 +128,7 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(-10, DistanceUnit.CM),
+				message.setSpeed(new Speed(new Distance(-SPEED, DistanceUnit.CM),
 						Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);

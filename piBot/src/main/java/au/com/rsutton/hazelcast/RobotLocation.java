@@ -7,6 +7,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 
 import com.google.common.base.Objects;
 import com.pi4j.gpio.extension.pixy.DistanceVector;
+import com.pi4j.gpio.extension.pixy.PixyCoordinate;
 
 public class RobotLocation extends MessageBase<RobotLocation>
 {
@@ -17,7 +18,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private Distance y;
 	private Speed speed;
 	private Distance clearSpaceAhead;
-	private Collection<DistanceVector> laserData;
+	private Collection<PixyCoordinate> laserData;
 
 	public RobotLocation()
 	{
@@ -82,13 +83,13 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return clearSpaceAhead;
 	}
 
-	public void setLaserData(Collection<DistanceVector> currentData)
+	public void setLaserData(Collection<PixyCoordinate> collection)
 	{
-		this.laserData = currentData;
+		this.laserData = collection;
 		
 	}
 
-	public Collection<DistanceVector> getLaserData()
+	public Collection<PixyCoordinate> getLaserData()
 	{
 		return laserData;
 		

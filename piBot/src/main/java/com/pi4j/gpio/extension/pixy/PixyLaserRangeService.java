@@ -10,23 +10,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.pi4j.gpio.extension.pixy.PixyCmu5.Frame;
-
 public class PixyLaserRangeService implements Runnable
 {
 	private PixyLaserRange ranger = new PixyLaserRange();
 
 	private PixyCmu5 pixy;
 
-	AtomicReference<Collection<DistanceVector>> availableData = new AtomicReference<>();
+	AtomicReference<Collection<PixyCoordinate>> availableData = new AtomicReference<>();
 
 	int[] allowedAngles = null;
+
+	volatile private int referenceDistance;
 	private final static Object sync = new Object();
 
 	public PixyLaserRangeService(int[] allowedAngles) throws IOException
 	{
 		this.allowedAngles = allowedAngles;
-		availableData.set(new LinkedList<DistanceVector>());
+		availableData.set(new LinkedList<PixyCoordinate>());
 		pixy = new PixyCmu5();
 		pixy.setup();
 
@@ -35,12 +35,13 @@ public class PixyLaserRangeService implements Runnable
 
 	}
 
-	public Collection<DistanceVector> getCurrentData()
+	public Collection<PixyCoordinate> getCurrentData(int referenceDistance)
 	{
 		synchronized (sync)
 		{
-			Collection<DistanceVector> data = availableData.get();
-			availableData.set(new LinkedList<DistanceVector>());
+			this.referenceDistance = referenceDistance;
+			Collection<PixyCoordinate> data = availableData.get();
+			availableData.set(new LinkedList<PixyCoordinate>());
 			return data;
 		}
 	}
@@ -52,26 +53,84 @@ public class PixyLaserRangeService implements Runnable
 		try
 		{
 			List<Frame> frames = pixy.getFrames();
-			Map<Integer, DistanceVector> rangeData = new HashMap<>();
+			System.out.println("Got " + frames.size());
+			List<PixyCoordinate> coords = new LinkedList<PixyCoordinate>();
 
 			// System.out.println("pixy frames = " + frames.size());
 			for (Frame frame : frames)
 			{
-				DistanceVector data = ranger.convertFrameToRangeData(frame);
-				if (data != null)
+				PixyCoordinate coord = new PixyCoordinate();
+				if (frame.yCenter > PixyLaserRange.Y_CENTER && frame.height > 0)
 				{
-					rangeData.put((int) data.angle, data);
+					coord.x = frame.xCenter;
+					coord.y = frame.yCenter;
+					coord.count = 1;
+					boolean found = false;
+					for (PixyCoordinate knownCoord : coords)
+					{
+						if (coord.x > knownCoord.getAverageX() - 10
+								&& coord.x < knownCoord.getAverageX() + 10)
+						{
+							knownCoord.y += coord.y;
+							knownCoord.x += coord.x;
+							knownCoord.count++;
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+					{
+						coords.add(coord);
+					}
+
 				}
 			}
-			List<DistanceVector> finalData = new LinkedList<>();
+			
+			List<PixyCoordinate> result = new LinkedList<PixyCoordinate>();
+			
+			for (PixyCoordinate coord : coords)
+			{
+				if (coord.count>1)
+				{
+					result.add(coord);
+				}
+			}
+
+
 			synchronized (sync)
 			{
-				finalData.addAll(rangeData.values());
-				availableData.set(finalData);
+				availableData.set(result);
 			}
 		} catch (IOException e)
 		{
 			e.printStackTrace();
 		}
 	}
+
+	private void dumpCalabrationData()
+	{
+		for (DistanceVector data : history.values())
+		{
+			System.out.println(data);
+
+		}
+	}
+
+	private void gatherCalabrationData(DistanceVector dv)
+	{
+		// calabration data collection code
+		DistanceVector lastData = history.get(dv);
+		if (lastData != null)
+		{
+			// smooth old data with new data
+			lastData.distance = lastData.distance * 0.7 + dv.distance * 0.3;
+			lastData.yAngle = lastData.yAngle * 0.7 + dv.yAngle * 0.3;
+			lastData.ydistance = lastData.ydistance * 0.7 + dv.ydistance * 0.3;
+		} else
+		{
+			history.put(dv, dv);
+		}
+	}
+
+	Map<DistanceVector, DistanceVector> history = new HashMap<>();
 }

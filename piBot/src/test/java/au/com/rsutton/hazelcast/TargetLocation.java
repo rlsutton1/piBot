@@ -33,8 +33,8 @@ public class TargetLocation implements MessageListener<RobotLocation>
 		while (distance > accuracy.convert(unit))
 		{
 
-			double newHeading = Math.toDegrees(Math.atan2((targetX - x),(targetY - y)
-					));
+			double newHeading = Math.toDegrees(Math.atan2((targetX - x),
+					(targetY - y)));
 
 			message.setHeading(newHeading);
 
@@ -46,13 +46,19 @@ public class TargetLocation implements MessageListener<RobotLocation>
 			// the target
 			double changeInHeading = HeadingHelper.getChangeInHeading(
 					newHeading, heading);
-			double speed = Math.max(400 - Math.abs(changeInHeading), 0);
+			double speed = 400;
+
+			// there is a lot of slip if we turn while on the move
+			if (changeInHeading > 5)
+			{
+				speed = 0;
+			}
 			speed = Math.min(distance / 1, speed);
 
 			message.setSpeed(new Speed(new Distance(speed, DistanceUnit.MM),
 					Time.perSecond()));
 			message.publish();
-			Thread.sleep(1000);
+			Thread.sleep(250);
 		}
 
 	}

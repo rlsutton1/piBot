@@ -71,25 +71,20 @@ public class SpeedHeadingController implements Runnable
 				// + " d " + desiredHeading);
 				double speed = desiredSpeed.getSpeed(distUnit, timeUnit);
 
-				double left = speed * ((100.0d + offset) / 100.0d);
-				double right = speed * ((100.0d - offset) / 100.0d);
+				double portionOfSpeed = (offset / 100d) * speed;
 
-				if (Math.abs(left) < Math.abs(offset)
-						&& Math.abs(right) < Math.abs(offset))
+				double inversion = Math.signum(speed);
+
+				double left = speed + (portionOfSpeed * inversion);
+				double right = speed - (portionOfSpeed * inversion);
+
+				if (Math.abs(left) < Math.abs(offset / 10d)
+						&& Math.abs(right) < Math.abs(offset / 10d))
 				{
 					// we are almost stationary so scaling the speed doesn't
 					// work.
-					left = speed + (offset * 2);
-					right = speed - (offset * 2);
-				} else
-
-				if (speed < 0)
-				{
-					// reversing, so reverse to direction compensation
-					double temp = right;
-					right = left;
-					left = temp;
-					
+					left = speed + (offset * 1d);
+					right = speed - (offset * 1d);
 				}
 
 				Speed leftSpeed = new Speed(new Distance(left, distUnit),

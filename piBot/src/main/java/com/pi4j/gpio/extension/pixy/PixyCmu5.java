@@ -28,24 +28,6 @@ public class PixyCmu5
 
 	}
 
-	public class Frame
-	{
-		// 0, 1 0 sync (0xaa55)
-		// 2, 3 1 checksum (sum of all 16-bit words 2-6)
-		// 4, 5 2 signature number
-		// 6, 7 3 x center of object
-		// 8, 9 4 y center of object
-		// 10, 11 5 width of object
-		// 12, 13 6 height of object
-
-		int sync = 0;
-		int checksum = 0;
-		public int signature;
-		public int xCenter;
-		public int yCenter;
-		public int width;
-		public int height;
-	}
 
 	public Frame getFrame(byte[] bytes)
 	{
@@ -78,21 +60,23 @@ public class PixyCmu5
 		// read data from pixy
 		int bytesRead = pixyDevice.read(bytes, 0, bytes.length);
 
-		System.out.println("Bytes read " + bytesRead);
-
+		if (bytesRead == 0)
+		{
+			System.out.println("Didn't get any data from pixy");
+		}
 		// search for sync
 		for (int byteOffset = 0; byteOffset < bytesRead - (FRAME_SIZE - 1);)
 		{
-			
+
 			int b1 = bytes[byteOffset];
 			if (b1 < 0)
 			{
-				b1+=256;
+				b1 += 256;
 			}
-			int b2 = bytes[byteOffset+1];
+			int b2 = bytes[byteOffset + 1];
 			if (b2 < 0)
 			{
-				b2+=256;
+				b2 += 256;
 			}
 
 			if (b1 == 0x55 && b2 == 0xaa)
@@ -120,6 +104,11 @@ public class PixyCmu5
 				}
 			}
 			byteOffset++;
+		}
+		if (frames.size() == 0)
+		{
+			System.out
+					.println("No frames from pixy, did you remove the lense cover?");
 		}
 
 		return frames;
