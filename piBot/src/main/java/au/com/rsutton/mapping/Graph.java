@@ -19,6 +19,7 @@ import au.com.rsutton.hazelcast.SetMotion;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.pi4j.gpio.extension.pixy.DistanceVector;
+import com.pi4j.gpio.extension.pixy.PixyCoordinate;
 
 public class Graph extends JPanel implements Runnable,
 		MessageListener<RobotLocation>
@@ -28,7 +29,8 @@ public class Graph extends JPanel implements Runnable,
 
 	volatile int currentX = 0;
 	volatile int currentY = 0;
-	
+	LaserRangeConverter converter = new LaserRangeConverter();
+
 	protected void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
@@ -61,7 +63,8 @@ public class Graph extends JPanel implements Runnable,
 		{
 			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				if (map.isMapLocationClear(x+currentX, -y+currentY, blockSize / 2) == LocationStatus.OCCUPIED)
+				if (map.isMapLocationClear(x + currentX, -y + currentY,
+						blockSize / 2) == LocationStatus.OCCUPIED)
 				{
 					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
 					g.drawRect((int) ((x + offset) * scale) - r,
@@ -139,26 +142,44 @@ public class Graph extends JPanel implements Runnable,
 		// / map.addObservation(new ObservationImpl(x, y, 1,
 		// LocationStatus.OCCUPIED));
 
-		Collection<DistanceVector> laserData = null;//messageObject.getLaserData();
-		for (DistanceVector vector : laserData)
+		double robotSinAngle = Math.sin(Math.toRadians(heading));
+
+		Collection<PixyCoordinate> laserData = messageObject.getLaserData();
+		for (PixyCoordinate vector : laserData)
 		{
-			double observationAngle = heading + vector.angle;
+			double observationAngle = heading
+					+ converter.convertAngle(vector.getAverageX());
 			// if (vector.angle > -10 && vector.angle < 30)
 			{
-				Distance distance = new Distance(vector.distance,
-						DistanceUnit.CM);
+				Integer convertedRange = converter.convertRange(
+						(int) vector.getAverageX(), (int) vector.getAverageY());
+				if (convertedRange != null)
+				{
+					Distance distance = new Distance(convertedRange,
+							DistanceUnit.CM);
 
-				double x = Math.sin(Math.toRadians(observationAngle))
-						* distance.convert(DistanceUnit.CM);
-				double y = Math.cos(Math.toRadians(observationAngle))
-						* distance.convert(DistanceUnit.CM);
+					// calculate the x value using the laser angle and distance
+					double x = Math.sin(Math.toRadians(observationAngle))
+							* distance.convert(DistanceUnit.CM);
 
-				System.out.println("angle " + vector.angle + "x " + x + " y "
-						+ y);
-				map.addObservation(new ObservationImpl(x
-						+ messageObject.getX().convert(DistanceUnit.CM), y
-						+ messageObject.getY().convert(DistanceUnit.CM), 1,
-						LocationStatus.OCCUPIED));
+					// now adjust x for the heading of the robot body
+					x = robotSinAngle * x;
+
+					// y is the distance along the y axis, no translation for
+					// the angle component of the laser data is required
+
+					// just adjust y for the heading of the robot body
+					double y = Math.cos(Math.toRadians(observationAngle))
+							* distance.convert(DistanceUnit.CM);
+
+					// System.out.println("angle " + vector.angle + "x " + x +
+					// " y "
+					// + y);
+					map.addObservation(new ObservationImpl(x
+							+ messageObject.getX().convert(DistanceUnit.CM), y
+							+ messageObject.getY().convert(DistanceUnit.CM), 1,
+							LocationStatus.OCCUPIED));
+				}
 			}
 		}
 

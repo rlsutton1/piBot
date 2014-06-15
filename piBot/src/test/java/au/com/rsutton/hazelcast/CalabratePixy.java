@@ -1,6 +1,14 @@
 package au.com.rsutton.hazelcast;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
@@ -92,6 +100,101 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 					+ queuedLaserData.size() + " points");
 			// TODO: analyse laser data
 
+			// add entry to data for the set distance
+			data.put(setDistance,
+					new LinkedHashMap<AverageValue, AverageValue>());
+			Map<AverageValue, AverageValue> distanceSet = data.get(setDistance);
+
+			// get value sets from queue
+			List<Collection<PixyCoordinate>> tmp = new LinkedList<>();
+			tmp.addAll(queuedLaserData);
+
+			// iterate value sets
+			for (Collection<PixyCoordinate> set : tmp)
+			{
+				for (PixyCoordinate values : set)
+				{
+					// accumulate average values;
+					AverageValue txa = new AverageValue();
+					txa.add((int) values.getAverageX());
+
+					AverageValue tset = distanceSet.get(txa);
+					if (tset == null)
+					{
+
+						distanceSet.put(txa, new AverageValue());
+					}
+					AverageValue xa = distanceSet.get(txa);
+					xa.add((int) values.getAverageY());
+				}
+			}
+
+			for (Entry<Integer, Map<AverageValue, AverageValue>> vx : data
+					.entrySet())
+			{
+				System.out.print("Distance: " + vx.getKey());
+				// add keys to a list and sort them
+				List<Integer> sortedKeys = new LinkedList<>();
+				for (AverageValue key : vx.getValue().keySet())
+				{
+					sortedKeys.add(key.getValue());
+				}
+				Collections.sort(sortedKeys);
+
+				// print the ordered values
+				for (Integer key : sortedKeys)
+				{
+					AverageValue avKey = new AverageValue();
+					avKey.add(key);
+					AverageValue value = vx.getValue().get(avKey);
+					System.out.print(",Xangle, " + key + ", Yangle, "
+							+ value.getValue());
+				}
+				System.out.println("");
+			}
+
+		}
+
+	}
+
+	// distance -> xangle,yangle
+	Map<Integer, Map<AverageValue, AverageValue>> data = new HashMap<>();
+
+	class AverageValue
+	{
+		int value = 0;
+
+		double count = 0;
+
+		@Override
+		public int hashCode()
+		{
+			return 1;
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			AverageValue ot = (AverageValue) o;
+			return getValue() + 20 > ot.getValue()
+					&& getValue() - 20 < ot.getValue();
+		}
+
+		void add(int v)
+		{
+			value += v;
+			count++;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "" + getValue();
+		}
+
+		int getValue()
+		{
+			return (int) (value / count);
 		}
 
 	}
