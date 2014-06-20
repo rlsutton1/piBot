@@ -13,6 +13,13 @@ public class PixyCoordinate implements Serializable
 	double y;
 	double count;
 
+	public PixyCoordinate(double x, double y)
+	{
+		this.x = x;
+		this.y = y;
+		count = 1;
+	}
+
 	public double getAverageX()
 	{
 		return x / count;

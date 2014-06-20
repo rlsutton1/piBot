@@ -79,7 +79,7 @@ public class Rover implements Runnable
 		pixy = new PixyLaserRangeService(new int[] {
 				0, 0, 0 });
 		getSpaceAhead();
-		pixy.getCurrentData((int)clearSpaceAhead.convert(DistanceUnit.CM));
+		pixy.getCurrentData();
 
 	
 		setupRightWheel();
@@ -194,8 +194,7 @@ public class Rover implements Runnable
 			currentLocation.setSpeed(speed);
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
 			currentLocation.setLaserData(pixy
-					.getCurrentData((int) clearSpaceAhead
-							.convert(DistanceUnit.CM)));
+					.getCurrentData());
 			currentLocation.publish();
 
 			previousLocation = currentLocation;

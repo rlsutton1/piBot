@@ -2,17 +2,14 @@ package com.pi4j.gpio.extension.pixy;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PixyLaserRangeService implements Runnable
 {
-	private PixyLaserRange ranger = new PixyLaserRange();
 
 	private PixyCmu5 pixy;
 
@@ -20,7 +17,6 @@ public class PixyLaserRangeService implements Runnable
 
 	int[] allowedAngles = null;
 
-	volatile private int referenceDistance;
 	private final static Object sync = new Object();
 
 	public PixyLaserRangeService(int[] allowedAngles) throws IOException
@@ -35,11 +31,10 @@ public class PixyLaserRangeService implements Runnable
 
 	}
 
-	public Collection<PixyCoordinate> getCurrentData(int referenceDistance)
+	public Collection<PixyCoordinate> getCurrentData()
 	{
 		synchronized (sync)
 		{
-			this.referenceDistance = referenceDistance;
 			Collection<PixyCoordinate> data = availableData.get();
 			availableData.set(new LinkedList<PixyCoordinate>());
 			return data;
@@ -59,12 +54,10 @@ public class PixyLaserRangeService implements Runnable
 			// System.out.println("pixy frames = " + frames.size());
 			for (Frame frame : frames)
 			{
-				PixyCoordinate coord = new PixyCoordinate();
 				if (frame.yCenter > PixyLaserRange.Y_CENTER && frame.height > 0)
 				{
-					coord.x = frame.xCenter;
-					coord.y = frame.yCenter;
-					coord.count = 1;
+					PixyCoordinate coord = new PixyCoordinate(frame.xCenter,
+							frame.yCenter);
 					boolean found = false;
 					for (PixyCoordinate knownCoord : coords)
 					{
@@ -85,17 +78,16 @@ public class PixyLaserRangeService implements Runnable
 
 				}
 			}
-			
+
 			List<PixyCoordinate> result = new LinkedList<PixyCoordinate>();
-			
+
 			for (PixyCoordinate coord : coords)
 			{
-				if (coord.count>1)
+				if (coord.count > 1)
 				{
 					result.add(coord);
 				}
 			}
-
 
 			synchronized (sync)
 			{
@@ -107,30 +99,4 @@ public class PixyLaserRangeService implements Runnable
 		}
 	}
 
-	private void dumpCalabrationData()
-	{
-		for (DistanceVector data : history.values())
-		{
-			System.out.println(data);
-
-		}
-	}
-
-	private void gatherCalabrationData(DistanceVector dv)
-	{
-		// calabration data collection code
-		DistanceVector lastData = history.get(dv);
-		if (lastData != null)
-		{
-			// smooth old data with new data
-			lastData.distance = lastData.distance * 0.7 + dv.distance * 0.3;
-			lastData.yAngle = lastData.yAngle * 0.7 + dv.yAngle * 0.3;
-			lastData.ydistance = lastData.ydistance * 0.7 + dv.ydistance * 0.3;
-		} else
-		{
-			history.put(dv, dv);
-		}
-	}
-
-	Map<DistanceVector, DistanceVector> history = new HashMap<>();
 }
