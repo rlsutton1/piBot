@@ -1,7 +1,9 @@
 package au.com.rsutton.mapping;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.awt.geom.Line2D;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -39,33 +41,51 @@ public class Graph extends JPanel implements Runnable,
 		double offset = 600;
 		double scale = minxy / (offset * 2.0d);
 		// Draw axeX.
-		g2.draw(new Line2D.Double(0, (offset * scale), w, (offset * scale))); // to
-																				// make
-																				// axisX
-																				// in
-																				// the
+		g2.draw(new Line2D.Double(0, (offset * scale), w, (offset * scale)));
+
+		// to
+		// make
+		// axisX
+		// in
+		// the
 		// middle
 		// Draw axeY.
-		g2.draw(new Line2D.Double((offset * scale), h, (offset * scale), 0));// to
-																				// make
-																				// axisY
-																				// in
-																				// the
+		g2.draw(new Line2D.Double((offset * scale), h, (offset * scale), 0));
+
+		// to
+		// make
+		// axisY
+		// in
+		// the
 		// middle of the panel
 
-		int blockSize = 10;
+		if (lastHeading != null)
+		{
+			System.out.println(lastHeading);
+			double xbot = (Math.sin(Math.toRadians(lastHeading)) * 40d);// +(Math.cos(Math.toRadians(lastHeading))*10);
+			double ybot = -(Math.cos(Math.toRadians(lastHeading)) * 40d);// +(Math.sin(Math.toRadians(lastHeading))*10);
+
+			
+			g2.setColor(new Color(255,0,0));
+			g2.draw(new Line2D.Double((offset * scale), (int) (offset * scale),
+					(int) ((offset + xbot) * scale),
+					(int) ((offset + ybot) * scale)));
+			g2.setColor(new Color(0,0,0));
+		}
+
+
+		int blockSize = 20;
 
 		for (int x = (int) -offset; x < offset; x += blockSize)
 		{
 			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				if (map.isMapLocationClear(x + currentX, -y + currentY,
-						blockSize / 2) == LocationStatus.OCCUPIED)
+				if (!map.isMapLocationClear(x + currentX, -y + currentY,
+						blockSize / 2))
 				{
 					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
 					g.drawRect((int) ((x + offset) * scale) - r,
 							(int) ((y + offset) * scale) - r, r * 2, r * 2);
-
 				}
 			}
 		}
@@ -82,11 +102,11 @@ public class Graph extends JPanel implements Runnable,
 		f.setLocation(200, 200);
 		f.setVisible(true);
 
-//		Thread th = new Thread(graph);
-//		th.start();
+		// Thread th = new Thread(graph);
+		// th.start();
 	}
 
-	Graph()
+	public Graph()
 	{
 		map = new MapAccessor();
 		RobotLocation locationMessage = new RobotLocation();
@@ -156,17 +176,18 @@ public class Graph extends JPanel implements Runnable,
 
 	}
 
-	Double lastHeading = null;
+	volatile Double lastHeading = null;
 
 	@Override
 	public void onMessage(Message<RobotLocation> message)
 	{
 		RobotLocation messageObject = message.getMessageObject();
 		int heading = messageObject.getHeading();
-		if (lastHeading == null)
-		{
-			lastHeading = (double) heading;
-		}
+
+		lastHeading = (double) heading;
+
+		currentX = (int) (messageObject.getX().convert(DistanceUnit.CM) * 1.25d);
+		currentY = (int) (messageObject.getY().convert(DistanceUnit.CM) * 1.25d);
 
 		double robotSinAngle = Math.sin(Math.toRadians(heading));
 		double robotCosAngle = Math.cos(Math.toRadians(heading));
@@ -185,17 +206,18 @@ public class Graph extends JPanel implements Runnable,
 					Distance distance = new Distance(convertedRange,
 							DistanceUnit.CM);
 
-					System.out.println("Obs Angle " + observationAngle);
+					// System.out.println("Obs Angle " + observationAngle);
 					double distanceCM = distance.convert(DistanceUnit.CM);
-					System.out.println("dist " + distanceCM);
+					// System.out.println("dist " + distanceCM);
 					// calculate the x value using the laser angle and distance
 					double xMeasurement = -Math.sin(Math
 							.toRadians(observationAngle)) * distanceCM;
-					System.out.println("x " + xMeasurement);
+					// System.out.println("x " + xMeasurement);
 					// now adjust x for the heading of the robot body
 					double x = (-robotCosAngle * xMeasurement)
 							+ (robotSinAngle * distanceCM);
-					System.out.println("xMeasurement " + xMeasurement + "\n\n");
+					// System.out.println("xMeasurement " + xMeasurement +
+					// "\n\n");
 					// y is the distance along the y axis, no translation for
 					// the angle component of the laser data is required
 
@@ -206,17 +228,13 @@ public class Graph extends JPanel implements Runnable,
 					// System.out.println("angle " + vector.angle + "x " + x +
 					// " y "
 					// + y);
-					map.addObservation(new ObservationImpl(x
-							+ messageObject.getX().convert(DistanceUnit.CM), y
-							+ messageObject.getY().convert(DistanceUnit.CM), 1,
-							LocationStatus.OCCUPIED));
+					map.addObservation(new ObservationImpl(x + currentX, y
+							+ currentY, 1, LocationStatus.OCCUPIED));
 				}
 			}
 		}
 
 		this.repaint();
-		currentX = (int) messageObject.getX().convert(DistanceUnit.CM);
-		currentY = (int) messageObject.getY().convert(DistanceUnit.CM);
 
 		// SetMotion message2 = new SetMotion();
 		// message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
