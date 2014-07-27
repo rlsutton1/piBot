@@ -72,7 +72,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 					double y = Math.cos(Math.toRadians(observationAngle))
 							* distance.convert(DistanceUnit.CM);
 
-					if (y < 70 && x > -40 && x < 40)
+					if (y < 70 && x > -30 && x < 30)
 					{
 						if (y < 50)
 						{

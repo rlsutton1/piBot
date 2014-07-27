@@ -27,7 +27,7 @@ public class Graph extends JPanel implements Runnable,
 
 	volatile int currentX = 0;
 	volatile int currentY = 0;
-	LaserRangeConverter converter = new LaserRangeConverter();
+	CoordResolver converter = new CoordResolver();
 
 	protected void paintComponent(Graphics g)
 	{
@@ -195,16 +195,16 @@ public class Graph extends JPanel implements Runnable,
 		Collection<PixyCoordinate> laserData = messageObject.getLaserData();
 		for (PixyCoordinate vector : laserData)
 		{
-			double observationAngle = converter.convertAngle(vector
+			double observationAngle = converter.convertXtoAngle(vector
 					.getAverageX());
 			// if (vector.angle > -10 && vector.angle < 30)
 			{
-				Integer convertedRange = converter.convertRange(
-						(int) vector.getAverageX(), (int) vector.getAverageY());
-				if (convertedRange != null)
+				Integer convertedRange = (int) converter.convertYtoRange(
+						   vector.getAverageY());
+				if (convertedRange != null && convertedRange> 0)
 				{
 					Distance distance = new Distance(convertedRange,
-							DistanceUnit.CM);
+							DistanceUnit.MM);
 
 					// System.out.println("Obs Angle " + observationAngle);
 					double distanceCM = distance.convert(DistanceUnit.CM);

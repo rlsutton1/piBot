@@ -20,6 +20,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.mapping.Graph;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
@@ -45,7 +46,7 @@ public class MainWindow extends JFrame implements
 
 	MainWindow()
 	{
-		this.setBounds(0, 0, 600, 400);
+		this.setBounds(0, 0, 850, 900);
 
 		FlowLayout experimentLayout = new FlowLayout();
 
@@ -92,6 +93,10 @@ public class MainWindow extends JFrame implements
 		controlPanel.add(forwardButton);
 		controlPanel.add(backButton);
 		this.setVisible(true);
+		
+		Graph graph = new Graph();
+		graph.setPreferredSize(new Dimension(750,750));
+		this.add(graph);
 	}
 
 	private JButton createForwardButton()

@@ -15,8 +15,11 @@
 			<artifactId>pi4j-gpio-extension</artifactId>
 			<version>0.0.5</version>
 		</dependency>
-		<!-- <dependency> <groupId>com.googlecode.javacv</groupId> <artifactId>javacv</artifactId> 
-			<version>0.5</version> </dependency> -->
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacv</artifactId>
+			<version>0.8</version>
+		</dependency>
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
