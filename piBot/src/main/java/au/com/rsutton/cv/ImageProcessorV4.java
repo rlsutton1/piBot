@@ -54,6 +54,7 @@ public class ImageProcessorV4
 			{
 
 				CvPoint center = new CvPoint().x(x).y(y);
+				xy.put(x, y);
 
 				cvCircle(src, center, 5, CvScalar.GREEN, -1, 8, 0);
 			}

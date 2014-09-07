@@ -193,11 +193,13 @@ public class Rover implements Runnable
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
-			currentLocation.setLaserData(pixy
-					.getCurrentData());
-			currentLocation.publish();
+			
+			throw new RuntimeException("Broken, next lines commented out to allow compile");
+//			currentLocation.setLaserData(pixy
+//					.getCurrentData());
+//			currentLocation.publish();
 
-			previousLocation = currentLocation;
+//			previousLocation = currentLocation;
 		} catch (Exception e)
 		{
 			// TODO Auto-generated catch block

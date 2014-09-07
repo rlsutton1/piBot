@@ -13,7 +13,7 @@ public class PixyLaserRangeService implements Runnable
 
 	private PixyCmu5 pixy;
 
-	AtomicReference<Collection<PixyCoordinate>> availableData = new AtomicReference<>();
+	AtomicReference<Collection<Coordinate>> availableData = new AtomicReference<>();
 
 	int[] allowedAngles = null;
 
@@ -22,7 +22,7 @@ public class PixyLaserRangeService implements Runnable
 	public PixyLaserRangeService(int[] allowedAngles) throws IOException
 	{
 		this.allowedAngles = allowedAngles;
-		availableData.set(new LinkedList<PixyCoordinate>());
+		availableData.set(new LinkedList<Coordinate>());
 		pixy = new PixyCmu5();
 		pixy.setup();
 
@@ -31,12 +31,12 @@ public class PixyLaserRangeService implements Runnable
 
 	}
 
-	public Collection<PixyCoordinate> getCurrentData()
+	public Collection<Coordinate> getCurrentData()
 	{
 		synchronized (sync)
 		{
-			Collection<PixyCoordinate> data = availableData.get();
-			availableData.set(new LinkedList<PixyCoordinate>());
+			Collection<Coordinate> data = availableData.get();
+			availableData.set(new LinkedList<Coordinate>());
 			return data;
 		}
 	}
@@ -49,17 +49,17 @@ public class PixyLaserRangeService implements Runnable
 		{
 			List<Frame> frames = pixy.getFrames();
 			System.out.println("Got " + frames.size());
-			List<PixyCoordinate> coords = new LinkedList<PixyCoordinate>();
+			List<Coordinate> coords = new LinkedList<Coordinate>();
 
 			// System.out.println("pixy frames = " + frames.size());
 			for (Frame frame : frames)
 			{
 				if (frame.yCenter > PixyLaserRange.Y_CENTER && frame.height > 0)
 				{
-					PixyCoordinate coord = new PixyCoordinate(frame.xCenter,
+					Coordinate coord = new Coordinate(frame.xCenter,
 							frame.yCenter);
 					boolean found = false;
-					for (PixyCoordinate knownCoord : coords)
+					for (Coordinate knownCoord : coords)
 					{
 						if (coord.x > knownCoord.getAverageX() - 10
 								&& coord.x < knownCoord.getAverageX() + 10)
@@ -79,9 +79,9 @@ public class PixyLaserRangeService implements Runnable
 				}
 			}
 
-			List<PixyCoordinate> result = new LinkedList<PixyCoordinate>();
+			List<Coordinate> result = new LinkedList<Coordinate>();
 
-			for (PixyCoordinate coord : coords)
+			for (Coordinate coord : coords)
 			{
 				if (coord.count > 1)
 				{

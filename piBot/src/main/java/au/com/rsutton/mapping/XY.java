@@ -53,11 +53,17 @@ public class XY
 	public void increment()
 	{
 		count++;
-		
+
 	}
 
 	public int decrement()
 	{
 		return --count;
+	}
+
+	@Override
+	public String toString()
+	{
+		return x + "," + y;
 	}
 }

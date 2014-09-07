@@ -3,31 +3,28 @@ package au.com.rsutton.mapping;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Stroke;
 import java.awt.geom.Line2D;
 import java.util.Collection;
-import java.util.LinkedList;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import au.com.rsutton.cv.CameraRangeData;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.pixy.PixyCoordinate;
+import com.pi4j.gpio.extension.pixy.Coordinate;
 
-public class Graph extends JPanel implements Runnable,
-		MessageListener<RobotLocation>
+public class Graph extends JPanel implements MessageListener<RobotLocation>
 {
 
 	private MapAccessor map;
 
 	volatile int currentX = 0;
 	volatile int currentY = 0;
-	CoordResolver converter = new CoordResolver();
 
 	protected void paintComponent(Graphics g)
 	{
@@ -38,7 +35,7 @@ public class Graph extends JPanel implements Runnable,
 		int w = getWidth();
 
 		double minxy = Math.min(h, w);
-		double offset = 600;
+		double offset = 1500;
 		double scale = minxy / (offset * 2.0d);
 		// Draw axeX.
 		g2.draw(new Line2D.Double(0, (offset * scale), w, (offset * scale)));
@@ -65,14 +62,12 @@ public class Graph extends JPanel implements Runnable,
 			double xbot = (Math.sin(Math.toRadians(lastHeading)) * 40d);// +(Math.cos(Math.toRadians(lastHeading))*10);
 			double ybot = -(Math.cos(Math.toRadians(lastHeading)) * 40d);// +(Math.sin(Math.toRadians(lastHeading))*10);
 
-			
-			g2.setColor(new Color(255,0,0));
+			g2.setColor(new Color(255, 0, 0));
 			g2.draw(new Line2D.Double((offset * scale), (int) (offset * scale),
 					(int) ((offset + xbot) * scale),
 					(int) ((offset + ybot) * scale)));
-			g2.setColor(new Color(0,0,0));
+			g2.setColor(new Color(0, 0, 0));
 		}
-
 
 		int blockSize = 20;
 
@@ -137,45 +132,6 @@ public class Graph extends JPanel implements Runnable,
 	//
 	// }
 
-	@Override
-	public void run()
-	{
-		RobotLocation location = new RobotLocation();
-
-		location.setHeading(0);
-		location.setX(new Distance(0, DistanceUnit.CM));
-		location.setY(new Distance(0, DistanceUnit.CM));
-		Collection<PixyCoordinate> pixyData = new LinkedList<PixyCoordinate>();
-		pixyData.add(new PixyCoordinate(100d, 130d));
-		pixyData.add(new PixyCoordinate(250, 126d));
-		pixyData.add(new PixyCoordinate(170d, 130d));
-		location.setLaserData(pixyData);
-
-		Message<RobotLocation> message = new Message<RobotLocation>("Fred",
-				location, System.currentTimeMillis(), null);
-		onMessage(message);
-
-		try
-		{
-			Thread.sleep(2000);
-			location.setHeading(90);
-			onMessage(message);
-
-			Thread.sleep(2000);
-			location.setHeading(180);
-			onMessage(message);
-
-			Thread.sleep(2000);
-			location.setHeading(270);
-			onMessage(message);
-		} catch (InterruptedException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
-
 	volatile Double lastHeading = null;
 
 	@Override
@@ -192,46 +148,20 @@ public class Graph extends JPanel implements Runnable,
 		double robotSinAngle = Math.sin(Math.toRadians(heading));
 		double robotCosAngle = Math.cos(Math.toRadians(heading));
 
-		Collection<PixyCoordinate> laserData = messageObject.getLaserData();
-		for (PixyCoordinate vector : laserData)
+		CameraRangeData cameraRangeData = messageObject.getCameraRangeData();
+		CoordResolver converter = new CoordResolver(
+				cameraRangeData.getRangeFinderConfig());
+
+		Collection<Coordinate> laserData = cameraRangeData.getRangeData();
+		for (Coordinate vector : laserData)
 		{
-			double observationAngle = converter.convertXtoAngle(vector
-					.getAverageX());
-			// if (vector.angle > -10 && vector.angle < 30)
-			{
-				Integer convertedRange = (int) converter.convertYtoRange(
-						   vector.getAverageY());
-				if (convertedRange != null && convertedRange> 0)
-				{
-					Distance distance = new Distance(convertedRange,
-							DistanceUnit.MM);
-
-					// System.out.println("Obs Angle " + observationAngle);
-					double distanceCM = distance.convert(DistanceUnit.CM);
-					// System.out.println("dist " + distanceCM);
-					// calculate the x value using the laser angle and distance
-					double xMeasurement = -Math.sin(Math
-							.toRadians(observationAngle)) * distanceCM;
-					// System.out.println("x " + xMeasurement);
-					// now adjust x for the heading of the robot body
-					double x = (-robotCosAngle * xMeasurement)
-							+ (robotSinAngle * distanceCM);
-					// System.out.println("xMeasurement " + xMeasurement +
-					// "\n\n");
-					// y is the distance along the y axis, no translation for
-					// the angle component of the laser data is required
-
-					// just adjust y for the heading of the robot body
-					double y = (robotCosAngle * distanceCM)
-							+ (robotSinAngle * xMeasurement);
-
-					// System.out.println("angle " + vector.angle + "x " + x +
-					// " y "
-					// + y);
-					map.addObservation(new ObservationImpl(x + currentX, y
+			
+			XY xy = converter.convertImageXYtoAbsoluteXY(vector.getAverageX(), vector.getAverageY());
+			
+			xy = Translator2d.rotate(xy,heading);
+			
+					map.addObservation(new ObservationImpl(xy.getX() + currentX, xy.getY()
 							+ currentY, 1, LocationStatus.OCCUPIED));
-				}
-			}
 		}
 
 		this.repaint();

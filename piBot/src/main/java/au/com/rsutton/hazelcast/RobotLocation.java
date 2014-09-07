@@ -2,12 +2,13 @@ package au.com.rsutton.hazelcast;
 
 import java.util.Collection;
 
+import au.com.rsutton.cv.CameraRangeData;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.Speed;
 
 import com.google.common.base.Objects;
 import com.pi4j.gpio.extension.pixy.DistanceVector;
-import com.pi4j.gpio.extension.pixy.PixyCoordinate;
+import com.pi4j.gpio.extension.pixy.Coordinate;
 
 public class RobotLocation extends MessageBase<RobotLocation>
 {
@@ -18,7 +19,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private Distance y;
 	private Speed speed;
 	private Distance clearSpaceAhead;
-	private Collection<PixyCoordinate> laserData;
+	private CameraRangeData cameraRangeData;
 
 	public RobotLocation()
 	{
@@ -83,15 +84,15 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return clearSpaceAhead;
 	}
 
-	public void setLaserData(Collection<PixyCoordinate> collection)
+	public void setCameraRangeData(CameraRangeData cameraRangeData)
 	{
-		this.laserData = collection;
-		
-	}
+		this.cameraRangeData = cameraRangeData;
 
-	public Collection<PixyCoordinate> getLaserData()
+	}
+	
+	public CameraRangeData getCameraRangeData()
 	{
-		return laserData;
-		
+		return this.cameraRangeData;
+
 	}
 }

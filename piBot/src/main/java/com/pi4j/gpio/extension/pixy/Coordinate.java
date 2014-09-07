@@ -2,7 +2,7 @@ package com.pi4j.gpio.extension.pixy;
 
 import java.io.Serializable;
 
-public class PixyCoordinate implements Serializable
+public class Coordinate implements Serializable
 {
 
 	/**
@@ -13,7 +13,7 @@ public class PixyCoordinate implements Serializable
 	double y;
 	double count;
 
-	public PixyCoordinate(double x, double y)
+	public Coordinate(double x, double y)
 	{
 		this.x = x;
 		this.y = y;

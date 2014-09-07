@@ -20,14 +20,14 @@ import au.com.rsutton.entryPoint.units.Time;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.pixy.PixyCoordinate;
+import com.pi4j.gpio.extension.pixy.Coordinate;
 
 public class CalabratePixy implements MessageListener<RobotLocation>
 {
 	volatile private int heading = 10000;
 	volatile private Distance distance;
 
-	LinkedBlockingQueue<Collection<PixyCoordinate>> queuedLaserData = new LinkedBlockingQueue<>();
+	LinkedBlockingQueue<Collection<Coordinate>> queuedLaserData = new LinkedBlockingQueue<>();
 
 	@Test
 	public void gotoTarget() throws InstantiationException,
@@ -106,13 +106,13 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 			Map<AverageValue, AverageValue> distanceSet = data.get(setDistance);
 
 			// get value sets from queue
-			List<Collection<PixyCoordinate>> tmp = new LinkedList<>();
+			List<Collection<Coordinate>> tmp = new LinkedList<>();
 			tmp.addAll(queuedLaserData);
 
 			// iterate value sets
-			for (Collection<PixyCoordinate> set : tmp)
+			for (Collection<Coordinate> set : tmp)
 			{
-				for (PixyCoordinate values : set)
+				for (Coordinate values : set)
 				{
 					// accumulate average values;
 					AverageValue txa = new AverageValue();
@@ -215,7 +215,9 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 
 		heading = m.getHeading();
 		distance = m.getClearSpaceAhead();
-		queuedLaserData.add(m.getLaserData());
+		throw new RuntimeException(
+				"This code is broken, following line was commented out to allow compile");
+		// queuedLaserData.add(m.getLaserData());
 
 	}
 }
