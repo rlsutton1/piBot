@@ -1,17 +1,11 @@
 package au.com.rsutton.cv;
 
-import static org.bytedeco.javacpp.opencv_core.cvCircle;
-
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-import org.bytedeco.javacpp.opencv_core.CvPoint;
-import org.bytedeco.javacpp.opencv_core.CvScalar;
-import org.bytedeco.javacpp.opencv_core.IplImage;
-
 public class ImageProcessor
 {
-	public void processImage(final IplImage src)
+	public void processImage(final BufferedImage src)
 	{
 
 		// Flip upside down
@@ -20,7 +14,7 @@ public class ImageProcessor
 		// cvCvtColor(src, src, CV_BGR2GRAY);
 
 		long start = System.currentTimeMillis();
-		BufferedImage bufferedImage = src.getBufferedImage();
+		BufferedImage bufferedImage = src;
 
 		int width = bufferedImage.getWidth();
 		int height = bufferedImage.getHeight();
@@ -39,12 +33,12 @@ public class ImageProcessor
 
 				if (bottom > -1 && Math.abs(top - bottom) < MAX_LINE_HEIGHT)
 				{
-					CvPoint center = new CvPoint().x(x).y(top);
+					//CvPoint center = new CvPoint().x(x).y(top);
 
-					cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
-					center = new CvPoint().x(x).y(bottom);
+					//cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
+					//center = new CvPoint().x(x).y(bottom);
 
-					cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
+					//cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
 
 				}
 			}
@@ -54,7 +48,7 @@ public class ImageProcessor
 		System.out.println("Elapsed " + (System.currentTimeMillis() - start));
 	}
 
-	private int scanForPoint(final IplImage src, BufferedImage bufferedImage,
+	private int scanForPoint(final BufferedImage src, BufferedImage bufferedImage,
 			int startY, int endY, int x, int stepSize)
 	{
 		int location = 0;

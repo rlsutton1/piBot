@@ -1,19 +1,13 @@
 package au.com.rsutton.cv;
 
-import static org.bytedeco.javacpp.opencv_core.cvCircle;
-
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bytedeco.javacpp.opencv_core.CvPoint;
-import org.bytedeco.javacpp.opencv_core.CvScalar;
-import org.bytedeco.javacpp.opencv_core.IplImage;
-
 public class ImageProcessorV3
 {
-	public Map<Integer,Integer> processImage(final IplImage src)
+	public Map<Integer,Integer> processImage(final BufferedImage src)
 	{
 		// first pass with wide threshold (1.3)
 		return processImageInternal(src, 1.3d);
@@ -25,7 +19,7 @@ public class ImageProcessorV3
 	//	processImageInternal(src, 1.4d);
 	}
 
-	public Map<Integer,Integer> processImageInternal(final IplImage src, double threshold)
+	public Map<Integer,Integer> processImageInternal(final BufferedImage src, double threshold)
 	{
 		Map<Integer,Integer> xy=new  HashMap<>();
 
@@ -35,7 +29,7 @@ public class ImageProcessorV3
 		// cvCvtColor(src, src, CV_BGR2GRAY);
 
 		long start = System.currentTimeMillis();
-		BufferedImage bufferedImage = src.getBufferedImage();
+		BufferedImage bufferedImage = src;
 
 		int width = bufferedImage.getWidth();
 		int height = bufferedImage.getHeight();
@@ -61,12 +55,12 @@ public class ImageProcessorV3
 					int averageLast = (lastYCenter[0] + lastYCenter[1] + lastYCenter[2]) / 3;
 					if (Math.abs(((top + bottom) / 2) - averageLast) < 10)
 					{
-						CvPoint center = new CvPoint().x(x).y(top);
-
-						cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
-						center = new CvPoint().x(x).y(bottom);
-
-						cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
+//						CvPoint center = new CvPoint().x(x).y(top);
+//
+//						cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
+//						center = new CvPoint().x(x).y(bottom);
+//
+//						cvCircle(src, center, 10, CvScalar.GREEN, -1, 8, 0);
 						
 						xy.put(x, ((top + bottom) / 2));
 					}
@@ -82,7 +76,7 @@ public class ImageProcessorV3
 		return xy;
 	}
 
-	private int scanForPoint(final IplImage src, BufferedImage bufferedImage,
+	private int scanForPoint(final BufferedImage src, BufferedImage bufferedImage,
 			int startY, int endY, int x, int stepSize, double threshold)
 	{
 		int location = 0;

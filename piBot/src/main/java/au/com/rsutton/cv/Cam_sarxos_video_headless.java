@@ -6,10 +6,9 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -19,7 +18,7 @@ import au.com.rsutton.mapping.CoordResolver;
 import com.github.sarxos.webcam.Webcam;
 import com.pi4j.gpio.extension.pixy.Coordinate;
 
-public class Cam_video implements Runnable
+public class Cam_sarxos_video_headless implements Runnable
 {
 
 	// v4l2-ctl -d /dev/video0 --list-framesizes=YUYV
@@ -51,20 +50,28 @@ public class Cam_video implements Runnable
 	final CoordResolver resolver;
 	private RangeFinderConfiguration rangeFinderConfig;
 
-	public static void main(String[] args)
+	public static void main(String[] args) throws InterruptedException
 	{
+		final ScheduledExecutorService scheduler = Executors
+				.newScheduledThreadPool(1);
 		RangeFinderConfiguration config0 = new RangeFinderConfiguration.Builder()
 				.setCameraResolution(xRes, yRes).setYMaxDegrees(25)
 				.setYZeroDegrees(155).setXFieldOfViewRangeDegrees(50)
 				.setCameraLaserSeparation(95).setOrientationToRobot(-25)
 				.build();
 
-		new Thread(new Cam_video(0, config0)).start();
+		Cam_sarxos_video_headless cam1 = new Cam_sarxos_video_headless(0,
+				config0);
+
+		long interval = 250;
+
+		scheduler.scheduleWithFixedDelay(cam1, 0,interval, TimeUnit.MILLISECONDS);
+
 		try
 		{
 			// sleep 1 second, otherwise we dont always get the correct
 			// resolution on the second camera
-			Thread.sleep(1000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e)
 		{
 			// ignoring this...
@@ -96,17 +103,30 @@ public class Cam_video implements Runnable
 		RangeFinderConfiguration config1 = new RangeFinderConfiguration.Builder()
 				.setCameraResolution(xRes, yRes).setYMaxDegrees(25)
 				.setYZeroDegrees(155).setXFieldOfViewRangeDegrees(50)
-				.setCameraLaserSeparation(95).setOrientationToRobot(+25).build();
+				.setCameraLaserSeparation(95).setOrientationToRobot(+25)
+				.build();
 
-		new Thread(new Cam_video(1, config1)).start();
+		Cam_sarxos_video_headless cam2 = new Cam_sarxos_video_headless(1,
+				config1);
+		scheduler.scheduleWithFixedDelay(cam2,0, interval, TimeUnit.MILLISECONDS);
+		Thread.sleep(60000);
 	}
 
-	Cam_video(int deviceId, RangeFinderConfiguration rangeFinderConfig)
+	ImageProcessorV4 processor = new ImageProcessorV4();
+
+	BufferedImage img;
+	Webcam webcam;
+
+	Cam_sarxos_video_headless(int deviceId,
+			RangeFinderConfiguration rangeFinderConfig)
 	{
 		this.deviceId = deviceId;
 		this.rangeFinderConfig = rangeFinderConfig;
 
 		resolver = new CoordResolver(rangeFinderConfig);
+		webcam = Webcam.getWebcams().get(deviceId);
+		webcam.setViewSize(new Dimension(xRes, yRes));
+		webcam.open();
 
 	}
 
@@ -114,71 +134,37 @@ public class Cam_video implements Runnable
 	{
 		try
 		{
-			// Create canvas frame for displaying video.
-			JFrame canvas = new JFrame("VideoCanvas");
-			
-			canvas.setVisible(true);
+			long start = System.currentTimeMillis();
+			img = webcam.getImage();
 
-			// Set Canvas frame to close on exit
-			canvas.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
-
-			Webcam webcam = Webcam.getWebcams().get(deviceId);
-			webcam.setViewSize(new Dimension(xRes,yRes));
-			webcam.open();
-			
-			ImageProcessorV4 processor = new ImageProcessorV4();
-
-			boolean firstFrame = true;
-
-			// grabber.setFrameRate(30);
-
-			while (true)
+			if (img != null)
 			{
-				Thread.sleep(100);
+				System.out.println("Capture took: "
+						+ (System.currentTimeMillis() - start));
 
-				// grab video frame to IplImage img
-				BufferedImage img = webcam.getImage();
-				if (firstFrame)
+				RobotLocation messageObject = new RobotLocation();
+				messageObject.setHeading(0);
+				messageObject.setX(new Distance(0, DistanceUnit.CM));
+				messageObject.setY(new Distance(0, DistanceUnit.CM));
+
+				Collection<Coordinate> rangeData = new LinkedList<>();
+				Map<Integer, Integer> data = processor.processImage(img);
+				for (Entry<Integer, Integer> value : data.entrySet())
 				{
-					// Set canvas size as per dimentions of video frame.
-					canvas.setSize(img.getWidth(), img.getHeight());
-					firstFrame = false;
+					System.out.print("Y:" + value.getValue() + " ");
+					System.out.println(resolver.convertImageXYtoAbsoluteXY(
+							value.getKey(), value.getValue()));
+					rangeData.add(new Coordinate(value.getKey(), value
+							.getValue()));
 				}
-				if (img != null)
-				{
 
-					RobotLocation messageObject = new RobotLocation();
-					messageObject.setHeading(0);
-					messageObject.setX(new Distance(0, DistanceUnit.CM));
-					messageObject.setY(new Distance(0, DistanceUnit.CM));
-
-					Collection<Coordinate> rangeData = new LinkedList<>();
-					Map<Integer, Integer> data = processor.processImage(img);
-					for (Entry<Integer, Integer> value : data.entrySet())
-					{
-						System.out.print("Y:" + value.getValue() + " ");
-						System.out.println(resolver.convertImageXYtoAbsoluteXY(
-								value.getKey(), value.getValue()));
-						rangeData.add(new Coordinate(value.getKey(), value
-								.getValue()));
-					}
-
-					CameraRangeData cameraRangeData = new CameraRangeData(
-							rangeFinderConfig, rangeData);
-					messageObject.setCameraRangeData(cameraRangeData);
-					messageObject.publish();
-
-					// Show video frame in canvas
-					canvas.getContentPane().removeAll();
-					JLabel jLabel = new JLabel(new ImageIcon(img));
-					jLabel.setSize(new Dimension(xRes, yRes));
-					canvas.getContentPane().add(jLabel);
-					canvas.repaint();
-
-					
-				}
+				CameraRangeData cameraRangeData = new CameraRangeData(
+						rangeFinderConfig, rangeData);
+				messageObject.setCameraRangeData(cameraRangeData);
+				messageObject.publish();
 
 			}
+
 		} catch (Exception e)
 		{
 			e.printStackTrace();

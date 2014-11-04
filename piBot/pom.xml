@@ -9,17 +9,32 @@
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-core</artifactId>
 			<version>0.0.5</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>pi4j-native</artifactId>
+					<groupId>com.pi4j</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-gpio-extension</artifactId>
 			<version>0.0.5</version>
 		</dependency>
+
 		<dependency>
-			<groupId>org.bytedeco</groupId>
-			<artifactId>javacv</artifactId>
-			<version>0.8</version>
+			<groupId>com.nativelibs4java</groupId>
+			<artifactId>bridj</artifactId>
+			<version>0.6.3-SNAPSHOT</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.github.sarxos</groupId>
+			<artifactId>webcam-capture</artifactId>
+			<!--<version>0.3.9</version> -->
+			<version>0.3.10</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
@@ -37,6 +52,21 @@
 	</dependencies>
 	<build>
 		<plugins>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>au.com.rsutton.entryPoint.Main</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -68,6 +98,10 @@
 			<name>ros</name>
 			<url>https://github.com/stonier/rosjava_mvn_repo/raw/master</url>
 		</repository>
-
+		<repository>
+			<id>nativelibs4java</id>
+			<name>nativelibs4java Maven2 Repository</name>
+			<url>http://nativelibs4java.sourceforge.net/maven</url>
+		</repository>
 	</repositories>
 </project>

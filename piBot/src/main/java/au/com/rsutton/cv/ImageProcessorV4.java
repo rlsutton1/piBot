@@ -1,15 +1,10 @@
 package au.com.rsutton.cv;
 
-import static org.bytedeco.javacpp.opencv_core.cvCircle;
-
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.bytedeco.javacpp.opencv_core.CvPoint;
-import org.bytedeco.javacpp.opencv_core.CvScalar;
-import org.bytedeco.javacpp.opencv_core.IplImage;
 
 public class ImageProcessorV4
 {
@@ -19,7 +14,7 @@ public class ImageProcessorV4
 	double totalbg = 0;
 	double count = 0;
 
-	public Map<Integer, Integer> processImage(final IplImage src)
+	public Map<Integer, Integer> processImage(final BufferedImage src)
 	{
 
 		totalrb = 0;
@@ -37,32 +32,39 @@ public class ImageProcessorV4
 		return tmp;
 	}
 
-	public Map<Integer, Integer> processImageInternal(final IplImage src,
+	public Map<Integer, Integer> processImageInternal(final BufferedImage src,
 			double threshold)
 	{
 		Map<Integer, Integer> xy = new HashMap<>();
 
 		long start = System.currentTimeMillis();
-		BufferedImage bufferedImage = src.getBufferedImage();
+		BufferedImage bufferedImage = src;
 
+		FastRGB fastRGB = new FastRGB(src);
+		
 		int width = bufferedImage.getWidth();
 
 		for (int x = 5; x < width - 10; x += width / 100)
 		{
-			int y = scanForPoint(bufferedImage, x);
+			int y = scanForPoint( fastRGB, x,bufferedImage.getHeight());
 			if (y > -1)
 			{
 
-				CvPoint center = new CvPoint().x(x).y(y);
+				// CvPoint center = new CvPoint().x(x).y(y);
 				xy.put(x, y);
 
-				cvCircle(src, center, 5, CvScalar.GREEN, -1, 8, 0);
+				src.getGraphics().setColor(new Color(0, 255, 0));
+				src.getGraphics().setPaintMode();
+				src.getGraphics().drawRect(x - 2, y - 2, 4, 4);
+				// cvCircle(src, center, 5, CvScalar.GREEN, -1, 8, 0);
 			}
 		}
 
 		System.out.println("Elapsed " + (System.currentTimeMillis() - start));
 		return xy;
 	}
+	
+	
 
 	/**
 	 * find the brightest pixel that matches the "red laser hue" and has the
@@ -71,11 +73,11 @@ public class ImageProcessorV4
 	 * Additionally allow saturated pixels (255 in red channel) as happens when
 	 * objects get close to the camera
 	 * 
-	 * @param bufferedImage
+	 * @param rgbArray
 	 * @param x
 	 * @return
 	 */
-	private Integer scanForPoint(BufferedImage bufferedImage, int x)
+	private Integer scanForPoint(FastRGB fastRGB, int x, int height)
 	{
 		Integer matchedY = -1;
 		Integer matchedIntensity = 0;
@@ -83,17 +85,21 @@ public class ImageProcessorV4
 		double hueTolerance = 0.20;
 		int colorStep = 30;
 
-		for (int y = 3; y < bufferedImage.getHeight(); y++)
+
+		
+		
+		double r1 = new Color(fastRGB.getRGB(x,2)).getRed();
+
+		for (int y = 3; y < height; y++)
 		{
 
-			int r1 = new Color(bufferedImage.getRGB(x, y - 1)).getRed();
-			double r2 = new Color(bufferedImage.getRGB(x, y)).getRed();
+			//int rgb = bufferedImage.getRGB(x, y);
+			int rgb = fastRGB.getRGB(x,y);
+			double r2 = new Color(rgb).getRed();
 
-			double b2 = Math.max(1,
-					new Color(bufferedImage.getRGB(x, y)).getBlue());
+			double b2 = Math.max(1, new Color(rgb).getBlue());
 
-			double g2 = Math.max(1,
-					new Color(bufferedImage.getRGB(x, y)).getGreen());
+			double g2 = Math.max(1, new Color(rgb).getGreen());
 
 			double rb = r2 / b2;
 			double rg = r2 / g2;
@@ -111,6 +117,7 @@ public class ImageProcessorV4
 					}
 				}
 			}
+			r1 = r2;
 		}
 
 		return matchedY;
@@ -138,7 +145,7 @@ public class ImageProcessorV4
 	 * @param r2
 	 * @return
 	 */
-	private boolean checkColorStep(int colorStep, int r1, double r2)
+	private boolean checkColorStep(int colorStep, double r1, double r2)
 	{
 		return r1 + colorStep < r2;
 	}
