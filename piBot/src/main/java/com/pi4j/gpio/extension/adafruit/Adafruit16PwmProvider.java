@@ -14,6 +14,7 @@ import com.pi4j.io.gpio.exception.UnsupportedPinModeException;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 /*
  * #%L
@@ -90,7 +91,7 @@ public class Adafruit16PwmProvider extends GpioProviderBase implements GpioProvi
 	{
 		// create I2C communications bus instance
 		// default = 0x40
-		bus = I2CFactory.getInstance(busNumber);
+		bus = I2CBusImplBanana.getBus(busNumber);
 
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(address));

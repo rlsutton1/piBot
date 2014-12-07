@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 public class ADS1115 implements Runnable
 {
@@ -166,7 +167,7 @@ public class ADS1115 implements Runnable
 		m_i2cAddress = i2cAddress;
 
 		// create I2C communications bus instance
-		bus = I2CFactory.getInstance(busNumber);
+		bus = I2CBusImplBanana.getBus(busNumber);
 
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(i2cAddress));

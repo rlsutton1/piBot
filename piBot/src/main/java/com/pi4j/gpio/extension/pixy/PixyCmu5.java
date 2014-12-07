@@ -5,10 +5,12 @@ import java.util.LinkedList;
 import java.util.List;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+import au.com.rsutton.i2c.I2cSettings;
 
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 public class PixyCmu5
 {
@@ -21,7 +23,7 @@ public class PixyCmu5
 	{
 
 		// create I2C communications bus instance
-		bus = I2CFactory.getInstance(1);
+		bus = I2CBusImplBanana.getBus(I2cSettings.busNumber);
 
 		// create I2C device instance
 		pixyDevice = new SynchronizedDeviceWrapper(bus.getDevice(0x54));

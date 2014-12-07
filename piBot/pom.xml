@@ -8,7 +8,7 @@
 		<dependency>
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-core</artifactId>
-			<version>0.0.5</version>
+			<version>1.0-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>pi4j-native</artifactId>
@@ -19,9 +19,10 @@
 		<dependency>
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-gpio-extension</artifactId>
-			<version>0.0.5</version>
+			<version>1.0-SNAPSHOT</version>
 		</dependency>
 
+<!-- 
 		<dependency>
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>bridj</artifactId>
@@ -31,10 +32,16 @@
 		<dependency>
 			<groupId>com.github.sarxos</groupId>
 			<artifactId>webcam-capture</artifactId>
-			<!--<version>0.3.9</version> -->
+			<<version>0.3.9</version> >
 			<version>0.3.10</version>
 		</dependency>
-
+ 
+		<dependency>
+			<groupId>com.github.sarxos</groupId>
+			<artifactId>webcam-capture-driver-gstreamer</artifactId>
+			<version>0.3.10-RC7</version>
+		</dependency>
+-->
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
@@ -49,6 +56,14 @@
 			<artifactId>guava</artifactId>
 			<version>15.0</version>
 		</dependency>
+
+		<dependency>
+			<groupId>au.edu.jcu.v4l4j</groupId>
+			<artifactId>v4l4j</artifactId>
+			<version>0.9.1</version>
+		</dependency>
+		
+		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j -DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
 	</dependencies>
 	<build>
 		<plugins>
@@ -102,6 +117,10 @@
 			<id>nativelibs4java</id>
 			<name>nativelibs4java Maven2 Repository</name>
 			<url>http://nativelibs4java.sourceforge.net/maven</url>
+		</repository>
+		<repository>
+			<id>SarXos Repository</id>
+			<url>http://www.sarxos.pl/repo/maven2</url>
 		</repository>
 	</repositories>
 </project>

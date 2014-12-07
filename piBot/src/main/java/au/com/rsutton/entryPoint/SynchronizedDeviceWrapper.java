@@ -144,4 +144,20 @@ public class SynchronizedDeviceWrapper implements I2CDevice
 		}
 	}
 
+	@Override
+	public int read(byte[] writeBuffer, int writeOffset, int writeSize,
+			byte[] readBuffer, int readOffset, int readSize) throws IOException
+	{
+		try
+		{
+			lock.lock();
+			int ret = device.read(writeBuffer,writeOffset,writeSize,readBuffer,readOffset,readSize);
+
+			return ret;
+		} finally
+		{
+			lock.unlock();
+		}
+	}
+
 }

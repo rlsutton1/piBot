@@ -5,6 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.entryPoint.controllers.ServoController;
+import au.com.rsutton.i2c.I2cSettings;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
@@ -31,7 +32,7 @@ public class ScanningSonar implements Runnable
 	{
 
 
-		ADS1115 ads = new ADS1115(1, 0x48);
+		ADS1115 ads = new ADS1115(I2cSettings.busNumber, 0x48);
 
 //		sonar = new Sonar(0.1, 2880, 0);
 //		ads.addListener(sonar);

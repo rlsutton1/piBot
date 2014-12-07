@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import au.com.rsutton.cv.CameraRangeData;
+import au.com.rsutton.cv.RobotLocationReporter;
+import au.com.rsutton.cv.LaserRangeFinder;
 import au.com.rsutton.entryPoint.sonar.SharpIR;
 import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -14,6 +17,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.i2c.I2cSettings;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
@@ -29,7 +33,7 @@ import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.gpio.RaspiPin;
 
-public class Rover implements Runnable
+public class Rover implements Runnable, RobotLocationReporter
 {
 
 	private WheelController rightWheel;
@@ -61,10 +65,10 @@ public class Rover implements Runnable
 		compass = new CompassLSM303();
 		compass.setup();
 
-		provider = new Adafruit16PwmProvider(1, 0x40);
+		provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 		provider.setPWMFreq(30);
 
-		ads = new ADS1115GpioProvider(1, 0x48);
+		ads = new ADS1115GpioProvider(I2cSettings.busNumber, 0x48);
 		ads.setProgrammableGainAmplifier(
 				ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A0);
 		ads.setProgrammableGainAmplifier(
@@ -76,10 +80,12 @@ public class Rover implements Runnable
 		leftSonar = new SharpIR(40000000, 440, 0);
 		// rightSonar = new SharpIR(1, 1800);
 
-		pixy = new PixyLaserRangeService(new int[] {
-				0, 0, 0 });
+//		pixy = new PixyLaserRangeService(new int[] {
+//				0, 0, 0 });
+		
+		LaserRangeFinder.start(this);
 		getSpaceAhead();
-		pixy.getCurrentData();
+//		pixy.getCurrentData();
 
 	
 		setupRightWheel();
@@ -159,6 +165,7 @@ public class Rover implements Runnable
 	{
 
 		double value = ads.getValue(ADS1115Pin.INPUT_A0);
+		System.out.println("Raw csa "+value);
 		clearSpaceAhead = forwardSonar.getCurrentDistance((int) value);
 		if (lastData != null
 				&& lastData.getSpeed().getSpeed(distUnit, timeUnit) > 0
@@ -177,6 +184,7 @@ public class Rover implements Runnable
 		try
 		{
 
+			System.out.println("run Rover");
 			getSpaceAhead();
 			int heading = (int) compass.getHeading();
 			speedHeadingController.setActualHeading(heading);
@@ -193,17 +201,19 @@ public class Rover implements Runnable
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
-			
-			throw new RuntimeException("Broken, next lines commented out to allow compile");
+	
+			//TODO: fix this
+//			throw new RuntimeException("Broken, next lines commented out to allow compile");
 //			currentLocation.setLaserData(pixy
 //					.getCurrentData());
-//			currentLocation.publish();
+			currentLocation.publish();
 
-//			previousLocation = currentLocation;
+			previousLocation = currentLocation;
 		} catch (Exception e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			System.exit(0);
 		}
 
 	}
@@ -226,6 +236,25 @@ public class Rover implements Runnable
 				Time.perSecond());
 		lastTime = now;
 		return speed;
+	}
+
+	@Override
+	public void report(CameraRangeData cameraRangeData) throws IOException
+	{
+		RobotLocation currentLocation = new RobotLocation();
+		currentLocation.setHeading((int)compass.getHeading());
+		currentLocation.setX(reconing.getX());
+		currentLocation.setY(reconing.getY());
+		currentLocation.setSpeed(calculateSpeed());
+		currentLocation.setClearSpaceAhead(clearSpaceAhead);
+
+		//TODO: fix this
+//		throw new RuntimeException("Broken, next lines commented out to allow compile");
+//		currentLocation.setLaserData(pixy
+//				.getCurrentData());
+		currentLocation.setCameraRangeData(cameraRangeData);
+		currentLocation.publish();
+		
 	}
 
 }

@@ -29,7 +29,7 @@ public class MainWindow extends JFrame implements
 		MessageListener<RobotLocation>
 {
 
-	private static final int SPEED = 3;
+	private static final int SPEED = 10;
 	private static final long serialVersionUID = -4490943128993707547L;
 	private JTextField heading;
 	private JLabel xLocationLabel;
@@ -93,9 +93,9 @@ public class MainWindow extends JFrame implements
 		controlPanel.add(forwardButton);
 		controlPanel.add(backButton);
 		this.setVisible(true);
-		
+
 		Graph graph = new Graph();
-		graph.setPreferredSize(new Dimension(750,750));
+		graph.setPreferredSize(new Dimension(750, 750));
 		this.add(graph);
 	}
 
@@ -110,8 +110,8 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(SPEED, DistanceUnit.CM),
-						Time.perSecond()));
+				message.setSpeed(new Speed(
+						new Distance(SPEED, DistanceUnit.CM), Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);
 				message.publish();
@@ -121,7 +121,7 @@ public class MainWindow extends JFrame implements
 
 		return b;
 	}
-	
+
 	private JButton createBackwardButton()
 	{
 		JButton b = new JButton("Backward");
@@ -133,8 +133,8 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(-SPEED, DistanceUnit.CM),
-						Time.perSecond()));
+				message.setSpeed(new Speed(
+						new Distance(-SPEED, DistanceUnit.CM), Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);
 				message.publish();
@@ -203,5 +203,6 @@ public class MainWindow extends JFrame implements
 		headingLabel.setText("H:" + (int) m.getHeading());
 		spaceLabel.setText("S:"
 				+ (int) m.getClearSpaceAhead().convert(DistanceUnit.CM) + "cm");
+
 	}
 }

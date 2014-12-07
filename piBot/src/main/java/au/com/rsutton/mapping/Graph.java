@@ -10,7 +10,6 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import au.com.rsutton.cv.CameraRangeData;
-import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 
@@ -138,41 +137,46 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 	public void onMessage(Message<RobotLocation> message)
 	{
 		RobotLocation messageObject = message.getMessageObject();
-		int heading = messageObject.getHeading();
-
-		lastHeading = (double) heading;
-
-		currentX = (int) (messageObject.getX().convert(DistanceUnit.CM) * 1.25d);
-		currentY = (int) (messageObject.getY().convert(DistanceUnit.CM) * 1.25d);
-
-		double robotSinAngle = Math.sin(Math.toRadians(heading));
-		double robotCosAngle = Math.cos(Math.toRadians(heading));
-
-		CameraRangeData cameraRangeData = messageObject.getCameraRangeData();
-		CoordResolver converter = new CoordResolver(
-				cameraRangeData.getRangeFinderConfig());
-
-		Collection<Coordinate> laserData = cameraRangeData.getRangeData();
-		for (Coordinate vector : laserData)
+		if (messageObject.getCameraRangeData() != null)
 		{
-			
-			XY xy = converter.convertImageXYtoAbsoluteXY(vector.getAverageX(), vector.getAverageY());
-			
-			xy = Translator2d.rotate(xy,heading);
-			
-					map.addObservation(new ObservationImpl(xy.getX() + currentX, xy.getY()
-							+ currentY, 1, LocationStatus.OCCUPIED));
+			int heading = messageObject.getHeading();
+
+			lastHeading = (double) heading;
+
+			currentX = (int) (messageObject.getX().convert(DistanceUnit.CM) * 1.25d);
+			currentY = (int) (messageObject.getY().convert(DistanceUnit.CM) * 1.25d);
+
+			double robotSinAngle = Math.sin(Math.toRadians(heading));
+			double robotCosAngle = Math.cos(Math.toRadians(heading));
+
+			CameraRangeData cameraRangeData = messageObject
+					.getCameraRangeData();
+			CoordResolver converter = new CoordResolver(
+					cameraRangeData.getRangeFinderConfig());
+
+			Collection<Coordinate> laserData = cameraRangeData.getRangeData();
+			for (Coordinate vector : laserData)
+			{
+
+				XY xy = converter.convertImageXYtoAbsoluteXY(
+						vector.getAverageX(), vector.getAverageY());
+
+				xy = Translator2d.rotate(xy, heading);
+
+				map.addObservation(new ObservationImpl(xy.getX() + currentX, xy
+						.getY() + currentY, 1, LocationStatus.OCCUPIED));
+			}
+
+			this.repaint();
+
+			// SetMotion message2 = new SetMotion();
+			// message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
+			// Time
+			// .perSecond()));
+			//
+			// lastHeading += 2;
+			// message2.setHeading(lastHeading);
+			// message2.publish();
 		}
-
-		this.repaint();
-
-		// SetMotion message2 = new SetMotion();
-		// message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-		// .perSecond()));
-		//
-		// lastHeading += 2;
-		// message2.setHeading(lastHeading);
-		// message2.publish();
-
 	}
 }

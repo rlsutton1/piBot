@@ -3,6 +3,7 @@ package au.com.rsutton.entryPoint;
 import java.io.IOException;
 
 import au.com.rsutton.entryPoint.controllers.ServoController;
+import au.com.rsutton.i2c.I2cSettings;
 
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
@@ -26,7 +27,7 @@ public class Stop
 		try
 		{
 
-			Adafruit16PwmProvider provider = new Adafruit16PwmProvider(1, 0x40);
+			Adafruit16PwmProvider provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 
 			provider.setPWMFreq(30);
 

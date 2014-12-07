@@ -3,10 +3,11 @@ package com.pi4j.gpio.extension.lsm303;
 import java.io.IOException;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+import au.com.rsutton.i2c.I2cSettings;
 
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
-import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 public class CompassLSM303
 {
@@ -74,7 +75,7 @@ public class CompassLSM303
 	{
 
 		// create I2C communications bus instance
-		bus = I2CFactory.getInstance(1);
+		bus = I2CBusImplBanana.getBus(I2cSettings.busNumber);
 
 		// create I2C device instance
 		magDevice = new SynchronizedDeviceWrapper(bus.getDevice(LSM303_MAG));
@@ -169,7 +170,7 @@ public class CompassLSM303
 		System.out.println("");
 	}
 
-	public float getHeading() throws IOException
+	synchronized public float getHeading() throws IOException
 	{
 
 		getLSM303_mag(mag);
@@ -184,8 +185,10 @@ public class CompassLSM303
 		mag[X] = mag[X] + 160;
 		mag[Y] = mag[Y] + 320;
 
-		mag[X] = (int) ((mag[X] * 0.5) + (last[X] * 0.5));
-		mag[Y] = (int) ((mag[Y] * 0.5) + (last[Y] * 0.5));
+		
+		// stablize values
+		mag[X] = (int) ((mag[X] * 0.25) + (last[X] * 0.75));
+		mag[Y] = (int) ((mag[Y] * 0.25) + (last[Y] * 0.75));
 
 		last[X] = mag[X];
 		last[Y] = mag[Y];
@@ -205,7 +208,7 @@ public class CompassLSM303
 		heading -= 90;
 		if (heading > 360)
 			heading -= 360;
-
+		
 		return heading;
 	}
 
@@ -231,7 +234,7 @@ public class CompassLSM303
 			return (360 + heading);
 	}
 
-	void getLSM303_mag(int[] rawValues) throws IOException
+	synchronized void getLSM303_mag(int[] rawValues) throws IOException
 	{
 		magDevice.write((byte) OUT_X_H_M);
 		byte[] bytes = new byte[6];
