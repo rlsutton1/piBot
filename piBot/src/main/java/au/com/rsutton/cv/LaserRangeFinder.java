@@ -12,6 +12,7 @@ import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.CoordResolver;
+import au.com.rsutton.mapping.XY;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.FrameInterval;
@@ -106,14 +107,21 @@ public class LaserRangeFinder implements Runnable, CaptureCallback
 	{
 		System.out.println("Starting up");
 
+		// right camera
 		RangeFinderConfiguration config0 = new RangeFinderConfiguration.Builder()
-				.setCameraResolution(xRes, yRes).setYMaxDegrees(25)
-				.setYZeroDegrees(240).setXFieldOfViewRangeDegrees(50)
-				.setCameraLaserSeparation(95).setOrientationToRobot(-25)
+				.setCameraResolution(xRes, yRes).setYMaxDegrees(24)
+				.setYZeroDegrees(242).setXFieldOfViewRangeDegrees(60)
+				.setCameraLaserSeparation(110).setOrientationToRobot(-28)
 				.build();
 
-		LaserRangeFinder cam1 = new LaserRangeFinder(0, config0,
-				reporter);
+		// left camera
+		RangeFinderConfiguration config1 = new RangeFinderConfiguration.Builder()
+				.setCameraResolution(xRes, yRes).setYMaxDegrees(24)
+				.setYZeroDegrees(244).setXFieldOfViewRangeDegrees(60)
+				.setCameraLaserSeparation(95).setOrientationToRobot(+28)
+				.build();
+
+		LaserRangeFinder cam1 = new LaserRangeFinder(0, config0, reporter);
 
 		new Thread(cam1, "Cam 1").start();
 
@@ -127,14 +135,7 @@ public class LaserRangeFinder implements Runnable, CaptureCallback
 			// ignoring this...
 		}
 
-		RangeFinderConfiguration config1 = new RangeFinderConfiguration.Builder()
-				.setCameraResolution(xRes, yRes).setYMaxDegrees(25)
-				.setYZeroDegrees(240).setXFieldOfViewRangeDegrees(50)
-				.setCameraLaserSeparation(95).setOrientationToRobot(+25)
-				.build();
-
-		LaserRangeFinder cam2 = new LaserRangeFinder(1, config1,
-				reporter);
+		LaserRangeFinder cam2 = new LaserRangeFinder(1, config1, reporter);
 		new Thread(cam2, "Cam 2").start();
 		// Thread.sleep(60000);
 	}
@@ -145,8 +146,7 @@ public class LaserRangeFinder implements Runnable, CaptureCallback
 	private JPEGFrameGrabber frameGrabber;
 	private RobotLocationReporter reporter;
 
-	LaserRangeFinder(int deviceId,
-			RangeFinderConfiguration rangeFinderConfig,
+	LaserRangeFinder(int deviceId, RangeFinderConfiguration rangeFinderConfig,
 			RobotLocationReporter reporter)
 	{
 		this.deviceId = deviceId;
@@ -168,27 +168,36 @@ public class LaserRangeFinder implements Runnable, CaptureCallback
 
 		try
 		{
-			System.out.println("Thread started");
 			long start = System.currentTimeMillis();
 			img = frame.getBufferedImage();
 
 			if (img != null)
 			{
 				CoordResolver resolver = new CoordResolver(rangeFinderConfig);
-				System.out.println("Capture took: "
-						+ (System.currentTimeMillis() - start));
+				// System.out.println("Capture took: "
+				// + (System.currentTimeMillis() - start));
 
 				Collection<Coordinate> rangeData = new LinkedList<>();
 				Map<Integer, Integer> data = processor.processImage(img);
 
 				for (Entry<Integer, Integer> value : data.entrySet())
 				{
-					System.out.print("Y:" + value.getValue() + " ");
-					System.out.println(resolver.convertImageXYtoAbsoluteXY(
-							value.getKey(), value.getValue()));
-					rangeData.add(new Coordinate(value.getKey(), value
-							.getValue()));
+					if (value.getValue() != 0 && value.getKey() != 0)
+					{
+						XY convertedXY = resolver.convertImageXYtoAbsoluteXY(
+								value.getKey(), value.getValue());
+						if (convertedXY.getX() != 0 && convertedXY.getY() != 0
+								&& Math.abs(convertedXY.getX()) < 4000
+								&& Math.abs(convertedXY.getY()) < 4000)
+						{
+							// System.out.print(" Y:" + value.getValue() + " ");
+							System.out.print(" " + convertedXY);
+							rangeData.add(new Coordinate(value.getKey(), value
+									.getValue()));
+						}
+					}
 				}
+				System.out.println();
 
 				CameraRangeData cameraRangeData = new CameraRangeData(
 						rangeFinderConfig, rangeData);

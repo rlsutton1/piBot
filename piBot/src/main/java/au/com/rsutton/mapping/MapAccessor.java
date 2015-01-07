@@ -1,16 +1,15 @@
 package au.com.rsutton.mapping;
 
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
+
+import varunpant.Point;
+import varunpant.QuadTree;
 
 public class MapAccessor
 {
-	private static final int MAX_HISTORY = 100;
-	Map<XY, XY> map = new ConcurrentHashMap<XY, XY>();
-	LinkedBlockingQueue<XY> history = new LinkedBlockingQueue<XY>();
+
+	QuadTree qt = new QuadTree(-100000, -100000, 100000, 100000);
 
 	/**
 	 * add this observation to all map locations that fit into the accuracy
@@ -20,34 +19,8 @@ public class MapAccessor
 	 */
 	public void addObservation(Observation observation)
 	{
-		XY xy = new XY((int) observation.getX(), (int) observation.getY());
-		XY previousObservation = map.get(xy);
-		if (previousObservation == null)
-		{
-			map.put(xy, xy);
-			history.add(xy);
-		} else
-		{
-			previousObservation.increment();
-			history.add(previousObservation);
-
-		}
-		if (history.size() > MAX_HISTORY)
-		{
-			try
-			{
-				XY old = history.take();
-				old = map.get(old);
-				if (old.decrement() == 0)
-				{
-					map.remove(old);
-				}
-			} catch (InterruptedException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+		qt.set(observation.getX(), observation.getY(),
+				System.currentTimeMillis());
 
 	}
 
@@ -61,27 +34,20 @@ public class MapAccessor
 	 */
 	boolean isMapLocationClear(int x, int y, int spread)
 	{
-		
-		int ctr = 0;
-		for (int xl = x - spread; xl <= x + spread; xl++)
-		{
 
-			for (int yl = y - spread; yl <= y + spread; yl++)
-			{
-				XY xy = new XY(xl, yl);
-				XY observation = map.get(xy);
-				if (observation != null)
-				{
-					ctr+=observation.count;
-				}
-			}
-		}
-
-		return ctr < 2;
+		Point[] result = qt.searchWithin(x - spread, y - spread, x + spread, y
+				+ spread);
+		return result.length < 2;
 	}
 
 	public Set<XY> getEntries()
 	{
-		return map.keySet();
+		Set<XY> points = new HashSet<>();
+		for (Point point:qt.getKeys())
+		{
+			points.add(new XY((int)point.getX(),(int)point.getY()));
+		}
+		
+		return points;
 	}
 }

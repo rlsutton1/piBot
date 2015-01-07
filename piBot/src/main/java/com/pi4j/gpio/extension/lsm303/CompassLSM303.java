@@ -1,6 +1,7 @@
 package com.pi4j.gpio.extension.lsm303;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 import au.com.rsutton.i2c.I2cSettings;
@@ -71,7 +72,7 @@ public class CompassLSM303
 
 	private double[] last = new double[2];
 
-	public void setup() throws IOException
+	public void setup() throws IOException, InterruptedException
 	{
 
 		// create I2C communications bus instance
@@ -86,7 +87,8 @@ public class CompassLSM303
 		for (int i = 0; i < 5; i++)
 		{
 			// allow smoothing to settle
-			getHeading();
+			internalGetHeading();
+			Thread.sleep(100);
 		}
 	}
 
@@ -170,7 +172,22 @@ public class CompassLSM303
 		System.out.println("");
 	}
 
-	synchronized public float getHeading() throws IOException
+	final static AtomicReference<Float> heading = new AtomicReference<>();
+	final static long TIME_TO_LIVE = 100;
+	volatile long lastReadTime = 0;
+
+	public float getHeading() throws IOException
+	{
+		long currentTimeMillis = System.currentTimeMillis();
+		if (lastReadTime < currentTimeMillis - TIME_TO_LIVE)
+		{
+			lastReadTime = currentTimeMillis;
+			heading.set(internalGetHeading());
+		}
+		return heading.get();
+	}
+
+	synchronized private float internalGetHeading() throws IOException
 	{
 
 		getLSM303_mag(mag);
@@ -185,13 +202,15 @@ public class CompassLSM303
 		mag[X] = mag[X] + 160;
 		mag[Y] = mag[Y] + 320;
 
-		
 		// stablize values
-		mag[X] = (int) ((mag[X] * 0.25) + (last[X] * 0.75));
-		mag[Y] = (int) ((mag[Y] * 0.25) + (last[Y] * 0.75));
+		int currentX = (int) ((mag[X] * 0.5) + (last[X] * 0.5));
+		int currentY = (int) ((mag[Y] * 0.5) + (last[Y] * 0.5));
 
-		last[X] = mag[X];
-		last[Y] = mag[Y];
+		last[X] = currentX;
+		last[Y] = currentY;
+		
+		mag[X]= currentX;
+		mag[Y] = currentY;
 
 		// see section 1.2 in app note AN3192
 		float heading = (float) Math.toDegrees(Math.atan2(mag[Y], mag[X])); // assume
@@ -208,7 +227,7 @@ public class CompassLSM303
 		heading -= 90;
 		if (heading > 360)
 			heading -= 360;
-		
+
 		return heading;
 	}
 

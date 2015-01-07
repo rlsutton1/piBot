@@ -1,5 +1,7 @@
 package au.com.rsutton.hazelcast;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Collection;
 
 import au.com.rsutton.cv.CameraRangeData;
@@ -20,11 +22,18 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private Speed speed;
 	private Distance clearSpaceAhead;
 	private CameraRangeData cameraRangeData;
+	private long time = System.currentTimeMillis();
 
 	public RobotLocation()
 	{
 		super(HcTopic.LOCATION);
 
+	}
+	
+	public void setTopic()  {  
+	
+		
+		this.topic = HazelCastInstance.getInstance().getTopic(HcTopic.LOCATION.toString());
 	}
 
 	public void setHeading(int outx)
@@ -94,5 +103,10 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	{
 		return this.cameraRangeData;
 
+	}
+	
+	public long getTime()
+	{
+		return time;
 	}
 }

@@ -54,70 +54,74 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		int speed = 100;
 
 		CameraRangeData cameraRangeData = messageObject.getCameraRangeData();
-		CoordResolver converter = new CoordResolver(
-				cameraRangeData.getRangeFinderConfig());
-
-		Collection<Coordinate> laserData = cameraRangeData.getRangeData();
-
-		double minX = 1000000;
-		for (Coordinate vector : laserData)
+		if (cameraRangeData != null)
 		{
-			XY xy = converter.convertImageXYtoAbsoluteXY(vector.getAverageX(),
-					vector.getAverageY());
-			
-			int x = xy.getX();
-			int y = xy.getY();
+			CoordResolver converter = new CoordResolver(
+					cameraRangeData.getRangeFinderConfig());
 
-			if (y < 70 && x > -30 && x < 30)
+			Collection<Coordinate> laserData = cameraRangeData.getRangeData();
+
+			double minX = 1000000;
+			for (Coordinate vector : laserData)
 			{
-				if (y < 50)
+				XY xy = converter.convertImageXYtoAbsoluteXY(
+						vector.getAverageX(), vector.getAverageY());
+
+				int x = (int) (new Float(xy.getX()) / 5.0f);
+				int y = (int) (new Float(xy.getY()) / 5.0f);
+
+				if (y < 70 && x > -30 && x < 30)
 				{
-					speed = -50;
+					if (y < 50)
+					{
+						speed = -50;
+					}
+					setHeading = heading + 45;
+					break;
 				}
+				if (x < -30 && x > -50)
+				{
+					setHeading = heading + 10;
+					break;
+				}
+				if (x < -50)
+				{
+					setHeading = heading - 10;
+					break;
+				}
+				if (y < 60)
+				{
+					minX = Math.min(minX, x);
+				}
+
+			}
+
+			if (message.getMessageObject().getClearSpaceAhead()
+					.convert(DistanceUnit.CM) < 35)
+			{
+				speed = -50;
 				setHeading = heading + 45;
-				break;
 			}
-			if (x < -30 && x > -50)
+
+			if (setHeading.intValue() == heading && minX > -30)
 			{
-				setHeading = heading + 10;
-				break;
+				// no negative x values were detected in the near range (y < 80)
+				// and
+				// no heading change has been
+				// set, so set one... we'll turn left to try to find something
+				setHeading = heading - 45;
 			}
-			if (x < -50)
+
+			if (Math.abs(setHeading - heading) > 10)
 			{
-				setHeading = heading - 10;
-				break;
+				speed = Math.min(speed, 0);
 			}
-			if (y < 60)
-			{
-				minX = Math.min(minX, x);
-			}
-
+			SetMotion message2 = new SetMotion();
+			message2.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM),
+					Time.perSecond()));
+			message2.setHeading((double) setHeading);
+			message2.publish();
 		}
-
-		if (message.getMessageObject().getClearSpaceAhead()
-				.convert(DistanceUnit.CM) < 35)
-		{
-			speed = -50;
-			setHeading = heading + 45;
-		}
-
-		if (setHeading.intValue() == heading && minX > -30)
-		{
-			// no negative x values were detected in the near range (y < 80) and
-			// no heading change has been
-			// set, so set one... we'll turn left to try to find something
-			setHeading = heading - 45;
-		}
-
-		if (Math.abs(setHeading - heading) > 10)
-		{
-			speed = Math.min(speed, 0);
-		}
-		SetMotion message2 = new SetMotion();
-		message2.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time
-				.perSecond()));
-		message2.setHeading((double) setHeading);
-		message2.publish();
 
 	}
 }

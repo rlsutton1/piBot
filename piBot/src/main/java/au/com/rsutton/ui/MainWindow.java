@@ -14,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import au.com.rsutton.entryPoint.DataLogReader;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -36,6 +37,7 @@ public class MainWindow extends JFrame implements
 	private JLabel yLocationLabel;
 	private JLabel headingLabel;
 	private JLabel spaceLabel;
+	private Graph graph;
 
 	public static void main(String[] args) throws InterruptedException,
 			IOException
@@ -85,6 +87,9 @@ public class MainWindow extends JFrame implements
 		heading = new JTextField("0", 5);
 
 		controlPanel.add(heading);
+
+		controlPanel.add(replayLogButton());
+
 		controlPanel.add(createHeadingButton());
 
 		JButton forwardButton = createForwardButton();
@@ -94,9 +99,48 @@ public class MainWindow extends JFrame implements
 		controlPanel.add(backButton);
 		this.setVisible(true);
 
-		Graph graph = new Graph();
+		graph = new Graph();
 		graph.setPreferredSize(new Dimension(750, 750));
 		this.add(graph);
+	}
+
+	private JButton replayLogButton()
+	{
+		JButton b = new JButton("ReplayLog");
+		b.setSize(50, 30);
+		b.addActionListener(new ActionListener()
+		{
+			volatile private DataLogReader dataLogReader;
+
+			private Runnable logReader;
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				if (dataLogReader != null)
+				{
+					dataLogReader.stop();
+					graph.clearMap();
+					dataLogReader = null;
+				} else
+				{
+					logReader = new Runnable()
+					{
+
+
+						@Override
+						public void run()
+						{
+							dataLogReader = new DataLogReader();
+							dataLogReader.runReader();
+						}
+					};
+					new Thread(logReader, "Data Log Reader").start();
+				}
+			}
+		});
+
+		return b;
 	}
 
 	private JButton createForwardButton()
@@ -201,8 +245,11 @@ public class MainWindow extends JFrame implements
 		yLocationLabel.setText("Y:" + (int) m.getY().convert(DistanceUnit.CM)
 				+ "cm");
 		headingLabel.setText("H:" + (int) m.getHeading());
-		spaceLabel.setText("S:"
-				+ (int) m.getClearSpaceAhead().convert(DistanceUnit.CM) + "cm");
-
+		if (m.getClearSpaceAhead() != null)
+		{
+			spaceLabel.setText("S:"
+					+ (int) m.getClearSpaceAhead().convert(DistanceUnit.CM)
+					+ "cm");
+		}
 	}
 }

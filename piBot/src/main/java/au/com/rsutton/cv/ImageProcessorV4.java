@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ImageProcessorV4
@@ -35,7 +36,7 @@ public class ImageProcessorV4
 	public Map<Integer, Integer> processImageInternal(final BufferedImage src,
 			double threshold)
 	{
-		Map<Integer, Integer> xy = new HashMap<>();
+		Map<Integer, Integer> xy = new LinkedHashMap<>();
 
 		long start = System.currentTimeMillis();
 		BufferedImage bufferedImage = src;
@@ -60,7 +61,7 @@ public class ImageProcessorV4
 			}
 		}
 
-		System.out.println("Elapsed " + (System.currentTimeMillis() - start));
+//		System.out.println("Elapsed " + (System.currentTimeMillis() - start));
 		return xy;
 	}
 	

@@ -56,4 +56,9 @@ public class Distance implements Serializable
 		return units.convert(ret, unit);
 
 	}
+
+	public Distance add(Distance distanceBetween)
+	{
+		return new Distance(distanceBetween.convert(units)+value,units);
+	}
 }

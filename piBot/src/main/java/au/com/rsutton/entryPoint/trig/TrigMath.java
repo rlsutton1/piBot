@@ -1,5 +1,7 @@
 package au.com.rsutton.entryPoint.trig;
 
+import java.util.List;
+
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 
@@ -68,5 +70,19 @@ public class TrigMath
 
 		// the sum of a+b should equal ac
 		return a + b < (ac + (ac * tolerance));
+	}
+
+	public static double averageAngles(List<Double> angles)
+	{
+		double ax = 0;
+		double ay = 0;
+		for (Double angle : angles)
+		{
+			ax += Math.cos(Math.toRadians(angle));
+			ay += Math.sin(Math.toRadians(angle));
+
+		}
+		return Math.toDegrees(Math.atan2(ay, ax));
+
 	}
 }

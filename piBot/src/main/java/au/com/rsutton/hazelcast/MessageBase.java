@@ -10,7 +10,7 @@ public abstract class MessageBase<M> implements Serializable
 
 	
 	private static final long serialVersionUID = 1130437880736641457L;
-	transient private ITopic<M> topic;
+	protected transient ITopic<M> topic;
 
 	MessageBase(HcTopic topic)
 	{

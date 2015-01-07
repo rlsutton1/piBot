@@ -82,6 +82,15 @@ public class Rover implements Runnable, RobotLocationReporter
 
 //		pixy = new PixyLaserRangeService(new int[] {
 //				0, 0, 0 });
+
+		reconing = new DeadReconing();
+		previousLocation = new RobotLocation();
+		previousLocation.setHeading(0);
+		previousLocation.setX(reconing.getX());
+		previousLocation.setY(reconing.getY());
+		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
+				Time.perSecond()));
+
 		
 		LaserRangeFinder.start(this);
 		getSpaceAhead();
@@ -92,13 +101,6 @@ public class Rover implements Runnable, RobotLocationReporter
 
 		setupLeftWheel();
 
-		reconing = new DeadReconing();
-		previousLocation = new RobotLocation();
-		previousLocation.setHeading(0);
-		previousLocation.setX(reconing.getX());
-		previousLocation.setY(reconing.getY());
-		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
-				Time.perSecond()));
 
 		speedHeadingController = new SpeedHeadingController(rightWheel,
 				leftWheel, compass.getHeading());
@@ -165,7 +167,7 @@ public class Rover implements Runnable, RobotLocationReporter
 	{
 
 		double value = ads.getValue(ADS1115Pin.INPUT_A0);
-		System.out.println("Raw csa "+value);
+//		System.out.println("Raw csa "+value);
 		clearSpaceAhead = forwardSonar.getCurrentDistance((int) value);
 		if (lastData != null
 				&& lastData.getSpeed().getSpeed(distUnit, timeUnit) > 0
@@ -184,7 +186,7 @@ public class Rover implements Runnable, RobotLocationReporter
 		try
 		{
 
-			System.out.println("run Rover");
+//			System.out.println("run Rover");
 			getSpaceAhead();
 			int heading = (int) compass.getHeading();
 			speedHeadingController.setActualHeading(heading);
