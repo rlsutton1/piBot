@@ -70,7 +70,7 @@ public class TargetLocation implements MessageListener<RobotLocation>
 
 		x = m.getX().convert(unit);
 		y = m.getY().convert(unit);
-		heading = m.getHeading();
+		heading = (int) m.getHeading().getDegrees();
 
 	}
 }

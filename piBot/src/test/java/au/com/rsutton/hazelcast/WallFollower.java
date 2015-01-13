@@ -46,7 +46,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 	public void onMessage(Message<RobotLocation> message)
 	{
 		RobotLocation messageObject = message.getMessageObject();
-		int heading = messageObject.getHeading();
+		int heading = (int) messageObject.getHeading().getDegrees();
 		if (setHeading == null)
 		{
 			setHeading = heading;

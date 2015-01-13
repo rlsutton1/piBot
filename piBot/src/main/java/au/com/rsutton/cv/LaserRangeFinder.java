@@ -13,6 +13,8 @@ import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.CoordResolver;
 import au.com.rsutton.mapping.XY;
+import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.AngleUnits;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.FrameInterval;
@@ -91,7 +93,7 @@ public class LaserRangeFinder implements Runnable, CaptureCallback
 			{
 
 				RobotLocation messageObject = new RobotLocation();
-				messageObject.setHeading(0);
+				messageObject.setHeading(new Angle(0,AngleUnits.DEGREES));
 				messageObject.setX(new Distance(0, DistanceUnit.CM));
 				messageObject.setY(new Distance(0, DistanceUnit.CM));
 
@@ -191,13 +193,13 @@ public class LaserRangeFinder implements Runnable, CaptureCallback
 								&& Math.abs(convertedXY.getY()) < 4000)
 						{
 							// System.out.print(" Y:" + value.getValue() + " ");
-							System.out.print(" " + convertedXY);
+							//System.out.print(" " + convertedXY);
 							rangeData.add(new Coordinate(value.getKey(), value
 									.getValue()));
 						}
 					}
 				}
-				System.out.println();
+				//System.out.println();
 
 				CameraRangeData cameraRangeData = new CameraRangeData(
 						rangeFinderConfig, rangeData);

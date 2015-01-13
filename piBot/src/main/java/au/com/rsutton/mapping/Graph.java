@@ -112,7 +112,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		List<Double> angles = new LinkedList<>();
 		for (RobotLocation robotLocation : frames)
 		{
-			angles.add((double) robotLocation.getHeading());
+			angles.add((double) robotLocation.getHeading().getDegrees());
 		}
 		lastHeading = TrigMath.averageAngles(angles);
 

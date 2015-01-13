@@ -5,7 +5,6 @@ public class XY
 
 	int x;
 	int y;
-	int count = 1;
 
 	public XY(int x2, int y2)
 	{
@@ -48,17 +47,6 @@ public class XY
 	public int getY()
 	{
 		return y;
-	}
-
-	public void increment()
-	{
-		count++;
-
-	}
-
-	public int decrement()
-	{
-		return --count;
 	}
 
 	@Override

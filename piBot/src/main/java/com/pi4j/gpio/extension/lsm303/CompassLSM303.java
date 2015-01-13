@@ -1,16 +1,21 @@
 package com.pi4j.gpio.extension.lsm303;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.i2c.I2cSettings;
 
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
-public class CompassLSM303
+public class CompassLSM303 implements Runnable
 {
 
 	private static int SCALE = 2; // accel full-scale, should be 2, 4, or 8
@@ -70,9 +75,24 @@ public class CompassLSM303
 	int maxY = Integer.MIN_VALUE;
 	int minY = Integer.MAX_VALUE;
 
-	private double[] last = new double[2];
+	public CompassLSM303()
+	{
+		try
+		{
+			setup();
+			// guarantee initial value is available
+			run();
+			Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
+					this, 200, 200, TimeUnit.MILLISECONDS);
+		} catch (IOException | InterruptedException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	}
 
-	public void setup() throws IOException, InterruptedException
+	private void setup() throws IOException, InterruptedException
 	{
 
 		// create I2C communications bus instance
@@ -84,15 +104,10 @@ public class CompassLSM303
 
 		initLSM303(SCALE); // Initialize the LSM303, using a SCALE full-scale
 							// range
-		for (int i = 0; i < 5; i++)
-		{
-			// allow smoothing to settle
-			internalGetHeading();
-			Thread.sleep(100);
-		}
+
 	}
 
-	public void loop() throws IOException, InterruptedException
+	private void loop() throws IOException, InterruptedException
 	{
 		getLSM303_accel(accel); // get the acceleration values and store them in
 								// the accel array
@@ -139,7 +154,7 @@ public class CompassLSM303
 		Thread.sleep(100); // delay for serial readability
 	}
 
-	void initLSM303(int fs) throws IOException
+	private void initLSM303(int fs) throws IOException
 	{
 		accDevice.write(CTRL_REG1_A, (byte) 0x27); // 0x27 = normal power mode,
 													// all accel axes on
@@ -154,7 +169,7 @@ public class CompassLSM303
 												// mode
 	}
 
-	void printValues(int[] magArray, int[] accelArray)
+	private void printValues(int[] magArray, int[] accelArray)
 	{
 		/* print out mag and accel arrays all pretty-like */
 		System.out.println(accelArray[X]);
@@ -178,16 +193,34 @@ public class CompassLSM303
 
 	public float getHeading() throws IOException
 	{
-		long currentTimeMillis = System.currentTimeMillis();
-		if (lastReadTime < currentTimeMillis - TIME_TO_LIVE)
-		{
-			lastReadTime = currentTimeMillis;
-			heading.set(internalGetHeading());
-		}
 		return heading.get();
 	}
 
-	synchronized private float internalGetHeading() throws IOException
+	public void run()
+	{
+		try
+		{
+			List<Double> angles = new LinkedList<>();
+			for (int i = 0; i < 15; i++)
+			{
+				angles.add((double) internalGetHeading());
+
+				Thread.sleep(5);
+
+			}
+			heading.set((float) TrigMath.averageAngles(angles));
+		} catch (InterruptedException e)
+		{
+			e.printStackTrace();
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	private double internalGetHeading() throws IOException
 	{
 
 		getLSM303_mag(mag);
@@ -198,26 +231,20 @@ public class CompassLSM303
 		maxY = Math.max(maxY, mag[Y]);
 		minY = Math.min(minY, mag[Y]);
 
+		int xoffset = 90;//160 ... east-west, effects alignment of north south... that is north is opposite south
+		int yoffset = 320;//320
+
+
 		// make calabration adjustments
-		mag[X] = mag[X] + 160;
-		mag[Y] = mag[Y] + 320;
-
-		// stablize values
-		int currentX = (int) ((mag[X] * 0.5) + (last[X] * 0.5));
-		int currentY = (int) ((mag[Y] * 0.5) + (last[Y] * 0.5));
-
-		last[X] = currentX;
-		last[Y] = currentY;
-		
-		mag[X]= currentX;
-		mag[Y] = currentY;
+		mag[X] = mag[X] + xoffset;
+		mag[Y] = mag[Y] + yoffset;
 
 		// see section 1.2 in app note AN3192
-		float heading = (float) Math.toDegrees(Math.atan2(mag[Y], mag[X])); // assume
-																			// pitch,
-																			// roll
-																			// are
-																			// 0
+		double heading = Math.toDegrees(Math.atan2(mag[Y], mag[X])); // assume
+																		// pitch,
+																		// roll
+																		// are
+																		// 0
 
 		// cap angle at 360 degrees
 		if (heading < 0)
@@ -231,7 +258,7 @@ public class CompassLSM303
 		return heading;
 	}
 
-	float getTiltHeading(int[] magValue, float[] accelValue)
+	private float getTiltHeading(int[] magValue, float[] accelValue)
 	{
 		// see appendix A in app note AN3192
 		float pitch = (float) Math.asin(-accelValue[X]);
@@ -253,7 +280,7 @@ public class CompassLSM303
 			return (360 + heading);
 	}
 
-	synchronized void getLSM303_mag(int[] rawValues) throws IOException
+	private void getLSM303_mag(int[] rawValues) throws IOException
 	{
 		magDevice.write((byte) OUT_X_H_M);
 		byte[] bytes = new byte[6];
@@ -268,7 +295,7 @@ public class CompassLSM303
 		}
 	}
 
-	public int convertBytesToInt(int msb, int lsb)
+	private int convertBytesToInt(int msb, int lsb)
 	{
 		int value = msb * 256;
 
@@ -281,7 +308,7 @@ public class CompassLSM303
 		return value;
 	}
 
-	void getLSM303_accel(int[] rawValues) throws IOException
+	private void getLSM303_accel(int[] rawValues) throws IOException
 	{
 		rawValues[Z] = convertBytesToInt(accDevice.read(OUT_X_L_A),
 				accDevice.read(OUT_X_H_A));

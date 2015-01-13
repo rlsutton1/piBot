@@ -7,8 +7,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.cv.CameraRangeData;
-import au.com.rsutton.cv.RobotLocationReporter;
 import au.com.rsutton.cv.LaserRangeFinder;
+import au.com.rsutton.cv.RobotLocationReporter;
 import au.com.rsutton.entryPoint.sonar.SharpIR;
 import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -62,8 +62,9 @@ public class Rover implements Runnable, RobotLocationReporter
 	{
 
 
+
 		compass = new CompassLSM303();
-		compass.setup();
+		
 
 		provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 		provider.setPWMFreq(30);
@@ -83,9 +84,10 @@ public class Rover implements Runnable, RobotLocationReporter
 //		pixy = new PixyLaserRangeService(new int[] {
 //				0, 0, 0 });
 
-		reconing = new DeadReconing();
+		Angle initialAngle = new Angle(compass.getHeading(),AngleUnits.DEGREES);
+		reconing = new DeadReconing(initialAngle);
 		previousLocation = new RobotLocation();
-		previousLocation.setHeading(0);
+		previousLocation.setHeading(initialAngle);
 		previousLocation.setX(reconing.getX());
 		previousLocation.setY(reconing.getY());
 		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
@@ -188,17 +190,17 @@ public class Rover implements Runnable, RobotLocationReporter
 
 //			System.out.println("run Rover");
 			getSpaceAhead();
-			int heading = (int) compass.getHeading();
-			speedHeadingController.setActualHeading(heading);
-			reconing.setHeading(heading);
+			
 			reconing.updateLocation(rightWheel.getDistance(),
-					leftWheel.getDistance());
+					leftWheel.getDistance(),new Angle(compass.getHeading(),AngleUnits.DEGREES));
+
+			speedHeadingController.setActualHeading((int)reconing.getHeading().getDegrees());
 
 			Speed speed = calculateSpeed();
 
 			// send location out on HazelCast
 			RobotLocation currentLocation = new RobotLocation();
-			currentLocation.setHeading(heading);
+			currentLocation.setHeading(reconing.getHeading());
 			currentLocation.setX(reconing.getX());
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
@@ -244,7 +246,8 @@ public class Rover implements Runnable, RobotLocationReporter
 	public void report(CameraRangeData cameraRangeData) throws IOException
 	{
 		RobotLocation currentLocation = new RobotLocation();
-		currentLocation.setHeading((int)compass.getHeading());
+		currentLocation.setHeading(reconing.getHeading());
+		currentLocation.setHeadingError(reconing.getHeadingError());
 		currentLocation.setX(reconing.getX());
 		currentLocation.setY(reconing.getY());
 		currentLocation.setSpeed(calculateSpeed());

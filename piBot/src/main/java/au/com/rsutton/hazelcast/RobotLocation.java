@@ -7,6 +7,7 @@ import java.util.Collection;
 import au.com.rsutton.cv.CameraRangeData;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.robot.rover.Angle;
 
 import com.google.common.base.Objects;
 import com.pi4j.gpio.extension.pixy.DistanceVector;
@@ -16,29 +17,31 @@ public class RobotLocation extends MessageBase<RobotLocation>
 {
 
 	private static final long serialVersionUID = 938950572423708619L;
-	private int heading;
+	private Angle heading;
 	private Distance x;
 	private Distance y;
 	private Speed speed;
 	private Distance clearSpaceAhead;
 	private CameraRangeData cameraRangeData;
 	private long time = System.currentTimeMillis();
+	private Angle headingError;
 
 	public RobotLocation()
 	{
 		super(HcTopic.LOCATION);
 
 	}
-	
-	public void setTopic()  {  
-	
-		
-		this.topic = HazelCastInstance.getInstance().getTopic(HcTopic.LOCATION.toString());
+
+	public void setTopic()
+	{
+
+		this.topic = HazelCastInstance.getInstance().getTopic(
+				HcTopic.LOCATION.toString());
 	}
 
-	public void setHeading(int outx)
+	public void setHeading(Angle angle)
 	{
-		this.heading = outx;
+		this.heading = angle;
 
 	}
 
@@ -71,7 +74,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return y;
 	}
 
-	public int getHeading()
+	public Angle getHeading()
 	{
 		return heading;
 	}
@@ -98,15 +101,26 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		this.cameraRangeData = cameraRangeData;
 
 	}
-	
+
 	public CameraRangeData getCameraRangeData()
 	{
 		return this.cameraRangeData;
 
 	}
-	
+
 	public long getTime()
 	{
 		return time;
+	}
+
+	public void setHeadingError(Angle headingError)
+	{
+		this.headingError = headingError;
+
+	}
+
+	public Angle getHeadingError()
+	{
+		return headingError;
 	}
 }

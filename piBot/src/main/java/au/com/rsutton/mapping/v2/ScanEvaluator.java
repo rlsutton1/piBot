@@ -17,6 +17,20 @@ public class ScanEvaluator implements ScanEvaluatorIfc
 	 * artifacts like corners
 	 */
 
+	/**
+	 * line rules
+	 * 
+	 * find initial cluster of n points => seed line : cluster must be [scaler]
+	 * * n times longer than wide : points must be from adjacent scan angles :
+	 * apply pythag rule [overall length] = sum(lengths)* [pythagScaler]
+	 * 
+	 * extend seed line : new point must extend length of line along it's axis :
+	 * new point must be from adjacent scan angles : new point must not deviate
+	 * more than 20 degrees from the lines axis : line must still be [scaler] *
+	 * [number of points] times longer that wide : apply pythag rule [overall
+	 * length] = sum(lengths)* [pythagScaler]
+	 */
+
 	double requiredLineQuality = 2.00;
 
 	/*
@@ -48,12 +62,12 @@ public class ScanEvaluator implements ScanEvaluatorIfc
 				// a perfect line is 0
 
 				if (meetsLineQualityCriteria(requiredLineQuality, lineQuality,
-						selection.size()) && scanPoints.size() == 0)
+						selection) && scanPoints.size() == 0)
 				{
 					// end of data
 					addLine(lines, selection, Math.abs(0.0d - lineQuality));
 				} else if (false == meetsLineQualityCriteria(
-						requiredLineQuality, lineQuality, selection.size()))
+						requiredLineQuality, lineQuality, selection))
 				{
 					if (selection.size() == 5)
 					{
@@ -77,7 +91,9 @@ public class ScanEvaluator implements ScanEvaluatorIfc
 				}
 			}
 		}
-		straightenLines(lines);
+		// TODO: fix this...
+
+		// straightenLines(lines);
 
 		for (Line line : lines)
 		{
@@ -102,7 +118,7 @@ public class ScanEvaluator implements ScanEvaluatorIfc
 			for (LineGroup group : groups)
 			{
 				if (Math.abs(HeadingHelper.getChangeInHeading(line.getAngle(),
-						group.angle)) < 20.0d)
+						group.angle)) < 10.0d)
 				{
 					group.lines.add(line);
 					lineGroup = group;
@@ -164,15 +180,17 @@ public class ScanEvaluator implements ScanEvaluatorIfc
 	}
 
 	private boolean meetsLineQualityCriteria(double criteria,
-			double lineQuality, int numberOfPoints)
+			double lineQuality, List<XY> points)
 	{
+		int numberOfPoints = points.size();
 		double absoluteQuality = Math.abs(0.0d - lineQuality);
 
 		// three is the minimum number of points that constitute a line where
 		// the straightness can be checked using pythagorus
 		double scaling = 3.0d / ((double) numberOfPoints);
 
-		return absoluteQuality < (criteria * scaling);
+		return absoluteQuality < (criteria * scaling)
+				&& checkPointDistribution(points);
 	}
 
 	private void addLine(List<Line> lines, List<XY> selection, double variance)
@@ -218,6 +236,42 @@ public class ScanEvaluator implements ScanEvaluatorIfc
 			error = 1000;
 		}
 		return error;
+	}
+
+	/**
+	 * ensure there are points above and below the line.
+	 * 
+	 * @param line
+	 * @return
+	 */
+	boolean checkPointDistribution(List<XY> points)
+	{
+
+		// y = mx+c;
+		// c = y-mx;
+
+		XY start = points.get(0);
+		XY end = points.get(points.size() - 1);
+		double x = (start.getX() - end.getX());
+		double y = (start.getY() - end.getY());
+
+		double m = y / x;
+		double c = start.getY() - (m * start.getX());
+
+		int above = 0;
+		int below = 0;
+		for (XY p : points)
+		{
+			if (p.getY() - (m * p.getX()) > c)
+			{
+				above++;
+			} else
+			{
+				below++;
+			}
+		}
+
+		return above > 1 && below > 1;
 	}
 
 	private Point getPointFromXY(XY xy)

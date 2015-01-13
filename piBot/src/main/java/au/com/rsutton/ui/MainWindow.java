@@ -244,7 +244,7 @@ public class MainWindow extends JFrame implements
 				+ "cm");
 		yLocationLabel.setText("Y:" + (int) m.getY().convert(DistanceUnit.CM)
 				+ "cm");
-		headingLabel.setText("H:" + (int) m.getHeading());
+		headingLabel.setText("H:" + (int) m.getHeading().getDegrees());
 		if (m.getClearSpaceAhead() != null)
 		{
 			spaceLabel.setText("S:"
