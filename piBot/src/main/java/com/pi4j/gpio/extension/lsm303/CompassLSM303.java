@@ -209,6 +209,7 @@ public class CompassLSM303 implements Runnable
 
 			}
 			heading.set((float) TrigMath.averageAngles(angles));
+			dumpCalabrationData();
 		} catch (InterruptedException e)
 		{
 			e.printStackTrace();
@@ -218,6 +219,19 @@ public class CompassLSM303 implements Runnable
 			e.printStackTrace();
 		}
 
+	}
+
+	long lastDumpTime = 0;
+
+	private void dumpCalabrationData()
+	{
+		long currentTimeMillis = System.currentTimeMillis();
+		if (currentTimeMillis > lastDumpTime + 60000)
+		{
+			lastDumpTime = currentTimeMillis;
+			System.out.println("Dump compass calabration data X: " + minX + " " + maxX + " Y: " + minY + " "
+					+ maxY);
+		}
 	}
 
 	private double internalGetHeading() throws IOException
@@ -231,9 +245,9 @@ public class CompassLSM303 implements Runnable
 		maxY = Math.max(maxY, mag[Y]);
 		minY = Math.min(minY, mag[Y]);
 
-		int xoffset = 90;//160 ... east-west, effects alignment of north south... that is north is opposite south
-		int yoffset = 320;//320
-
+		int xoffset = 90;// 160 ... east-west, effects alignment of north
+							// south... that is north is opposite south
+		int yoffset = 320;// 320
 
 		// make calabration adjustments
 		mag[X] = mag[X] + xoffset;
