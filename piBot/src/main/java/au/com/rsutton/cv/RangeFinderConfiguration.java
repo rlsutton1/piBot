@@ -24,7 +24,7 @@ public class RangeFinderConfiguration implements Serializable
 	int yRes;
 	int orientationToRobot;
 
-	static final class Builder implements DSLyMax, DSLcamerLaserSeparation,
+	public static final class Builder implements DSLyMax, DSLcamerLaserSeparation,
 			DSLxFeildOfView, DSLyZeroDegrees, DSLbuild,
 			DSLsetOrientationToRobot
 	{
@@ -85,7 +85,7 @@ public class RangeFinderConfiguration implements Serializable
 			return this;
 		}
 
-		DSLyMax setCameraResolution(int x, int y)
+		public DSLyMax setCameraResolution(int x, int y)
 		{
 			xRes = x;
 			yRes = y;

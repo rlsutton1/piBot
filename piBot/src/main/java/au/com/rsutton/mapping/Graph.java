@@ -193,13 +193,6 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		double offset = 1500;
 		double scale = minxy / (offset * 2.0d);
 
-		ScanEvaluatorV3 v3 = new ScanEvaluatorV3();
-		List<HoughLine> houghLines = v3.findLines(translatedXyData,
-				(int) (offset * scale), (int) (offset * scale));
-		for (HoughLine l : houghLines)
-		{
-			l.draw(image, 65535);
-		}
 
 		// Draw axeX.
 		g2.draw(new Line2D.Double(0, (offset * scale), w, (offset * scale)));

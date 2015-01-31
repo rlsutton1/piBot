@@ -18,6 +18,7 @@ public class CoordResolver
 	double HALF_X_RESOLUTION = xResolution / 2;
 	double HALF_X_ANGLE_RANGE = xDegrees / 2;
 	private int orientationToRobot;
+	private double laserLineWidth = 5; // millimeters
 
 	/**
 	 * 
@@ -89,19 +90,43 @@ public class CoordResolver
 		range = Math.max(-1, range);
 		return range;
 	}
+	
+	/**
+	 * 
+	 * @param y position in image
+	 * @return
+	 */
+	public double getExpectedLineHeight(double y)
+	{
+		double range = convertYtoRange(y);
+		double expectedAngleAtBottomOfLine = Math.toDegrees(Math.atan((range/(camraLaserSeparation-laserLineWidth ))));
+		return convertAngleToCamraYCoord(expectedAngleAtBottomOfLine);
+	}
+	
+	/**
+	 * reverse of the method laserAboveCamra
+	 * @param angle
+	 * @return
+	 */
+	public double convertAngleToCamraYCoord(double angle)
+	{
+		// assuming laserAboveCamra
+		double yCoord =  ((yZeroDegrees*((angle-90.0d)/yMaxDegrees))+yZeroDegrees );
+		return yCoord;
+	}
 
 	private double camraAboveLaser(double y)
 	{
 		double yAngle = 90.0
-				- ((y - yZeroDegrees) / (yResolution - yZeroDegrees))
-				* yMaxDegrees;
+				- (((y - yZeroDegrees) / (yResolution - yZeroDegrees))
+				* yMaxDegrees);
 		return yAngle;
 	}
 
-	private double laserAboveCamra(double y)
+	public double laserAboveCamra(double y)
 	{
-		double yAngle = 90.0 - ((yZeroDegrees - y) / (yZeroDegrees))
-				* yMaxDegrees;
+		double yAngle = 90.0 - (((yZeroDegrees - y) / (yZeroDegrees))
+				* yMaxDegrees);
 		return yAngle;
 	}
 

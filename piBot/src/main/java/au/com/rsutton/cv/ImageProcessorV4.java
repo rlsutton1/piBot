@@ -85,9 +85,6 @@ public class ImageProcessorV4
 
 		double hueTolerance = 0.20;
 		int colorStep = 30;
-
-
-		
 		
 		double r1 = new Color(fastRGB.getRGB(x,2)).getRed();
 
