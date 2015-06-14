@@ -18,20 +18,15 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.i2c.I2cSettings;
+import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.adafruit.Adafruit16PwmPin;
-import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
-import com.pi4j.gpio.extension.adafruit.PwmPin;
-import com.pi4j.gpio.extension.ads.ADS1115GpioProvider;
-import com.pi4j.gpio.extension.ads.ADS1115Pin;
-import com.pi4j.gpio.extension.ads.ADS1x15GpioProvider.ProgrammableGainAmplifierValue;
+import com.pi4j.gpio.extension.grovePi.GrovePiPin;
+import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.gpio.extension.lsm303.CompassLSM303;
 import com.pi4j.gpio.extension.pixy.PixyLaserRangeService;
-import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
-import com.pi4j.io.gpio.RaspiPin;
 
 public class Rover implements Runnable, RobotLocationReporter
 {
@@ -44,9 +39,9 @@ public class Rover implements Runnable, RobotLocationReporter
 	final DistanceUnit distUnit = DistanceUnit.MM;
 	final TimeUnit timeUnit = TimeUnit.SECONDS;
 	private long lastTime;
-	final private Adafruit16PwmProvider provider;
+	// final private Adafruit16PwmProvider provider;
 	private CompassLSM303 compass;
-	final private ADS1115GpioProvider ads;
+	// final private ADS1115GpioProvider ads;
 	final private Sonar forwardSonar;
 
 	private SetMotion lastData;
@@ -58,33 +53,37 @@ public class Rover implements Runnable, RobotLocationReporter
 	protected Distance clearSpaceRight;
 	private PixyLaserRangeService pixy;
 
-	public Rover() throws IOException, InterruptedException
+	private GrovePiProvider grove;
+
+	public Rover() throws IOException, InterruptedException, V4L4JException
 	{
 
+		grove = new GrovePiProvider(I2cSettings.busNumber, 4);
 
+		grove.setMode(GrovePiPin.GPIO_A1, PinMode.ANALOG_INPUT);
 
 		compass = new CompassLSM303();
-		
 
-		provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
-		provider.setPWMFreq(30);
+		// provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
+		// provider.setPWMFreq(30);
 
-		ads = new ADS1115GpioProvider(I2cSettings.busNumber, 0x48);
-		ads.setProgrammableGainAmplifier(
-				ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A0);
-		ads.setProgrammableGainAmplifier(
-				ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A1);
-		ads.setProgrammableGainAmplifier(
-				ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A2);
-		// ads = new ADS1115(1, 0x48);
+		// LaserControllerIfc laserController = new LaserController(provider);
+
+		// ads = new ADS1115GpioProvider(I2cSettings.busNumber, 0x48);
+		// ads.setProgrammableGainAmplifier(
+		// ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A0);
+		// ads.setProgrammableGainAmplifier(
+		// ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A1);
+		// ads.setProgrammableGainAmplifier(
+		// ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.INPUT_A2);
 		forwardSonar = new Sonar(0.1, -340);
 		leftSonar = new SharpIR(40000000, 440, 0);
 		// rightSonar = new SharpIR(1, 1800);
 
-//		pixy = new PixyLaserRangeService(new int[] {
-//				0, 0, 0 });
+		// pixy = new PixyLaserRangeService(new int[] {
+		// 0, 0, 0 });
 
-		Angle initialAngle = new Angle(compass.getHeading(),AngleUnits.DEGREES);
+		Angle initialAngle = new Angle(compass.getHeading(), AngleUnits.DEGREES);
 		reconing = new DeadReconing(initialAngle);
 		previousLocation = new RobotLocation();
 		previousLocation.setHeading(initialAngle);
@@ -93,16 +92,14 @@ public class Rover implements Runnable, RobotLocationReporter
 		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
 				Time.perSecond()));
 
-		
 		LaserRangeFinder.start(this);
+
 		getSpaceAhead();
-//		pixy.getCurrentData();
+		// pixy.getCurrentData();
 
-	
-		setupRightWheel();
+		rightWheel = WheelFactory.setupRightWheel(grove);
 
-		setupLeftWheel();
-
+		leftWheel = WheelFactory.setupLeftWheel(grove);
 
 		speedHeadingController = new SpeedHeadingController(rightWheel,
 				leftWheel, compass.getHeading());
@@ -133,33 +130,6 @@ public class Rover implements Runnable, RobotLocationReporter
 
 	}
 
-	private void setupLeftWheel() throws IOException
-	{
-		provider.export(Adafruit16PwmPin.GPIO_04, PinMode.PWM_OUTPUT);
-		provider.export(Adafruit16PwmPin.GPIO_05, PinMode.PWM_OUTPUT);
-
-		Pin quadratureA = RaspiPin.GPIO_02;
-		PwmPin directionPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_05);
-		PwmPin pwmPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_04);
-		Pin quadreatureB = RaspiPin.GPIO_03;
-		leftWheel = new WheelController(pwmPin, directionPin, quadratureA,
-				quadreatureB, false, true);
-	}
-
-	private void setupRightWheel() throws IOException
-	{
-		provider.export(Adafruit16PwmPin.GPIO_00, PinMode.PWM_OUTPUT);
-		provider.export(Adafruit16PwmPin.GPIO_01, PinMode.PWM_OUTPUT);
-
-		Pin quadratureA = RaspiPin.GPIO_05;
-		PwmPin pwmPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_01);
-
-		Pin quadreatureB = RaspiPin.GPIO_04;
-		PwmPin directionPin = new PwmPin(provider, Adafruit16PwmPin.GPIO_00);
-		rightWheel = new WheelController(pwmPin, directionPin, quadratureA,
-				quadreatureB, false, false);
-	}
-
 	DataValueSmoother fs = new DataValueSmoother(0.90d);
 
 	Map<Integer, Integer> distVal = new HashMap<Integer, Integer>();
@@ -167,10 +137,11 @@ public class Rover implements Runnable, RobotLocationReporter
 
 	void getSpaceAhead() throws IOException
 	{
-
-		double value = ads.getValue(ADS1115Pin.INPUT_A0);
-//		System.out.println("Raw csa "+value);
+		double value = grove.getValue(GrovePiPin.GPIO_A1);
+		// double value = ads.getValue(ADS1115Pin.INPUT_A0);
+		// System.out.println("Raw csa "+value);
 		clearSpaceAhead = forwardSonar.getCurrentDistance((int) value);
+		clearSpaceAhead = new Distance(40, DistanceUnit.CM);
 		if (lastData != null
 				&& lastData.getSpeed().getSpeed(distUnit, timeUnit) > 0
 				&& clearSpaceAhead.convert(DistanceUnit.CM) < 30)
@@ -188,13 +159,15 @@ public class Rover implements Runnable, RobotLocationReporter
 		try
 		{
 
-//			System.out.println("run Rover");
+			// System.out.println("run Rover");
 			getSpaceAhead();
-			
-			reconing.updateLocation(rightWheel.getDistance(),
-					leftWheel.getDistance(),new Angle(compass.getHeading(),AngleUnits.DEGREES));
 
-			speedHeadingController.setActualHeading((int)reconing.getHeading().getDegrees());
+			reconing.updateLocation(rightWheel.getDistance(), leftWheel
+					.getDistance(), new Angle(compass.getHeading(),
+					AngleUnits.DEGREES));
+
+			speedHeadingController.setActualHeading((int) reconing.getHeading()
+					.getDegrees());
 
 			Speed speed = calculateSpeed();
 
@@ -205,11 +178,12 @@ public class Rover implements Runnable, RobotLocationReporter
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
-	
-			//TODO: fix this
-//			throw new RuntimeException("Broken, next lines commented out to allow compile");
-//			currentLocation.setLaserData(pixy
-//					.getCurrentData());
+
+			// TODO: fix this
+			// throw new
+			// RuntimeException("Broken, next lines commented out to allow compile");
+			// currentLocation.setLaserData(pixy
+			// .getCurrentData());
 			currentLocation.publish();
 
 			previousLocation = currentLocation;
@@ -253,13 +227,14 @@ public class Rover implements Runnable, RobotLocationReporter
 		currentLocation.setSpeed(calculateSpeed());
 		currentLocation.setClearSpaceAhead(clearSpaceAhead);
 
-		//TODO: fix this
-//		throw new RuntimeException("Broken, next lines commented out to allow compile");
-//		currentLocation.setLaserData(pixy
-//				.getCurrentData());
+		// TODO: fix this
+		// throw new
+		// RuntimeException("Broken, next lines commented out to allow compile");
+		// currentLocation.setLaserData(pixy
+		// .getCurrentData());
 		currentLocation.setCameraRangeData(cameraRangeData);
 		currentLocation.publish();
-		
+
 	}
 
 }

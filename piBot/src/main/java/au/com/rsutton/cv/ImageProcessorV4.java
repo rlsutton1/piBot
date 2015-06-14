@@ -7,13 +7,22 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import au.com.rsutton.mapping.CoordResolver;
+
 public class ImageProcessorV4
 {
 
+	private static final int LINE_HEIGHT_TOLLERANCE = 5;
 	double totalrb = 0;
 	double totalrg = 0;
 	double totalbg = 0;
 	double count = 0;
+	final CoordResolver coordResolver;
+
+	public ImageProcessorV4(CoordResolver coordResolver)
+	{
+		this.coordResolver = coordResolver;
+	}
 
 	public Map<Integer, Integer> processImage(final BufferedImage src)
 	{
@@ -42,12 +51,12 @@ public class ImageProcessorV4
 		BufferedImage bufferedImage = src;
 
 		FastRGB fastRGB = new FastRGB(src);
-		
+
 		int width = bufferedImage.getWidth();
 
 		for (int x = 5; x < width - 10; x += width / 100)
 		{
-			int y = scanForPoint( fastRGB, x,bufferedImage.getHeight());
+			int y = scanForPoint(fastRGB, x, bufferedImage.getHeight());
 			if (y > -1)
 			{
 
@@ -61,11 +70,15 @@ public class ImageProcessorV4
 			}
 		}
 
-//		System.out.println("Elapsed " + (System.currentTimeMillis() - start));
+		// System.out.println("Elapsed " + (System.currentTimeMillis() -
+		// start));
 		return xy;
 	}
-	
-	
+
+	enum State
+	{
+		NONE, UP, DOWN
+	}
 
 	/**
 	 * find the brightest pixel that matches the "red laser hue" and has the
@@ -85,40 +98,82 @@ public class ImageProcessorV4
 
 		double hueTolerance = 0.20;
 		int colorStep = 30;
-		
-		double r1 = new Color(fastRGB.getRGB(x,2)).getRed();
+
+		State state = State.NONE;
+		int location = -1;
+
+		double previousRed = new Color(fastRGB.getRGB(x, 2)).getRed();
 
 		for (int y = 3; y < height; y++)
 		{
 
-			//int rgb = bufferedImage.getRGB(x, y);
-			int rgb = fastRGB.getRGB(x,y);
-			double r2 = new Color(rgb).getRed();
+			// int rgb = bufferedImage.getRGB(x, y);
+			int rgb = fastRGB.getRGB(x, y);
+			double red = new Color(rgb).getRed();
 
 			double b2 = Math.max(1, new Color(rgb).getBlue());
 
 			double g2 = Math.max(1, new Color(rgb).getGreen());
 
-			double rb = r2 / b2;
-			double rg = r2 / g2;
+			double rb = red / b2;
+			double rg = red / g2;
 			double bg = b2 / g2;
 
-			if (checkColorStep(colorStep, r1, r2) || isPixelSaturated(r2))
+			if (red > previousRed + colorStep)
 			{
-				if (checkHue(hueTolerance, rb, rg, bg) || isPixelSaturated(r2))
+				// sufficently large step in red
+				if (checkHue(hueTolerance, rb, rg, bg) || isPixelSaturated(red))
 				{
-					collectHueStatistics(rb, rg, bg);
-					if (checkIntensity(matchedIntensity, r2, b2, g2))
-					{
-						matchedY = y;
-						matchedIntensity = (int) (r2 + b2 + g2);
-					}
+					// matched hue or are saturated
+					state = State.UP;
+					location = y;
+				}
+
+			} else if (red < previousRed - colorStep)
+			{
+				// large step down in red
+				if (state == State.UP
+						&& Math.abs(compareHeightToExpectedHeight(location, y)) < LINE_HEIGHT_TOLLERANCE)
+				{
+					matchedY = y;
+				}
+				state = State.NONE;
+			} else if (state == State.UP)
+			{
+				if (compareHeightToExpectedHeight(location, y) > LINE_HEIGHT_TOLLERANCE)
+				{
+					// we went pass the maximum possible line height
+					state = State.NONE;
+				} else if (!checkHue(hueTolerance, rb, rg, bg)
+						&& !isPixelSaturated(red))
+				{
+					// we lost hue/saturation
+					state = State.NONE;
 				}
 			}
-			r1 = r2;
+			previousRed = red;
 		}
 
 		return matchedY;
+	}
+
+	private int compareHeightToExpectedHeight(int location, int y)
+	{
+		int difference = getExpectedLineHeightForY(location)-getHeight(location, y) ;
+		System.out.println("difference between line height and expected line height "+difference);
+		return difference;
+	}
+
+	private int getHeight(int location, int y)
+	{
+		return y - location;
+	}
+
+	private int getExpectedLineHeightForY(int location)
+	{
+	//	System.out.println("Expected height from "+location+" "+(coordResolver.getExpectedLineHeight(location)-location));
+		return (int) Math.max(1,
+				(coordResolver.getExpectedLineHeight(location)-location) + 0.5d);
 	}
 
 	private boolean isPixelSaturated(double r2)

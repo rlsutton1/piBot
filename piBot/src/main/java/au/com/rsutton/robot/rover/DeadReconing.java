@@ -63,9 +63,9 @@ public class DeadReconing
 
 				double changeInHeading = -Math.toDegrees((t2 - t1)
 						/ VEHICAL_WIDTH);
-				System.out.println("Compass: " + angle.getDegrees()
-						+ " heading: " + heading.getDegrees()
-						+ " changeInHeading: " + changeInHeading);
+			//	System.out.println("Compass: " + angle.getDegrees()
+			//			+ " heading: " + heading.getDegrees()
+			//			+ " changeInHeading: " + changeInHeading);
 				heading = heading.add(changeInHeading, AngleUnits.DEGREES);
 
 				// get error between compass heading and deadReconing heading

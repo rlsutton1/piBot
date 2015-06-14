@@ -197,6 +197,13 @@ public class ServoControllerTest
 			// TODO Auto-generated method stub
 			
 		}
+
+		@Override
+		public void export(Pin arg0, PinMode arg1, PinState arg2)
+		{
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
 	@Test

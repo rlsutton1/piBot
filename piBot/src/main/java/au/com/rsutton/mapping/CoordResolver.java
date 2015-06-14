@@ -71,7 +71,7 @@ public class CoordResolver
 
 	/**
 	 * 
-	 * @param y
+	 * @param y - pixel position in y axis
 	 * @return -1 if values are invalid
 	 */
 	private double convertYtoRange(double y)
@@ -99,8 +99,8 @@ public class CoordResolver
 	public double getExpectedLineHeight(double y)
 	{
 		double range = convertYtoRange(y);
-		double expectedAngleAtBottomOfLine = Math.toDegrees(Math.atan((range/(camraLaserSeparation-laserLineWidth ))));
-		return convertAngleToCamraYCoord(expectedAngleAtBottomOfLine);
+		double expectedAngleAtBottomOfLine = Math.toDegrees(Math.atan(range/(camraLaserSeparation-laserLineWidth )));
+		return convertAngleToCamraYCoord(expectedAngleAtBottomOfLine)-y;
 	}
 	
 	/**

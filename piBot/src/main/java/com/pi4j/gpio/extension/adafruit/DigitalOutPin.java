@@ -4,30 +4,31 @@ import com.pi4j.io.gpio.GpioProvider;
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinMode;
 
-public class PwmPin
+public class DigitalOutPin
 {
 
 	private Pin pin;
 	private GpioProvider provider;
 
-	public PwmPin(GpioProvider provider, Pin pin)
+	public DigitalOutPin(GpioProvider provider, Pin pin)
 	{
 		this.pin = pin;
 		this.provider = provider;
-		provider.export(pin, PinMode.PWM_OUTPUT);
+		provider.export(pin, PinMode.DIGITAL_OUTPUT);
 
 	}
 
-	/**
-	 * range 0 - 4095;
-	 * 
-	 * @param value
-	 */
-	public void setPwmValue(int value)
+	public void setHigh()
 	{
-		provider.setPwm(pin, value);
+		provider.setValue(pin, 1);
 	}
 
+	public void setLow()
+	{
+		provider.setValue(pin, 0);
+	}
+
+	
 	@Override
 	public String toString()
 	{

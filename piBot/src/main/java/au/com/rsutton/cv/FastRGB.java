@@ -2,6 +2,7 @@ package au.com.rsutton.cv;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.util.Arrays;
 
 public class FastRGB
 {
@@ -15,6 +16,7 @@ public class FastRGB
 	{
 
 		pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+		pixels = Arrays.copyOf(pixels, pixels.length);
 		width = image.getWidth();
 		hasAlphaChannel = image.getAlphaRaster() != null;
 		pixelLength = 3;

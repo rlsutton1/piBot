@@ -75,6 +75,10 @@ public class CompassLSM303 implements Runnable
 	int maxY = Integer.MIN_VALUE;
 	int minY = Integer.MAX_VALUE;
 
+	private CompassAxisCalibractionCorrection yAxisCorrection;
+
+	private CompassAxisCalibractionCorrection xAxisCorrection;
+
 	public CompassLSM303()
 	{
 		try
@@ -94,6 +98,9 @@ public class CompassLSM303 implements Runnable
 
 	private void setup() throws IOException, InterruptedException
 	{
+
+		yAxisCorrection = new CompassAxisCalibractionCorrection(-251, 108);
+		xAxisCorrection = new CompassAxisCalibractionCorrection(-271, 210);
 
 		// create I2C communications bus instance
 		bus = I2CBusImplBanana.getBus(I2cSettings.busNumber);
@@ -201,14 +208,29 @@ public class CompassLSM303 implements Runnable
 		try
 		{
 			List<Double> angles = new LinkedList<>();
+			int max = Integer.MIN_VALUE;
+			int min = Integer.MAX_VALUE;
 			for (int i = 0; i < 15; i++)
 			{
-				angles.add((double) internalGetHeading());
+				double internalGetHeading = internalGetHeading();
+				max = (int) Math.max(max, internalGetHeading);
+				min = (int) Math.min(min, internalGetHeading);
+				angles.add(internalGetHeading);
 
 				Thread.sleep(5);
 
 			}
+
+			if (max == min)
+			{
+				// the compass probably crashed!
+
+				System.out.println("Resetting compass !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				initLSM303(SCALE);
+			}
+
 			heading.set((float) TrigMath.averageAngles(angles));
+
 			dumpCalabrationData();
 		} catch (InterruptedException e)
 		{
@@ -229,11 +251,16 @@ public class CompassLSM303 implements Runnable
 		if (currentTimeMillis > lastDumpTime + 60000)
 		{
 			lastDumpTime = currentTimeMillis;
-			System.out.println("Dump compass calabration data X: " + minX + " " + maxX + " Y: " + minY + " "
-					+ maxY);
+			System.out.println("Dump compass calabration data X: " + minX + " "
+					+ maxX + " Y: " + minY + " " + maxY);
 		}
 	}
 
+	/**
+	 * 
+	 * @return - heading in degrees
+	 * @throws IOException
+	 */
 	private double internalGetHeading() throws IOException
 	{
 
@@ -245,13 +272,11 @@ public class CompassLSM303 implements Runnable
 		maxY = Math.max(maxY, mag[Y]);
 		minY = Math.min(minY, mag[Y]);
 
-		int xoffset = 90;// 160 ... east-west, effects alignment of north
-							// south... that is north is opposite south
-		int yoffset = 320;// 320
+		//System.out.println("Raw " + mag[X] + " " + mag[Y]);
 
 		// make calabration adjustments
-		mag[X] = mag[X] + xoffset;
-		mag[Y] = mag[Y] + yoffset;
+		mag[X] = xAxisCorrection.getCorrectedValue(mag[X]);
+		mag[Y] = yAxisCorrection.getCorrectedValue(mag[Y]);
 
 		// see section 1.2 in app note AN3192
 		double heading = Math.toDegrees(Math.atan2(mag[Y], mag[X])); // assume

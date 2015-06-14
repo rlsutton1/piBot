@@ -5,6 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import au.com.rsutton.entryPoint.controllers.DeadZoneRescaler;
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.Pid;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncodingCBridge;
@@ -15,6 +16,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.robot.QuadratureToDistance;
 
+import com.pi4j.gpio.extension.adafruit.DigitalOutPin;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
 import com.pi4j.io.gpio.Pin;
 
@@ -31,19 +33,21 @@ public class WheelController implements Runnable
 	final private DistanceUnit distUnit = DistanceUnit.MM;
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
 	final private ScheduledFuture<?> worker;
+	private double lastSpeed = 0;
 
-	WheelController(PwmPin pwmPin, PwmPin directionPin, Pin quadratureA,
-			Pin quadreatureB, boolean invertPwm, boolean invertQuadrature) throws IOException
+	public WheelController(PwmPin pwmPin, DigitalOutPin directionPin,
+			Pin quadratureA, Pin quadreatureB, boolean invertPwm,
+			boolean invertQuadrature,  double deadZone) throws IOException
 	{
 
-		hBridge = new HBridgeController(pwmPin, directionPin, invertPwm);
+		hBridge = new HBridgeController(pwmPin, directionPin, invertPwm, deadZone);
 
 		hBridge.setOutput(0);
 
 		quadrature = new QuadratureEncodingCBridge(quadratureA, quadreatureB,
 				invertQuadrature);
-		worker = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
-				100, 100, TimeUnit.MILLISECONDS);
+		worker = Executors.newSingleThreadScheduledExecutor()
+				.scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
 
 	}
 
@@ -78,6 +82,8 @@ public class WheelController implements Runnable
 
 	}
 
+	static final int MIN_SPEED = 10;
+
 	@Override
 	public void run()
 	{
@@ -85,17 +91,18 @@ public class WheelController implements Runnable
 		{
 			double actualSpeed = getActualSpeed();
 
-			if (Math.abs(setSpeed) < 10 && Math.abs(actualSpeed) < 10)
+			if (Math.abs(setSpeed) < MIN_SPEED
+					&& Math.abs(actualSpeed) < MIN_SPEED)
 			{
 				if (pid != null)
 				{
-					// System.out.println("Stopping speed controller pid");
+					//System.out.println("Stopping speed controller pid");
 					pid = null;
 				}
 
 			} else if (pid == null)
 			{
-				// System.out.println("creating new speed controller pid");
+				//System.out.println("creating new speed controller pid");
 				pid = new Pid(.25, .05, .01, 100, 99, -99, false);
 			}
 			double power = 0;
@@ -104,8 +111,8 @@ public class WheelController implements Runnable
 				power = pid.computePid(setSpeed, actualSpeed);
 			}
 
-			// System.out.println("A " + actualSpeed + " S " + setSpeed + " P "
-			// + power);
+			//System.out.println("A " + actualSpeed + " S " + setSpeed + " P "
+			//		+ power);
 
 			hBridge.setOutput(power / 100.0d);
 		} catch (Throwable e)
@@ -117,10 +124,11 @@ public class WheelController implements Runnable
 
 	private double getActualSpeed()
 	{
-		long currentQuadrature=0;
+		long currentQuadrature = 0;
 		try
 		{
 			currentQuadrature = quadrature.getValue();
+			//System.out.println("Current Quadrature " + currentQuadrature);
 		} catch (IOException e)
 		{
 			worker.cancel(false);
@@ -131,18 +139,24 @@ public class WheelController implements Runnable
 		long now = System.currentTimeMillis();
 
 		long elapsed = now - lastCalcuationTime;
-		if (Math.abs(change) > 0)
+
+		// diminish last speed if no new data
+		lastSpeed = lastSpeed * 0.9d;
+
+		if (Math.abs(change) > 1 && elapsed > 1)
 		{
 			lastCalcuationTime = now;
 			lastQuadratureOffset = currentQuadrature;
+			change = change / (((double) elapsed) / 1000.0d);
+
+			Distance distance = distanceConverter.scale((int) change);
+
+			double currentSpeed = new Speed(distance, Time.perSecond()).getSpeed(
+					distUnit, timeUnit);
+			lastSpeed = (currentSpeed*0.5)+(lastSpeed*0.5);
 		}
 
-		change = change / (((double) elapsed) / 1000.0d);
-
-		Distance distance = distanceConverter.scale((int) change);
-
-		return new Speed(distance, Time.perSecond()).getSpeed(distUnit,
-				timeUnit);
+		return lastSpeed;
 
 	}
 }
