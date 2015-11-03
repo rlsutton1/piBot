@@ -2,6 +2,7 @@ package com.pi4j.gpio.extension.grovePi;
 
 import java.io.IOException;
 
+import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -27,7 +28,9 @@ public class GrovePiTest
 
 	private static void compassTest() throws IOException, InterruptedException
 	{
-		CompassLSM303 compass = new CompassLSM303();
+		Config config = new Config();
+
+		CompassLSM303 compass = new CompassLSM303(config);
 
 		for (int i = 0; i < 100; i++)
 		{
@@ -40,10 +43,12 @@ public class GrovePiTest
 	private static void singleWheelTest() throws IOException,
 			InterruptedException
 	{
+		Config config = new Config();
+
 		GrovePiProvider grovePiProvider = new GrovePiProvider(1, 04);
 
 		// WheelController left = setupLeftWheel(grovePiProvider);
-		WheelController right = WheelFactory.setupRightWheel(grovePiProvider);
+		WheelController right = WheelFactory.setupRightWheel(grovePiProvider,config);
 
 		for (int i = -100; i < 100; i += 1)
 		{

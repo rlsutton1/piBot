@@ -4,20 +4,16 @@ import java.io.IOException;
 
 import au.com.rsutton.i2c.I2cSettings;
 import au.com.rsutton.robot.rover.Rover;
-import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
-import com.pi4j.io.i2c.I2CFactory;
-import com.pi4j.io.i2c.I2CFactoryProviderBanana;
-import com.pi4j.io.i2c.I2CFactoryProviderRaspberry;
 
 public class Main
 {
 	boolean distanceOk = true;
 
 	public static void main(String[] args) throws InterruptedException,
-			IOException, V4L4JException
+			IOException
 	{
 //		I2CFactory.setFactory(new I2CFactoryProviderBanana());
 		new Rover();

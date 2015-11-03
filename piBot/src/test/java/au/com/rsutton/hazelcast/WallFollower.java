@@ -4,17 +4,15 @@ import java.util.Collection;
 
 import org.junit.Test;
 
-import au.com.rsutton.cv.CameraRangeData;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.mapping.CoordResolver;
 import au.com.rsutton.mapping.XY;
+import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.pixy.Coordinate;
 
 public class WallFollower implements Runnable, MessageListener<RobotLocation>
 {
@@ -53,47 +51,40 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		}
 		int speed = 100;
 
-		CameraRangeData cameraRangeData = messageObject.getCameraRangeData();
-		if (cameraRangeData != null)
+		Collection<LidarObservation> laserData = message.getMessageObject()
+				.getObservations();
+
+		double minX = 1000000;
+
+		for (LidarObservation observation : laserData)
 		{
-			CoordResolver converter = new CoordResolver(
-					cameraRangeData.getRangeFinderConfig());
+			XY xy = new XY(observation.getX(), observation.getY());
 
-			Collection<Coordinate> laserData = cameraRangeData.getRangeData();
+			int x = (int) (new Float(xy.getX()) / 5.0f);
+			int y = (int) (new Float(xy.getY()) / 5.0f);
 
-			double minX = 1000000;
-			for (Coordinate vector : laserData)
+			if (y < 70 && x > -30 && x < 30)
 			{
-				XY xy = converter.convertImageXYtoAbsoluteXY(
-						vector.getAverageX(), vector.getAverageY());
-
-				int x = (int) (new Float(xy.getX()) / 5.0f);
-				int y = (int) (new Float(xy.getY()) / 5.0f);
-
-				if (y < 70 && x > -30 && x < 30)
+				if (y < 50)
 				{
-					if (y < 50)
-					{
-						speed = -50;
-					}
-					setHeading = heading + 45;
-					break;
+					speed = -50;
 				}
-				if (x < -30 && x > -50)
-				{
-					setHeading = heading + 10;
-					break;
-				}
-				if (x < -50)
-				{
-					setHeading = heading - 10;
-					break;
-				}
-				if (y < 60)
-				{
-					minX = Math.min(minX, x);
-				}
-
+				setHeading = heading + 45;
+				break;
+			}
+			if (x < -30 && x > -50)
+			{
+				setHeading = heading + 10;
+				break;
+			}
+			if (x < -50)
+			{
+				setHeading = heading - 10;
+				break;
+			}
+			if (y < 60)
+			{
+				minX = Math.min(minX, x);
 			}
 
 			if (message.getMessageObject().getClearSpaceAhead()
@@ -111,17 +102,16 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 				// set, so set one... we'll turn left to try to find something
 				setHeading = heading - 45;
 			}
-
-			if (Math.abs(setHeading - heading) > 10)
-			{
-				speed = Math.min(speed, 0);
-			}
-			SetMotion message2 = new SetMotion();
-			message2.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM),
-					Time.perSecond()));
-			message2.setHeading((double) setHeading);
-			message2.publish();
 		}
+		if (Math.abs(setHeading - heading) > 10)
+		{
+			speed = Math.min(speed, 0);
+		}
+		SetMotion message2 = new SetMotion();
+		message2.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time
+				.perSecond()));
+		message2.setHeading((double) setHeading);
+		message2.publish();
 
 	}
 }

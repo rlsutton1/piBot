@@ -1,17 +1,13 @@
 package au.com.rsutton.hazelcast;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.util.Collection;
+import java.util.Set;
 
-import au.com.rsutton.cv.CameraRangeData;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.google.common.base.Objects;
-import com.pi4j.gpio.extension.pixy.DistanceVector;
-import com.pi4j.gpio.extension.pixy.Coordinate;
 
 public class RobotLocation extends MessageBase<RobotLocation>
 {
@@ -22,9 +18,9 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private Distance y;
 	private Speed speed;
 	private Distance clearSpaceAhead;
-	private CameraRangeData cameraRangeData;
 	private long time = System.currentTimeMillis();
 	private Angle headingError;
+	private Set<LidarObservation> observations;
 
 	public RobotLocation()
 	{
@@ -96,18 +92,6 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return clearSpaceAhead;
 	}
 
-	public void setCameraRangeData(CameraRangeData cameraRangeData)
-	{
-		this.cameraRangeData = cameraRangeData;
-
-	}
-
-	public CameraRangeData getCameraRangeData()
-	{
-		return this.cameraRangeData;
-
-	}
-
 	public long getTime()
 	{
 		return time;
@@ -122,5 +106,21 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	public Angle getHeadingError()
 	{
 		return headingError;
+	}
+
+	public void addObservations(Set<LidarObservation> observations)
+	{
+		this.observations = observations;
+		
+	}
+
+	public Set<LidarObservation> getObservations()
+	{
+		return observations;
+	}
+
+	public void setObservations(Set<LidarObservation> observations)
+	{
+		this.observations = observations;
 	}
 }

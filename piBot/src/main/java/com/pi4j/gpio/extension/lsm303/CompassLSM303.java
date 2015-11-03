@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.i2c.I2cSettings;
@@ -79,10 +80,13 @@ public class CompassLSM303 implements Runnable
 
 	private CompassAxisCalibractionCorrection xAxisCorrection;
 
-	public CompassLSM303()
+	private Config config;
+
+	public CompassLSM303(Config config)
 	{
 		try
 		{
+			this.config = config;
 			setup();
 			// guarantee initial value is available
 			run();
@@ -96,11 +100,24 @@ public class CompassLSM303 implements Runnable
 		}
 	}
 
+	public void saveConfig()
+	{
+		config.storeSetting("Compass.min.y", minY);
+		config.storeSetting("Compass.max.y", maxY);
+		config.storeSetting("Compass.min.x", minX);
+		config.storeSetting("Compass.max.x", maxX);
+
+	}
+
 	private void setup() throws IOException, InterruptedException
 	{
+		minY = config.loadSetting("Compass.min.y", -251);
+		maxY = config.loadSetting("Compass.max.y", 108);
+		minX = config.loadSetting("Compass.min.x", -271);
+		maxX = config.loadSetting("Compass.max.x", 210);
 
-		yAxisCorrection = new CompassAxisCalibractionCorrection(-251, 108);
-		xAxisCorrection = new CompassAxisCalibractionCorrection(-271, 210);
+		yAxisCorrection = new CompassAxisCalibractionCorrection(minY, maxY);
+		xAxisCorrection = new CompassAxisCalibractionCorrection(minX, maxX);
 
 		// create I2C communications bus instance
 		bus = I2CBusImplBanana.getBus(I2cSettings.busNumber);
@@ -225,12 +242,13 @@ public class CompassLSM303 implements Runnable
 			{
 				// the compass probably crashed!
 
-				System.out.println("Resetting compass !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				System.out
+						.println("compass crashed, rebooting it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				initLSM303(SCALE);
+			} else
+			{
+				heading.set((float) TrigMath.averageAngles(angles));
 			}
-
-			heading.set((float) TrigMath.averageAngles(angles));
-
 			dumpCalabrationData();
 		} catch (InterruptedException e)
 		{
@@ -244,6 +262,10 @@ public class CompassLSM303 implements Runnable
 	}
 
 	long lastDumpTime = 0;
+
+	private int calabrationStartX;
+
+	private int calabrationStartY;
 
 	private void dumpCalabrationData()
 	{
@@ -272,7 +294,7 @@ public class CompassLSM303 implements Runnable
 		maxY = Math.max(maxY, mag[Y]);
 		minY = Math.min(minY, mag[Y]);
 
-		//System.out.println("Raw " + mag[X] + " " + mag[Y]);
+		// System.out.println("Raw " + mag[X] + " " + mag[Y]);
 
 		// make calabration adjustments
 		mag[X] = xAxisCorrection.getCorrectedValue(mag[X]);
@@ -356,6 +378,51 @@ public class CompassLSM303 implements Runnable
 		rawValues[Y] = convertBytesToInt(accDevice.read(OUT_Z_L_A),
 				accDevice.read(OUT_Z_H_A));
 		// had to swap those to right the data with the proper axis
+	}
+
+	/**
+	 * mark our orientation, so we know when calabration is over
+	 */
+	public void startCalabration()
+	{
+		minX = Integer.MAX_VALUE;
+		maxX = Integer.MIN_VALUE;
+		minY = Integer.MAX_VALUE;
+		maxY = Integer.MIN_VALUE;
+
+		calabrationStartX = mag[X];
+		calabrationStartY = mag[Y];
+	}
+
+	/**
+	 * wait up to 30 seconds for the compass to return to it's starting position
+	 * before accepting the calabration data
+	 * 
+	 * @throws InterruptedException
+	 */
+	public void finishcalabration() throws InterruptedException
+	{
+		long start = System.currentTimeMillis();
+		while (!calabrationFinished()
+				&& System.currentTimeMillis() - start < 30000)
+		{
+			Thread.sleep(1000);
+		}
+
+		yAxisCorrection = new CompassAxisCalibractionCorrection(minY, maxY);
+		xAxisCorrection = new CompassAxisCalibractionCorrection(minX, maxX);
+
+	}
+
+	/**
+	 * check if we've rotated back to the position we were at calabration start
+	 * 
+	 * @return
+	 */
+	private boolean calabrationFinished()
+	{
+		return Math.abs(calabrationStartX - mag[X]) < 30
+				&& Math.abs(calabrationStartY - mag[Y]) < 30;
 	}
 
 }

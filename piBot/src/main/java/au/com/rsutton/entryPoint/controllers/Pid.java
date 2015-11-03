@@ -1,6 +1,5 @@
 package au.com.rsutton.entryPoint.controllers;
 
-import java.util.Date;
 
 /*
  * 
@@ -22,7 +21,6 @@ public class Pid
 	Double lastCheckTime = null;
 
 	// used to persist the last error, until a current error occurs.
-	Double lastCurrentError = null;
 	Double lastError = null;
 	private double kp;
 	private double ki;
@@ -62,33 +60,22 @@ public class Pid
 	{
 		double error;
 		double interval;
-		double now = new Date().getTime();
+		double now = System.currentTimeMillis();
+
+		// calculate instantaneous error
+		error = target - value;
+
 		if (lastCheckTime == null)
 		{
+			// if first time through, assume last error = current error
+			lastError = error;
 			interval = 1;// seconds since last check
 		} else
 		{
 			interval = (now - lastCheckTime) / div;// time since last check
 		}
 		lastCheckTime = now;
-
-		// calculate instantaneous error
-		error = target - value;
-
-		// if first time through, assume last error = current error
-		if (lastCurrentError == null || lastError == null)
-		{
-			lastCurrentError = error;
-			lastError = error;
-		}
-		if (Math.abs(error - lastCurrentError) < 0.001)
-		{
-			// take the current error, and store it to last error for the next
-			// call
-			lastError = lastCurrentError;
-			lastCurrentError = error;
-		}
-
+		
 		integral += (error * interval);
 		double derivative = (error - lastError) * interval;
 
@@ -106,14 +93,18 @@ public class Pid
 		if (ret > maxOut)
 		{
 			ret = maxOut;
-			integral *= .9;
+			// we are at max output, so deduct away the integral we just added to avoid a build up
+			integral -= (error * interval);
 		}
 		if (ret < minOut)
 		{
 			ret = minOut;
-			integral *= .9;
+			// we are at min output, so deduct away the integral we just added to avoid a build up
+			integral -= (error * interval);
 		}
 
+		lastError =  error;
+		
 //		System.out.printf("error %4.1f p: %4.1f i: %4.1f d: %4.1f output: %4.1f\n", error, p, i, d, ret);
 
 		return ret;

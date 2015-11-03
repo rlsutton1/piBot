@@ -14,15 +14,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import au.com.rsutton.cv.CameraRangeData;
 import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.mapping.v2.HoughLine;
 import au.com.rsutton.mapping.v2.Line;
 import au.com.rsutton.mapping.v2.ScanEvaluator;
 import au.com.rsutton.mapping.v2.ScanEvaluatorIfc;
-import au.com.rsutton.mapping.v2.ScanEvaluatorV3;
+import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
@@ -94,30 +92,17 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 	@Override
 	public void onMessage(Message<RobotLocation> message)
 	{
-		RobotLocation messageObject = message.getMessageObject();
-		if (messageObject.getCameraRangeData() != null)
+
+		RobotLocation robotLocation = message.getMessageObject();
+
+		try
 		{
-			frameJoiner.join(messageObject, this);
+			List<XY> translatedXyData = new LinkedList<>();
 
-		}
-	}
+			List<Double> angles = new LinkedList<>();
 
-	FrameJoiner frameJoiner = new FrameJoiner();
-
-	void handlePointCloud(List<RobotLocation> frames)
-	{
-
-		List<XY> translatedXyData = new LinkedList<>();
-
-		List<Double> angles = new LinkedList<>();
-		for (RobotLocation robotLocation : frames)
-		{
-			angles.add((double) robotLocation.getHeading().getDegrees());
-		}
-		lastHeading = TrigMath.averageAngles(angles);
-
-		for (RobotLocation robotLocation : frames)
-		{
+			List<XY> newPoints = new LinkedList<>(translatedXyData);
+			lastHeading = robotLocation.getHeading().getDegrees();
 
 			currentX = (int) (robotLocation.getX().convert(DistanceUnit.CM) * 12d);
 			currentY = (int) (robotLocation.getY().convert(DistanceUnit.CM) * 12d);
@@ -125,40 +110,21 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 			double robotSinAngle = Math.sin(Math.toRadians(lastHeading));
 			double robotCosAngle = Math.cos(Math.toRadians(lastHeading));
 
-			CameraRangeData cameraRangeData = robotLocation
-					.getCameraRangeData();
-			CoordResolver converter = new CoordResolver(
-					cameraRangeData.getRangeFinderConfig());
-
-			Collection<Coordinate> laserData = cameraRangeData.getRangeData();
-			for (Coordinate vector : laserData)
+			for (LidarObservation vector : robotLocation.getObservations())
 			{
 
-				XY xy = converter.convertImageXYtoAbsoluteXY(
-						vector.getAverageX(), vector.getAverageY());
+				XY xy =new XY(vector.getX()*-10,vector.getY()*10);
 
 				xy = Translator2d.rotate(xy, lastHeading);
 				translatedXyData.add(xy);
+				newPoints.add(xy);
+
+				map.addObservation(new ObservationImpl(xy.getX() + currentX, xy
+						.getY() + currentY, 1, LocationStatus.OCCUPIED));
 
 			}
-		}
-		List<XY> newPoints = new LinkedList<>(translatedXyData);
-		ScanEvaluatorIfc se = new ScanEvaluator();
-		try
-		{
-			List<Line> lines = se.findLines(translatedXyData);
-			translatedXyData.clear();
-			for (Line line : lines)
-			{
-				for (XY xy : line.getPoints())
-				{
-					map.addObservation(new ObservationImpl(
-							xy.getX() + currentX, xy.getY() + currentY, 1,
-							LocationStatus.OCCUPIED));
-					translatedXyData.add(xy);
-				}
-			}
 
+			List<Line> lines = new LinkedList<>();
 			renderMap(newPoints, lines);
 		} catch (Exception e)
 		{
@@ -192,7 +158,6 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		double minxy = Math.min(h, w);
 		double offset = 1500;
 		double scale = minxy / (offset * 2.0d);
-
 
 		// Draw axeX.
 		g2.draw(new Line2D.Double(0, (offset * scale), w, (offset * scale)));

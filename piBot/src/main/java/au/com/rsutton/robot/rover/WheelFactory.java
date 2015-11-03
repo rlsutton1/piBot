@@ -2,6 +2,8 @@ package au.com.rsutton.robot.rover;
 
 import java.io.IOException;
 
+import au.com.rsutton.config.Config;
+
 import com.pi4j.gpio.extension.adafruit.DigitalOutPin;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
@@ -11,7 +13,7 @@ import com.pi4j.io.gpio.RaspiPin;
 
 public class WheelFactory
 {
-	static public WheelController setupRightWheel(GrovePiProvider grove)
+	static public WheelController setupRightWheel(GrovePiProvider grove, Config config)
 			throws IOException
 	{
 		PwmPin pwmPin = new PwmPin(grove, GrovePiPin.GPIO_D3);
@@ -20,10 +22,10 @@ public class WheelFactory
 		Pin quadratureA = RaspiPin.GPIO_05;
 		Pin quadreatureB = RaspiPin.GPIO_04;
 		return new WheelController(pwmPin, directionPin, quadratureA,
-				quadreatureB, false, false, 0.3);
+				quadreatureB, false, false, 0.3,config,"right");
 	}
 
-	static public WheelController setupLeftWheel(GrovePiProvider grove)
+	static public WheelController setupLeftWheel(GrovePiProvider grove, Config config)
 			throws IOException
 	{
 		PwmPin pwmPin = new PwmPin(grove, GrovePiPin.GPIO_D6);
@@ -32,7 +34,7 @@ public class WheelFactory
 		Pin quadratureA = RaspiPin.GPIO_02;
 		Pin quadreatureB = RaspiPin.GPIO_03;
 		return new WheelController(pwmPin, directionPin, quadratureA,
-				quadreatureB, false, true, 0.3);
+				quadreatureB, false, true, 0.3,config,"left");
 	}
 
 }

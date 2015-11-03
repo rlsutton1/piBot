@@ -92,4 +92,9 @@ public class Angle implements Serializable
 		return diff;
 	}
 
+	public double difference(Angle angle2)
+	{
+		return difference(angle2.getDegrees(),AngleUnits.DEGREES);
+	}
+
 }

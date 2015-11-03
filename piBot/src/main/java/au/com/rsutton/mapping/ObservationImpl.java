@@ -13,7 +13,7 @@ public class ObservationImpl implements Observation
 	LocationStatus status = LocationStatus.UNOBSERVED;
 	private int seen = 1;
 
-	ObservationImpl(double x, double y, double accuracy, LocationStatus status)
+	public ObservationImpl(double x, double y, double accuracy, LocationStatus status)
 	{
 		Preconditions.checkArgument(status != LocationStatus.UNOBSERVED,
 				"Location status can not be UNOBSERVED");

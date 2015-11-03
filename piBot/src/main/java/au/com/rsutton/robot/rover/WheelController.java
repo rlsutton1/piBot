@@ -5,6 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.controllers.DeadZoneRescaler;
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.Pid;
@@ -29,7 +30,7 @@ public class WheelController implements Runnable
 	private volatile long lastQuadratureOffset;
 	private volatile long lastCalcuationTime = System.currentTimeMillis();
 	private volatile Pid pid;
-	final QuadratureToDistance distanceConverter = new QuadratureToDistance();
+	final QuadratureToDistance distanceConverter ;
 	final private DistanceUnit distUnit = DistanceUnit.MM;
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
 	final private ScheduledFuture<?> worker;
@@ -37,9 +38,11 @@ public class WheelController implements Runnable
 
 	public WheelController(PwmPin pwmPin, DigitalOutPin directionPin,
 			Pin quadratureA, Pin quadreatureB, boolean invertPwm,
-			boolean invertQuadrature,  double deadZone) throws IOException
+			boolean invertQuadrature,  double deadZone, Config config, String wheelLabel) throws IOException
 	{
 
+		distanceConverter = new QuadratureToDistance(config,wheelLabel);
+		
 		hBridge = new HBridgeController(pwmPin, directionPin, invertPwm, deadZone);
 
 		hBridge.setOutput(0);

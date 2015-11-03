@@ -42,22 +42,38 @@
 			<version>15.0</version>
 		</dependency>
 
-		<dependency>
-			<groupId>au.edu.jcu.v4l4j</groupId>
-			<artifactId>v4l4j</artifactId>
-			<version>0.9.1</version>
-		</dependency>
-		<dependency>
+			<dependency>
 			<groupId>Quadtree</groupId>
 			<artifactId>Quadtree</artifactId>
 			<version>1.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.4.1</version>
+		</dependency>
+
 
 		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j 
 			-DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
 	</dependencies>
 	<build>
 		<plugins>
+
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>install</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>

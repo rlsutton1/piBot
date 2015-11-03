@@ -2,6 +2,8 @@ package com.pi4j.gpio.extension.pixy;
 
 import java.io.Serializable;
 
+import au.com.rsutton.hazelcast.DistanceVector;
+
 public class PixyLaserRange implements Serializable
 {
 

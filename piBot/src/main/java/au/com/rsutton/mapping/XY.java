@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping;
 
-public class XY
+public class XY implements Comparable<XY>
 {
 
 	int x;
@@ -53,5 +53,15 @@ public class XY
 	public String toString()
 	{
 		return x + "," + y;
+	}
+
+	@Override
+	public int compareTo(XY o)
+	{
+		if (o.getX() == x)
+		{
+			return o.getY() - y;
+		}
+		return o.getX() - x;
 	}
 }
