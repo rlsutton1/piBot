@@ -35,6 +35,7 @@ public class Config
 		String storedValue = (String) properties.get(key);
 		if (storedValue == null)
 		{
+			storeSetting(key,value);
 			return value;
 		}
 		try
@@ -53,6 +54,7 @@ public class Config
 		String storedValue = (String) properties.get(key);
 		if (storedValue == null)
 		{
+			storeSetting(key,value);
 			return value;
 		}
 		try
@@ -76,6 +78,7 @@ public class Config
 		String storedValue = (String) properties.get(key);
 		if (storedValue == null)
 		{
+			storeSetting(key, value);
 			return value;
 		}
 		return storedValue;

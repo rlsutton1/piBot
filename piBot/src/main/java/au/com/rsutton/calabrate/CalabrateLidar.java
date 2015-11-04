@@ -25,7 +25,7 @@ public class CalabrateLidar implements LidarDataListener
 	private Lidar lidar;
 	volatile private double currentReading;
 
-	CalabrateLidar() throws IOException, InterruptedException
+	public CalabrateLidar() throws IOException, InterruptedException
 	{
 		Config config = new Config();
 

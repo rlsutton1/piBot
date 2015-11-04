@@ -24,7 +24,7 @@ public class CalabrateCompass
 	private WheelController rightWheel;
 	private WheelController leftWheel;
 
-	CalabrateCompass() throws IOException, InterruptedException
+	public CalabrateCompass() throws IOException, InterruptedException
 	{
 		Config config = new Config();
 		
