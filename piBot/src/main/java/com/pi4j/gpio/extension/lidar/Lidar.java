@@ -1,65 +1,33 @@
 package com.pi4j.gpio.extension.lidar;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.config.Config;
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
-import com.pi4j.gpio.extension.adafruit.AdafruitPCA9685;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 
-public class Lidar implements Runnable
+public class Lidar
 {
 
-	private static final int PWM_PIN = 0;
-	private static final int DISTANCE_FROM_CENTER_TO_STRUT = 4;
 	private static final int LIDAR_ADDR = 0x62;
 	private static final int LIDAR_CONFIG_REGISTER = 0x00;
 	private static final int LIDAR_DISTANCE_REGISTER = 0x8f;
 	private static final int LIDAR_INTERVAL_REGISTER = 0x45;
 	private static final int LIDAR_NUMBER_OF_READINGS_REGISTER = 0x11;
 
-	private static final int MIN_PWM = 170;
-	private static final int MAX_PWM = 605;
-
-	private static final int MIN_ANGLE = -90;
-	private static final int MAX_ANGLE = 90;
-
-	private static final int STEP_DELAY_MS = 80;
-	private static final int STEPS = MAX_ANGLE - MIN_ANGLE;
-	private static final int STEP_DURATION = STEP_DELAY_MS;
-	private static final int STEP_ANGLE = 4;
-
 	final private I2CDevice lidarDevice;
-	private final AdafruitPCA9685 pwm;
-	final private ServoAngleToPwmCalculator angleToPwmCalculator;
-
-	private volatile boolean stop = false;
 
 	volatile int resolution = 1;
 
-	private final Map<Integer, Rotation> scanRotationMap = new LinkedHashMap<>();
-	private final LidarDataListener listener;
-	private Config config;
-	
 	// think y =mx+c
 	private Integer calabrationC;
 	private Double calabrationM;
 
-	public Lidar(AdafruitPCA9685 pwm, LidarDataListener listener, Config config)
-			throws InterruptedException, IOException
+	public Lidar(Config config) throws InterruptedException, IOException
 	{
-		this.pwm = pwm;
-		this.listener = listener;
-		this.config = config;
 		calabrationC = config.loadSetting("lidar.c", 30);
 
 		calabrationM = config.loadSetting("lidar.m", 1.0);
@@ -69,109 +37,15 @@ public class Lidar implements Runnable
 															// RasPI version
 
 		// Get the device itself
-		lidarDevice = bus.getDevice(LIDAR_ADDR);
+		lidarDevice = new SynchronizedDeviceWrapper(bus.getDevice(LIDAR_ADDR));
 
 		setupContinuous(false);
-		Thread.sleep(5000);
-
-		angleToPwmCalculator = new ServoAngleToPwmCalculator(MIN_PWM, MAX_PWM,
-				MIN_ANGLE, 90);
-
-		init();
-
-		new Thread(this, "lidar").start();
 
 	}
 
-	public void prepareForCalabration()
+	void setCalabrationC(double c)
 	{
-		calabrationC = 0;
-		calabrationM = 1.0;
-	}
-
-	public void saveConfig(double m, int c)
-	{
-		calabrationC = c;
-		calabrationM = m;
-		config.storeSetting("lidar.c", c);
-		config.storeSetting("lidar.m", m);
-
-	}
-
-	void init() throws InterruptedException, IOException
-	{
-
-		int min = Integer.MAX_VALUE;
-
-		pwm.setPWM(PWM_PIN, 0,
-				(int) angleToPwmCalculator.getPwmValueDegrees(MIN_ANGLE));
-
-		Thread.sleep(500);
-
-		buildScanRotationMap();
-
-	}
-
-	void buildScanRotationMap()
-	{
-		int i = 0;
-		for (i = MIN_ANGLE; i < MAX_ANGLE; i += STEP_ANGLE)
-		{
-			scanRotationMap.put(i,
-					new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(i)));
-		}
-
-	}
-
-	@Override
-	public void run()
-	{
-
-		while (!stop)
-		{
-			try
-			{
-				int ctr = 0;
-				for (Entry<Integer, Rotation> position : scanRotationMap
-						.entrySet())
-				{
-
-					if (ctr % resolution == 0)
-					{
-						int update = update();
-						pwm.setPWM(PWM_PIN, 0, (int) angleToPwmCalculator
-								.getPwmValueDegrees(position.getKey()));
-						if (update > 0 && update < 1000)
-						{
-							Vector3D vector = new Vector3D(0, update, 0);
-							addDataPoint(
-									position.getValue().applyInverseTo(vector),
-									update, position.getKey());
-						}
-						Thread.sleep(STEP_DURATION);
-					}
-				}
-				for (int i = MAX_ANGLE; i > MIN_ANGLE; i -= 4)
-				{
-					pwm.setPWM(PWM_PIN, 0,
-							(int) angleToPwmCalculator.getPwmValueDegrees(i));
-					Thread.sleep(STEP_DURATION / 2);
-				}
-			} catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-		pwm.setPWM(PWM_PIN, 0, (int) angleToPwmCalculator.getPwmValueDegrees(0));
-
-	}
-
-	private void addDataPoint(Vector3D vector, double distanceCm,
-			double angleDegrees)
-	{
-
-		listener.addLidarData(vector, distanceCm, angleDegrees);
-
+		calabrationC = (int) c;
 	}
 
 	void setupContinuous(boolean modePinLow) throws IOException
@@ -200,13 +74,19 @@ public class Lidar implements Runnable
 	}
 
 	// Update distance variable
-	public int update() throws IOException, InterruptedException
+	public int getLatestReading() throws IOException, InterruptedException
 	{
 		byte[] distance = new byte[2];
 
+		int value = 0;
 		// Read in 2 bytes from distance register
-		lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
-
+		try
+		{
+			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
+		} catch (IOException e)
+		{
+			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
+		}
 		int d1 = distance[0];
 		if (d1 < 0)
 		{
@@ -218,10 +98,9 @@ public class Lidar implements Runnable
 			d2 += 256;
 		}
 
-		int value = (d1 * 256) + d2;
+		value = (d1 * 256) + d2;
 
 		value = (int) ((value * calabrationM) + calabrationC);
-
 		return value;
 	}
 

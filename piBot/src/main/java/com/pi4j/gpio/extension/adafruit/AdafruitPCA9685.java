@@ -2,6 +2,8 @@ package com.pi4j.gpio.extension.adafruit;
 
 import java.io.IOException;
 
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
@@ -47,7 +49,7 @@ public class AdafruitPCA9685
         System.out.println("Connected to bus. OK.");
 
       // Get the device itself
-      servoDriver = bus.getDevice(address); 
+      servoDriver = new SynchronizedDeviceWrapper(bus.getDevice(address)); 
       if (verbose)
         System.out.println("Connected to device. OK.");
       // Reseting

@@ -1,5 +1,7 @@
 package au.com.rsutton.mapping.v3.linearEquasion;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.v3.impl.ObservedPoint;
 import au.com.rsutton.robot.rover.Angle;
@@ -30,6 +32,22 @@ public class LinearEquasionNormal implements LinearEquasion
 		c = p1.getY() - (m * p1.getX());
 	}
 
+	LinearEquasionNormal(Vector3D p1, Vector3D p2)
+	{
+		double run = p2.getX() - p1.getX();
+		double rise = p2.getY() - p1.getY();
+		m = rise / run;
+
+		angle = new Angle(Math.toDegrees(Math.atan(m)), AngleUnits.DEGREES);
+
+		// y=mx+c
+		// y-mx = c;
+		// c= y-mx;
+		// p1.getY()=ratio*p1.getX()+c;
+		//
+		c = p1.getY() - (m * p1.getX());
+	}
+
 	public double getM()
 	{
 		return m;
@@ -40,12 +58,12 @@ public class LinearEquasionNormal implements LinearEquasion
 		return c;
 	}
 
-	public double getY(double x)
+	public double getYFromX(double x)
 	{
 		return (m * x) + c;
 	}
 
-	public double getX(double y)
+	public double getXFromY(double y)
 	{
 		// y = mx+c
 		// mx = y-c
@@ -59,11 +77,10 @@ public class LinearEquasionNormal implements LinearEquasion
 	{
 		boolean ret = false;
 
-		ret = Math.abs(otherLine.getAngle()
-				.difference(otherLine.getAngle())) <= angleTolleranceDegrees;
+		ret = Math.abs(otherLine.getAngle().difference(otherLine.getAngle())) <= angleTolleranceDegrees;
 		if (otherLine instanceof LinearEquasionNormal)
 		{
-			ret &= Math.abs(((LinearEquasionNormal) otherLine).getX(at.getY())
+			ret &= Math.abs(((LinearEquasionNormal) otherLine).getXFromY(at.getY())
 					- at.getX()) <= cTollerance;
 		} else if (otherLine instanceof VerticalLine)
 		{
@@ -84,12 +101,12 @@ public class LinearEquasionNormal implements LinearEquasion
 		{
 			double otherX = ((VerticalLine) otherLine).getX();
 			return new InterceptResult(InterceptType.INTERCEPT, new XY(
-					(int) otherX, (int) getY(otherX)));
+					(int) otherX, (int) getYFromX(otherX)));
 		} else if (otherLine instanceof HorizontalLine)
 		{
 			int otherY = (int) ((HorizontalLine) otherLine).getY();
 			return new InterceptResult(InterceptType.INTERCEPT, new XY(
-					(int) getX(otherY), otherY));
+					(int) getXFromY(otherY), otherY));
 
 		} else
 		{
@@ -126,6 +143,12 @@ public class LinearEquasionNormal implements LinearEquasion
 	public Angle getAngle()
 	{
 		return angle;
+	}
+
+	@Override
+	public boolean isPointOnLine(Vector3D point, double accuracy)
+	{
+		return Math.abs(getYFromX(point.getX()) - point.getY()) < accuracy;
 	}
 
 }

@@ -1,5 +1,7 @@
 package au.com.rsutton.mapping.v3.linearEquasion;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.robot.rover.Angle;
 
@@ -24,4 +26,6 @@ public interface LinearEquasion
 	 */
 	boolean isSimilar(LinearEquasion otherLine, double angleTolleranceDegrees,
 			double cTollerance, XY at);
+
+	boolean isPointOnLine(Vector3D point, double accuracy);
 }

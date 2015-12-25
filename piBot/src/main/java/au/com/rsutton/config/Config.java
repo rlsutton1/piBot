@@ -70,7 +70,7 @@ public class Config
 
 	public void storeSetting(String key, Object value)
 	{
-		properties.put(key, value);
+		properties.put(key, value.toString());
 	}
 
 	String loadSetting(String key, String value)

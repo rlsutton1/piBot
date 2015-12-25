@@ -1,5 +1,6 @@
 package au.com.rsutton.hazelcast;
 
+import java.util.List;
 import java.util.Set;
 
 import au.com.rsutton.entryPoint.units.Distance;
@@ -20,7 +21,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	private Distance clearSpaceAhead;
 	private long time = System.currentTimeMillis();
 	private Angle headingError;
-	private Set<LidarObservation> observations;
+	private List<LidarObservation> observations;
 
 	public RobotLocation()
 	{
@@ -31,7 +32,7 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	public void setTopic()
 	{
 
-		this.topic = HazelCastInstance.getInstance().getTopic(
+		this.topicInstance = HazelCastInstance.getInstance().getTopic(
 				HcTopic.LOCATION.toString());
 	}
 
@@ -108,18 +109,18 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return headingError;
 	}
 
-	public void addObservations(Set<LidarObservation> observations)
+	public void addObservations(List<LidarObservation> observations)
 	{
 		this.observations = observations;
 		
 	}
 
-	public Set<LidarObservation> getObservations()
+	public List<LidarObservation> getObservations()
 	{
 		return observations;
 	}
 
-	public void setObservations(Set<LidarObservation> observations)
+	public void setObservations(List<LidarObservation> observations)
 	{
 		this.observations = observations;
 	}

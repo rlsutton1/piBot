@@ -2,6 +2,9 @@ package au.com.rsutton.hazelcast;
 
 import java.util.Collection;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
 import au.com.rsutton.entryPoint.units.Distance;
@@ -10,6 +13,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
@@ -40,6 +44,12 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 
 	Integer setHeading = null;
 
+	double currentSpeed = 0;
+
+	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer();
+
+	WallFollowerUI ui = new WallFollowerUI();
+	
 	@Override
 	public void onMessage(Message<RobotLocation> message)
 	{
@@ -51,18 +61,26 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		}
 		int speed = 100;
 
-		Collection<LidarObservation> laserData = message.getMessageObject()
-				.getObservations();
+		buffer.addObservation(messageObject);
 
+		Collection<LidarObservation> laserData = buffer.getObservations(
+				new Vector3D(messageObject.getX().convert(DistanceUnit.CM), messageObject.getY().convert(
+						DistanceUnit.CM)), new Rotation(RotationOrder.XYZ, 0, 0, messageObject.getHeading()
+						.getRadians()));
+
+		ui.showPoints(laserData);
+		
 		double minX = 1000000;
 
+		
+		
 		for (LidarObservation observation : laserData)
 		{
 			XY xy = new XY(observation.getX(), observation.getY());
 
-			int x = (int) (new Float(xy.getX()) / 5.0f);
-			int y = (int) (new Float(xy.getY()) / 5.0f);
-
+			int x = (int) xy.getX();
+			int y = (int) xy.getY();
+			System.out.println(System.currentTimeMillis()+" "+x + " " + y);
 			if (y < 70 && x > -30 && x < 30)
 			{
 				if (y < 50)
@@ -87,12 +105,11 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 				minX = Math.min(minX, x);
 			}
 
-			if (message.getMessageObject().getClearSpaceAhead()
-					.convert(DistanceUnit.CM) < 35)
-			{
-				speed = -50;
-				setHeading = heading + 45;
-			}
+//			if (message.getMessageObject().getClearSpaceAhead().convert(DistanceUnit.CM) < 35)
+//			{
+//				speed = -50;
+//				setHeading = heading + 45;
+//			}
 
 			if (setHeading.intValue() == heading && minX > -30)
 			{
@@ -107,9 +124,10 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		{
 			speed = Math.min(speed, 0);
 		}
+
+		currentSpeed = speed;
 		SetMotion message2 = new SetMotion();
-		message2.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time
-				.perSecond()));
+		message2.setSpeed(new Speed(new Distance(currentSpeed, DistanceUnit.CM), Time.perSecond()));
 		message2.setHeading((double) setHeading);
 		message2.publish();
 

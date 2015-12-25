@@ -4,13 +4,15 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.sonar.Sonar;
@@ -21,20 +23,18 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.i2c.I2cSettings;
+import au.com.rsutton.robot.stepper.StepperMotor;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.pi4j.gpio.extension.adafruit.AdafruitPCA9685;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
-import com.pi4j.gpio.extension.lidar.Lidar;
-import com.pi4j.gpio.extension.lidar.LidarDataListener;
+import com.pi4j.gpio.extension.lidar.LidarScanningService;
 import com.pi4j.gpio.extension.lsm303.CompassLSM303;
-import com.pi4j.gpio.extension.pixy.PixyLaserRangeService;
 import com.pi4j.io.gpio.PinMode;
 
-public class Rover implements Runnable, RobotLocationReporter,
-		LidarDataListener
+public class Rover implements Runnable, RobotLocationReporter
 {
 
 	private WheelController rightWheel;
@@ -53,34 +53,25 @@ public class Rover implements Runnable, RobotLocationReporter,
 	private SetMotion lastData;
 
 	volatile private Distance clearSpaceAhead = new Distance(0, DistanceUnit.MM);
-	protected Distance clearSpaceLeft;
-	protected Distance clearSpaceRight;
 
 	private GrovePiProvider grove;
 
-	public Rover() throws IOException, InterruptedException
+	public Rover() throws IOException, InterruptedException,
+			BrokenBarrierException
 	{
 
 		Config config = new Config();
-		
+
 		grove = new GrovePiProvider(I2cSettings.busNumber, 4);
 
 		grove.setMode(GrovePiPin.GPIO_A1, PinMode.ANALOG_INPUT);
 
 		compass = new CompassLSM303(config);
 
-		rightWheel = WheelFactory.setupRightWheel(grove,config);
+		rightWheel = WheelFactory.setupRightWheel(grove, config);
 
-		leftWheel = WheelFactory.setupLeftWheel(grove,config);
+		leftWheel = WheelFactory.setupLeftWheel(grove, config);
 
-		compass.startCalabration();
-		rightWheel.setSpeed(new Speed(new Distance(100, DistanceUnit.CM), Time
-				.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(-100, DistanceUnit.CM), Time
-				.perSecond()));
-		Thread.sleep(15000);
-
-		compass.finishcalabration();
 		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
 				.perSecond()));
 		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
@@ -113,11 +104,26 @@ public class Rover implements Runnable, RobotLocationReporter,
 		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
 				Time.perSecond()));
 
-		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
-		// address
-		pwm.setPWMFreq(60); // Set frequency to 60 Hz
+//		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
+//		// address
+//		pwm.setPWMFreq(1000); // Set frequency to 60 Hz
 
-		new Lidar(pwm, this,config);
+		StepperMotor stepper = new StepperMotor();
+
+		new LidarScanningService(grove, stepper, config);
+
+		new LidarObservation()
+				.addMessageListener(new MessageListener<LidarObservation>()
+				{
+
+					@Override
+					public void onMessage(Message<LidarObservation> message)
+					{
+
+						currentObservations.add(message.getMessageObject());
+
+					}
+				});
 
 		getSpaceAhead();
 		// pixy.getCurrentData();
@@ -200,9 +206,10 @@ public class Rover implements Runnable, RobotLocationReporter,
 			currentLocation.setSpeed(speed);
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
 
-			Set<LidarObservation> observations = new HashSet<>();
+			List<LidarObservation> observations = new LinkedList<>();
+			
 			observations.addAll(currentObservations);
-			currentObservations.clear();
+			currentObservations.removeAll(observations);
 			currentLocation.addObservations(observations);
 
 			currentLocation.publish();
@@ -237,18 +244,6 @@ public class Rover implements Runnable, RobotLocationReporter,
 		return speed;
 	}
 
-	Set<LidarObservation> currentObservations = Collections
-			.newSetFromMap(new ConcurrentHashMap<LidarObservation, Boolean>());
-
-	@Override
-	public void addLidarData(Vector3D vector, double distanceCm,
-			double angleDegrees)
-	{
-		System.out.println((int) vector.getX() + " " + (int) vector.getY()+" "+distanceCm);
-
-		currentObservations.add(new LidarObservation(vector, distanceCm,
-				angleDegrees));
-
-	}
+	List<LidarObservation> currentObservations = new Vector<>();
 
 }

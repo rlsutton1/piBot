@@ -10,21 +10,32 @@ public abstract class MessageBase<M> implements Serializable
 
 	
 	private static final long serialVersionUID = 1130437880736641457L;
-	protected transient ITopic<M> topic;
+	protected transient ITopic<M> topicInstance;
+	final transient private HcTopic topic;
 
-	MessageBase(HcTopic topic)
+	protected MessageBase(HcTopic topic)
 	{
-		this.topic = HazelCastInstance.getInstance().getTopic(topic.toString());
+		this.topic = topic;
 	}
 
 	@SuppressWarnings("unchecked")
 	public void publish()
 	{
-		topic.publish((M) this);
+		if (topicInstance==null)
+		{
+			this.topicInstance = HazelCastInstance.getInstance().getTopic(topic.toString());
+
+		}
+		topicInstance.publish((M) this);
 	}
 
 	public void addMessageListener(MessageListener<M> listener)
 	{
-		topic.addMessageListener(listener);
+		if (topicInstance==null)
+		{
+			this.topicInstance = HazelCastInstance.getInstance().getTopic(topic.toString());
+
+		}
+		topicInstance.addMessageListener(listener);
 	}
 }

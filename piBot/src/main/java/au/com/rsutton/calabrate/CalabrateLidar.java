@@ -3,63 +3,56 @@ package au.com.rsutton.calabrate;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.BrokenBarrierException;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.config.Config;
+import au.com.rsutton.i2c.I2cSettings;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.v3.impl.ObservedPoint;
-import au.com.rsutton.mapping.v3.linearEquasion.LinearEquasion;
 import au.com.rsutton.mapping.v3.linearEquasion.LinearEquasionFactory;
 import au.com.rsutton.mapping.v3.linearEquasion.LinearEquasionNormal;
-import au.com.rsutton.robot.rover.WheelController;
+import au.com.rsutton.robot.stepper.StepperMotor;
 
 import com.pi4j.gpio.extension.adafruit.AdafruitPCA9685;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
-import com.pi4j.gpio.extension.lidar.Lidar;
-import com.pi4j.gpio.extension.lidar.LidarDataListener;
-import com.pi4j.gpio.extension.lsm303.CompassLSM303;
+import com.pi4j.gpio.extension.lidar.LidarScanner;
 
-public class CalabrateLidar implements LidarDataListener
+public class CalabrateLidar
 {
-	private Lidar lidar;
+	private LidarScanner lidar;
 	volatile private double currentReading;
 
-	public CalabrateLidar() throws IOException, InterruptedException
+	public CalabrateLidar() throws IOException, InterruptedException,
+			BrokenBarrierException
 	{
 		Config config = new Config();
 
-		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
-		// address
-		pwm.setPWMFreq(60); // Set frequency to 60 Hz
+//		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
+//		// address
+//		pwm.setPWMFreq(60); // Set frequency to 60 Hz
+		GrovePiProvider grove = new GrovePiProvider(I2cSettings.busNumber, 4);
 
-		lidar = new Lidar(pwm, this, config);
+		StepperMotor driver = new StepperMotor();
 
-		lidar.prepareForCalabration();
+		config.loadSetting("lidar.c", 0);
+
+		config.loadSetting("lidar.m", 1.0);
+
+		lidar = new LidarScanner(driver, config, grove);
 
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		System.out
 				.println("Move robot 100cm from a wall, and press enter when done");
 		br.read();
-		currentReading = -1;
-		System.out.println("Please wait...");
-		while (currentReading == -1)
-		{
-			Thread.sleep(100);
-
-		}
+		currentReading = Vector3D.distance(Vector3D.ZERO, lidar.scanAngle(0));
 		double reading1 = currentReading;
 
 		System.out
 				.println("Move robot 200cm from a wall, and press enter when done");
 		br.read();
-		currentReading = -1;
-		System.out.println("Please wait...");
-		while (currentReading == -1)
-		{
-			Thread.sleep(100);
-
-		}
+		currentReading = Vector3D.distance(Vector3D.ZERO, lidar.scanAngle(0));
 		double reading2 = currentReading;
 
 		LinearEquasionNormal lineEquasion = (LinearEquasionNormal) LinearEquasionFactory
@@ -70,7 +63,8 @@ public class CalabrateLidar implements LidarDataListener
 		int c = (int) lineEquasion.getC();
 		double m = lineEquasion.getM();
 
-		lidar.saveConfig(m,c);
+		config.storeSetting("lidar.c", c);
+		config.storeSetting("lidar.m", m);
 
 		config.save();
 
@@ -78,15 +72,4 @@ public class CalabrateLidar implements LidarDataListener
 
 	}
 
-	@Override
-	public void addLidarData(Vector3D vector, double distanceCm,
-			double angleDegrees)
-	{
-		if (Math.abs(angleDegrees) < 1)
-		{
-			currentReading = distanceCm;
-			System.out.println("Reading accuired " + distanceCm);
-		}
-
-	}
 }

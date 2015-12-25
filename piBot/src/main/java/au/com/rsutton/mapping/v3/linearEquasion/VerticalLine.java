@@ -1,5 +1,7 @@
 package au.com.rsutton.mapping.v3.linearEquasion;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
@@ -24,7 +26,7 @@ public class VerticalLine implements LinearEquasion
 				.difference(otherLine.getAngle())) <= angleTolleranceDegrees;
 		if (otherLine instanceof LinearEquasionNormal)
 		{
-			ret &= Math.abs(((LinearEquasionNormal) otherLine).getX(at.getY())
+			ret &= Math.abs(((LinearEquasionNormal) otherLine).getXFromY(at.getY())
 					- at.getX()) <= cTollerance;
 		} else if (otherLine instanceof VerticalLine)
 		{
@@ -63,7 +65,7 @@ public class VerticalLine implements LinearEquasion
 
 		LinearEquasionNormal other = (LinearEquasionNormal) otherLine;
 		return new InterceptResult(InterceptType.INTERCEPT, new XY((int) getX(),
-				(int) other.getY(getX())));
+				(int) other.getYFromX(getX())));
 
 	}
 
@@ -76,6 +78,12 @@ public class VerticalLine implements LinearEquasion
 	public double getX()
 	{
 		return x;
+	}
+	
+	@Override
+	public boolean isPointOnLine(Vector3D point, double accuracy)
+	{
+		return (Math.abs(point.getX()-x) < accuracy);
 	}
 
 }
