@@ -36,14 +36,16 @@ public class WallFollowerGraph extends JPanel
 		int w = image.getWidth();
 
 		// Draw axeX.
-		g2.draw(new Line2D.Double(0, h / 2, w, h / 2));
-		g2.draw(new Line2D.Double(w / 2, 0, w / 2, h));
+		int centerY = h / 2;
+		g2.draw(new Line2D.Double(0, centerY, w, centerY));
+		int centerX = w / 2;
+		g2.draw(new Line2D.Double(centerX, 0, centerX, h));
 
 		g2.setColor(new Color(255, 255, 255));
 
 		for (LidarObservation point : laserData)
 		{
-			g2.drawRect((int) point.getX(), (int) point.getY(), 10, 10);
+			g2.drawRect((int)(point.getX()+centerX), (int) (point.getY()+centerY), 10, 10);
 
 		}
 

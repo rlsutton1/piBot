@@ -29,6 +29,11 @@ public class WallFollowerUI extends JFrame
 		graph = new WallFollowerGraph();
 		graph.setPreferredSize(new Dimension(750, 750));
 		this.add(graph);
+		
+		setSize(400, 400);
+		setLocation(200, 200);
+		setVisible(true);
+
 	}
 	
 	public void showPoints(Collection<LidarObservation> laserData)

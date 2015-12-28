@@ -13,53 +13,53 @@ import au.com.rsutton.hazelcast.RobotLocation;
 public class MovingLidarObservationBuffer
 {
 	List<LidarObservation> observations = new LinkedList<>();
-	Vector3D frameTranslation = null;
-	Rotation frameRotation = null;
 
 	void addLidarObservation(RobotLocation data)
 	{
-		data.getX();
-		data.getY();
 
-		data.getHeading();
+		double heading = data.getHeading().getRadians();
+		Rotation frameRotation = new Rotation(RotationOrder.XYZ, 0, 0, heading);
 
-		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, data.getHeading().getRadians());
-		Vector3D translation = new Vector3D(data.getX().convert(DistanceUnit.CM), data.getY().convert(DistanceUnit.CM),
-				0);
-
-		if (observations.isEmpty())
-		{
-			frameRotation = rotation;
-			frameTranslation = translation;
-		}
+		// due to a horrible bug in old code we have to invert the X axis
+		// must replace all old code with Vector3D
+		double xCm = -data.getX().convert(DistanceUnit.CM);
+		double yCm = data.getY().convert(DistanceUnit.CM);
+		Vector3D frameTranslation = new Vector3D(xCm, yCm, 0);
 
 		for (LidarObservation observation : data.getObservations())
 		{
-			double angle = rotation.getAngles(RotationOrder.XYZ)[2];
-			double frameAngle = frameRotation.getAngles(RotationOrder.XYZ)[2];
-			double deltaAngle = frameAngle - angle;
 
-			Rotation deltaRotation = new Rotation(RotationOrder.XYZ, 0, 0, deltaAngle);
+			Vector3D resolvedObservation = frameRotation.applyTo(observation.getVector()).add(frameTranslation);
 
-			Vector3D deltaTranslation = frameTranslation.subtract(translation);
-
-			Vector3D resolvedObservation = deltaRotation.applyInverseTo(observation.getVector().subtract(
-					deltaTranslation));
-
-			observations.add(new LidarObservation(resolvedObservation,false));
+			observations.add(new LidarObservation(resolvedObservation, observation.isStartOfScan()));
 
 		}
 
 	}
-	
-	List<LidarObservation> getTranslatedObservations(Rotation rotation, Vector3D translation)
+
+	List<LidarObservation> getTranslatedObservations(RobotLocation data)
+	{
+		double heading = data.getHeading().getRadians();
+		Rotation frameRotation = new Rotation(RotationOrder.XYZ, 0, 0, heading);
+
+		// due to a horrible bug in old code we have to invert the X axis
+		// must replace all old code with Vector3D
+		double xCm = -data.getX().convert(DistanceUnit.CM);
+		double yCm = data.getY().convert(DistanceUnit.CM);
+		Vector3D frameTranslation = new Vector3D(xCm, yCm, 0);
+
+		return getTranslatedObservations(frameRotation, frameTranslation);
+	}
+
+	List<LidarObservation> getTranslatedObservations(Rotation frameRotation, Vector3D frameTranslation)
 	{
 		List<LidarObservation> translatedObservations = new LinkedList<>();
-		for (LidarObservation observation :observations)
+		for (LidarObservation observation : observations)
 		{
-			Vector3D worldFrame = frameRotation.applyInverseTo(observation.getVector().add(frameTranslation));
-			
-			translatedObservations.add(new LidarObservation(rotation.applyInverseTo(worldFrame).subtract(translation),false));
+			Vector3D worldFrame = observation.getVector();
+
+			translatedObservations.add(new LidarObservation(frameRotation.applyInverseTo(worldFrame
+					.subtract(frameTranslation)), false));
 		}
 		return translatedObservations;
 	}

@@ -104,8 +104,8 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 			List<XY> newPoints = new LinkedList<>(translatedXyData);
 			lastHeading = robotLocation.getHeading().getDegrees();
 
-			currentX = (int) (robotLocation.getX().convert(DistanceUnit.CM) * 12d);
-			currentY = (int) (robotLocation.getY().convert(DistanceUnit.CM) * 12d);
+			currentX = (int) (robotLocation.getX().convert(DistanceUnit.CM) * 10d);
+			currentY = (int) (robotLocation.getY().convert(DistanceUnit.CM) * 10d);
 
 			double robotSinAngle = Math.sin(Math.toRadians(lastHeading));
 			double robotCosAngle = Math.cos(Math.toRadians(lastHeading));
@@ -113,7 +113,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 			for (LidarObservation vector : robotLocation.getObservations())
 			{
 
-				XY xy =new XY(vector.getX()*-10,vector.getY()*10);
+				XY xy =new XY(vector.getX()*10,vector.getY()*10);
 
 				xy = Translator2d.rotate(xy, lastHeading);
 				translatedXyData.add(xy);

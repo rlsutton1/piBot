@@ -83,8 +83,10 @@ public class Lidar
 		try
 		{
 			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
+			
 		} catch (IOException e)
 		{
+			Thread.sleep(200);
 			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
 		}
 		int d1 = distance[0];

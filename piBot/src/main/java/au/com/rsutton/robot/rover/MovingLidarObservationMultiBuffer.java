@@ -12,7 +12,7 @@ import au.com.rsutton.hazelcast.RobotLocation;
 public class MovingLidarObservationMultiBuffer
 {
 
-	private static final int MAX_BUFERS = 3;
+	private static final int MAX_BUFERS = 6;
 	List<MovingLidarObservationBuffer> buffers = new CopyOnWriteArrayList<>();
 
 	MovingLidarObservationBuffer currentBuffer;
@@ -33,26 +33,18 @@ public class MovingLidarObservationMultiBuffer
 			}
 			if (currentBuffer != null)
 			{
-				RobotLocation location = new RobotLocation();
-				location.setHeading(data.getHeading());
-				location.setX(data.getX());
-				location.setY(data.getY());
-				List<LidarObservation> observations = new LinkedList<>();
-				observations.add(observation);
-				
-				location.addObservations(observations);
 				currentBuffer.addLidarObservation(data);
 			}
 		}
 
 	}
 	
-	public List<LidarObservation> getObservations(Vector3D translation, Rotation rotation)
+	public List<LidarObservation> getObservations(RobotLocation data)
 	{
 		List<LidarObservation> observations = new LinkedList<>();
 		for (MovingLidarObservationBuffer buffer:buffers)
 		{
-			observations.addAll(buffer.getTranslatedObservations(rotation, translation));
+			observations.addAll(buffer.getTranslatedObservations(data));
 		}
 		return observations;
 	}

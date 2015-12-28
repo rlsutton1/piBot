@@ -49,7 +49,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer();
 
 	WallFollowerUI ui = new WallFollowerUI();
-	
+
 	@Override
 	public void onMessage(Message<RobotLocation> message)
 	{
@@ -63,69 +63,99 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 
 		buffer.addObservation(messageObject);
 
-		Collection<LidarObservation> laserData = buffer.getObservations(
-				new Vector3D(messageObject.getX().convert(DistanceUnit.CM), messageObject.getY().convert(
-						DistanceUnit.CM)), new Rotation(RotationOrder.XYZ, 0, 0, messageObject.getHeading()
-						.getRadians()));
+		Vector3D position = new Vector3D(messageObject.getX().convert(DistanceUnit.CM), messageObject.getY().convert(
+				DistanceUnit.CM), 0);
+		System.out.println(position);
+		Collection<LidarObservation> laserData = buffer.getObservations(messageObject);
 
 		ui.showPoints(laserData);
-		
-		double minX = 1000000;
 
-		
-		
+		double minX = 1000000;
 		for (LidarObservation observation : laserData)
 		{
 			XY xy = new XY(observation.getX(), observation.getY());
 
 			int x = (int) xy.getX();
 			int y = (int) xy.getY();
-			System.out.println(System.currentTimeMillis()+" "+x + " " + y);
-			if (y < 70 && x > -30 && x < 30)
+
+			if (y < 40 && y > 0)
 			{
-				if (y < 50)
+				if (x > -15 && x < 15)
 				{
-					speed = -50;
+					if (y < 50)
+					{
+						speed = -50;
+					}
+					System.out.println("Something directly ahead, turning right");
+					setHeading = heading + 20;
+					break;
 				}
-				setHeading = heading + 45;
-				break;
 			}
-			if (x < -30 && x > -50)
+		}
+		if (setHeading.intValue() == heading)
+		{
+			int changeInHeading = 0;
+			int changeCount = 0;
+			for (LidarObservation observation : laserData)
 			{
-				setHeading = heading + 10;
-				break;
-			}
-			if (x < -50)
-			{
-				setHeading = heading - 10;
-				break;
-			}
-			if (y < 60)
-			{
-				minX = Math.min(minX, x);
-			}
+				XY xy = new XY(observation.getX(), observation.getY());
 
-//			if (message.getMessageObject().getClearSpaceAhead().convert(DistanceUnit.CM) < 35)
-//			{
-//				speed = -50;
-//				setHeading = heading + 45;
-//			}
+				int x = (int) xy.getX();
+				int y = (int) xy.getY();
+				if (y > 0)
+				{
 
-			if (setHeading.intValue() == heading && minX > -30)
-			{
-				// no negative x values were detected in the near range (y < 80)
-				// and
-				// no heading change has been
-				// set, so set one... we'll turn left to try to find something
-				setHeading = heading - 45;
+					if (y < 60 && x > -20 && x < 20)
+					{
+						minX = Math.min(minX, x);
+					}
+
+					if (y < 70)
+					{
+
+						if (x < -30 && x > -40)
+						{
+							changeInHeading += 10;
+							changeCount++;
+							System.out.println("Left of the groove,Turning right");
+
+						}
+						if (x < -50)
+						{
+							changeInHeading -= 10;
+							changeCount++;
+							System.out.println("Right of the groove, Turning left");
+
+						}
+					}
+
+					// if
+					// (message.getMessageObject().getClearSpaceAhead().convert(DistanceUnit.CM)
+					// < 35)
+					// {
+					// speed = -50;
+					// setHeading = heading + 45;
+					// }
+				}
 			}
+			setHeading = heading + (changeInHeading / Math.max(1, changeCount));
+		}
+		if ((setHeading.intValue() % 360 == heading || setHeading.intValue() == heading || setHeading.intValue() + 360 == heading)
+				&& minX > -30)
+		{
+			// no negative x values were detected in the near range (y < 80)
+			// and
+			// no heading change has been
+			// set, so set one... we'll turn left to try to find something
+			setHeading = heading - 45;
+			System.out.println("Nothing detected, turning left");
 		}
 		if (Math.abs(setHeading - heading) > 10)
 		{
 			speed = Math.min(speed, 0);
 		}
 
-		currentSpeed = speed;
+		currentSpeed = speed / 10.0;
 		SetMotion message2 = new SetMotion();
 		message2.setSpeed(new Speed(new Distance(currentSpeed, DistanceUnit.CM), Time.perSecond()));
 		message2.setHeading((double) setHeading);

@@ -86,7 +86,7 @@ public class LidarScanner
 
 		double cm = 0;
 		int ctr = 0;
-		while (ctr < 100)
+		while (ctr < 10)
 		{
 
 			int latestReading = lidar.getLatestReading();
@@ -95,6 +95,7 @@ public class LidarScanner
 				cm += latestReading;
 				ctr++;
 			}
+			Thread.sleep(10);
 		}
 		double c = -34 ;//- (cm / 100.0);
 		lidar.setCalabrationC(c);
