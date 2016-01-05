@@ -42,6 +42,8 @@ public class LidarScanningService implements Runnable
 	{
 		int start = scanner.getMinPosition();
 		int end = scanner.getMaxPosition();
+
+		System.out.println("Expect " + (end - start) + " points in a scan");
 		while (!stop)
 		{
 			try
@@ -57,8 +59,7 @@ public class LidarScanningService implements Runnable
 						isStart = false;
 					} catch (InterruptedException | IOException e)
 					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						stop = true;
 					}
 
 				}
@@ -72,8 +73,7 @@ public class LidarScanningService implements Runnable
 						isStart = false;
 					} catch (InterruptedException | IOException e)
 					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						stop = true;
 					}
 				}
 			} catch (Throwable e)

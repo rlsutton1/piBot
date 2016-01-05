@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.i2c.I2cSettings;
 
@@ -18,6 +19,8 @@ import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 public class CompassLSM303 implements Runnable
 {
+
+	private static final int ERROR_VALUE_WHEN_OFF_LINE = 10000;
 
 	private static int SCALE = 2; // accel full-scale, should be 2, 4, or 8
 
@@ -89,12 +92,14 @@ public class CompassLSM303 implements Runnable
 			this.config = config;
 			setup();
 			// guarantee initial value is available
+
+			currentCompassData.set(new HeadingData(0, 360));
+
 			run();
-			Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
-					this, 200, 200, TimeUnit.MILLISECONDS);
+			Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 200, TimeUnit.MILLISECONDS);
 		} catch (IOException | InterruptedException e)
 		{
-			// TODO Auto-generated catch block
+			// fail hard if the compass isn't responding
 			e.printStackTrace();
 			System.exit(-1);
 		}
@@ -133,49 +138,17 @@ public class CompassLSM303 implements Runnable
 
 	private void loop() throws IOException, InterruptedException
 	{
-		getLSM303_accel(accel); // get the acceleration values and store them in
-								// the accel array
-		// while(!(byte)(LSM303_read(SR_REG_M) & 0x01))
-		// ; // wait for the magnetometer readings to be ready
-		getLSM303_mag(mag); // get the magnetometer values, store them in mag
-		// printValues(mag, accel); // print the raw accel and mag values, good
-		// debugging
+		// get the acceleration values and store them in
+		// the accel array
+		getLSM303_accel(accel);
 
+		// get the magnetometer values, store them in mag
+		getLSM303_mag(mag);
+
+		// calculate real acceleration values, in units of g
 		for (int i = 0; i < 3; i++)
-			realAccel[i] = (float) (accel[i] / Math.pow(2, 15) * SCALE); // calculate
-																			// real
-																			// acceleration
-																			// values,
-																			// in
-																			// units
-																			// of
-																			// g
+			realAccel[i] = (float) (accel[i] / Math.pow(2, 15) * SCALE);
 
-		/* print both the level, and tilt-compensated headings below to compare */
-		// System.out.println(getHeading(mag) + " " + mag[Y] + " " + mag[X]); //
-		// this
-		// only
-		// works
-		// if
-		// the
-		// sensor
-		// is
-		// level
-
-		// for calabration
-		// System.out.println("x" + maxX + " -> " + minX + " y" + maxY + " -> "
-		// + minY);
-
-		// TODO: fix the accelerometer code, probably math issues, havent looked
-		// yet though
-		// System.out.println("\t\t"); // print some tabs
-		// System.out.println(getTiltHeading(mag, realAccel)); // see how
-		// awesome
-		// tilt compensation
-		// is?!
-
-		// printValues(mag, accel);
-		Thread.sleep(100); // delay for serial readability
 	}
 
 	private void initLSM303(int fs) throws IOException
@@ -183,8 +156,7 @@ public class CompassLSM303 implements Runnable
 		accDevice.write(CTRL_REG1_A, (byte) 0x27); // 0x27 = normal power mode,
 													// all accel axes on
 		if ((fs == 8) || (fs == 4))
-			magDevice
-					.write(CTRL_REG4_A, (byte) (0x00 | (fs - fs / 2 - 1) << 4)); // set
+			magDevice.write(CTRL_REG4_A, (byte) (0x00 | (fs - fs / 2 - 1) << 4)); // set
 																					// full-scale
 		else
 			magDevice.write(CTRL_REG4_A, (byte) 0x00);
@@ -211,13 +183,11 @@ public class CompassLSM303 implements Runnable
 		System.out.println("");
 	}
 
-	final static AtomicReference<Float> heading = new AtomicReference<>();
-	final static long TIME_TO_LIVE = 100;
-	volatile long lastReadTime = 0;
+	final static AtomicReference<HeadingData> currentCompassData = new AtomicReference<>();
 
-	public float getHeading() throws IOException
+	public HeadingData getHeadingData() throws IOException
 	{
-		return heading.get();
+		return currentCompassData.get();
 	}
 
 	public void run()
@@ -225,30 +195,46 @@ public class CompassLSM303 implements Runnable
 		try
 		{
 			List<Double> angles = new LinkedList<>();
-			int max = Integer.MIN_VALUE;
-			int min = Integer.MAX_VALUE;
-			for (int i = 0; i < 15; i++)
+			double max = Integer.MIN_VALUE;
+			double min = Integer.MAX_VALUE;
+			for (int i = 0; i < 10; i++)
 			{
 				double internalGetHeading = internalGetHeading();
-				max = (int) Math.max(max, internalGetHeading);
-				min = (int) Math.min(min, internalGetHeading);
+				max = Math.max(max, internalGetHeading);
+				min = Math.min(min, internalGetHeading);
 				angles.add(internalGetHeading);
 
-				Thread.sleep(5);
+				Thread.sleep(20);
 
 			}
-
-			if (max == min)
+			if (max == min || max < 0.01)
 			{
-				// the compass probably crashed!
+				// multiple identical values or no values, the compass is
+				// crashed!
 
-				System.out
-						.println("compass crashed, rebooting it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				System.out.println("compass crashed, rebooting it !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				initLSM303(SCALE);
+
+				currentCompassData
+						.set(new HeadingData(currentCompassData.get().getHeading(), ERROR_VALUE_WHEN_OFF_LINE));
+
 			} else
 			{
-				heading.set((float) TrigMath.averageAngles(angles));
+				float angle = (float) HeadingHelper.normalizeHeading((float) TrigMath.averageAngles(angles));
+
+				if (max > 340 && min < 20)
+				{
+					min += 360;
+				}
+				float error = (float) Math.abs(max - min);
+				if (error > 45)
+				{
+					// at +- 45 degrees, something is seriously wrong.
+					error = ERROR_VALUE_WHEN_OFF_LINE;
+				}
+				currentCompassData.set(new HeadingData(angle, error));
 			}
+
 			dumpCalabrationData();
 		} catch (InterruptedException e)
 		{
@@ -273,8 +259,7 @@ public class CompassLSM303 implements Runnable
 		if (currentTimeMillis > lastDumpTime + 60000)
 		{
 			lastDumpTime = currentTimeMillis;
-			System.out.println("Dump compass calabration data X: " + minX + " "
-					+ maxX + " Y: " + minY + " " + maxY);
+			System.out.println("Dump compass calabration data X: " + minX + " " + maxX + " Y: " + minY + " " + maxY);
 		}
 	}
 
@@ -306,14 +291,14 @@ public class CompassLSM303 implements Runnable
 																		// roll
 																		// are
 																		// 0
-
-		// cap angle at 360 degrees
-		if (heading < 0)
-			heading += 360;
-
 		// adjust for orientation of compass in robot
 		heading -= 90;
-		if (heading > 360)
+
+		// cap angle at 360 degrees
+		while (heading < 0)
+			heading += 360;
+
+		while (heading > 360)
 			heading -= 360;
 
 		return heading;
@@ -325,14 +310,11 @@ public class CompassLSM303 implements Runnable
 		float pitch = (float) Math.asin(-accelValue[X]);
 		float roll = (float) Math.asin(accelValue[Y] / Math.cos(pitch));
 
-		float xh = (float) (magValue[X] * Math.cos(pitch) + magValue[Z]
-				* Math.sin(pitch));
-		float yh = (float) (magValue[X] * Math.sin(roll) * Math.sin(pitch)
-				+ magValue[Y] * Math.cos(roll) - magValue[Z] * Math.sin(roll)
-				* Math.cos(pitch));
-		float zh = (float) (-magValue[X] * Math.cos(roll) * Math.sin(pitch)
-				+ magValue[Y] * Math.sin(roll) + magValue[Z] * Math.cos(roll)
-				* Math.cos(pitch));
+		float xh = (float) (magValue[X] * Math.cos(pitch) + magValue[Z] * Math.sin(pitch));
+		float yh = (float) (magValue[X] * Math.sin(roll) * Math.sin(pitch) + magValue[Y] * Math.cos(roll) - magValue[Z]
+				* Math.sin(roll) * Math.cos(pitch));
+		float zh = (float) (-magValue[X] * Math.cos(roll) * Math.sin(pitch) + magValue[Y] * Math.sin(roll) + magValue[Z]
+				* Math.cos(roll) * Math.cos(pitch));
 
 		float heading = (float) (180 * Math.atan2(yh, xh) / Math.PI);
 		if (yh >= 0)
@@ -371,12 +353,9 @@ public class CompassLSM303 implements Runnable
 
 	private void getLSM303_accel(int[] rawValues) throws IOException
 	{
-		rawValues[Z] = convertBytesToInt(accDevice.read(OUT_X_L_A),
-				accDevice.read(OUT_X_H_A));
-		rawValues[X] = convertBytesToInt(accDevice.read(OUT_Y_L_A),
-				accDevice.read(OUT_Y_H_A));
-		rawValues[Y] = convertBytesToInt(accDevice.read(OUT_Z_L_A),
-				accDevice.read(OUT_Z_H_A));
+		rawValues[Z] = convertBytesToInt(accDevice.read(OUT_X_L_A), accDevice.read(OUT_X_H_A));
+		rawValues[X] = convertBytesToInt(accDevice.read(OUT_Y_L_A), accDevice.read(OUT_Y_H_A));
+		rawValues[Y] = convertBytesToInt(accDevice.read(OUT_Z_L_A), accDevice.read(OUT_Z_H_A));
 		// had to swap those to right the data with the proper axis
 	}
 
@@ -403,8 +382,7 @@ public class CompassLSM303 implements Runnable
 	public void finishcalabration() throws InterruptedException
 	{
 		long start = System.currentTimeMillis();
-		while (!calabrationFinished()
-				&& System.currentTimeMillis() - start < 30000)
+		while (!calabrationFinished() && System.currentTimeMillis() - start < 30000)
 		{
 			Thread.sleep(1000);
 		}
@@ -421,8 +399,7 @@ public class CompassLSM303 implements Runnable
 	 */
 	private boolean calabrationFinished()
 	{
-		return Math.abs(calabrationStartX - mag[X]) < 30
-				&& Math.abs(calabrationStartY - mag[Y]) < 30;
+		return Math.abs(calabrationStartX - mag[X]) < 30 && Math.abs(calabrationStartY - mag[Y]) < 30;
 	}
 
 }

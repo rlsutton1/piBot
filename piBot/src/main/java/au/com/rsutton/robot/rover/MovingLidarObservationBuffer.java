@@ -32,6 +32,14 @@ public class MovingLidarObservationBuffer
 			Vector3D resolvedObservation = frameRotation.applyTo(observation.getVector()).add(frameTranslation);
 
 			observations.add(new LidarObservation(resolvedObservation, observation.isStartOfScan()));
+			for (LidarObservation obs : observations)
+			{
+				if (obs.getVector().equals(resolvedObservation))
+				{
+					System.out.println("Error Error, duplicate observation in buffer " + resolvedObservation
+							+ " buffer size " + observations.size());
+				}
+			}
 
 		}
 

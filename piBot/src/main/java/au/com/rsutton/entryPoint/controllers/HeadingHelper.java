@@ -3,14 +3,15 @@ package au.com.rsutton.entryPoint.controllers;
 public class HeadingHelper
 {
 
-	static private double normalizeHeading(double heading)
+	static public double normalizeHeading(double heading)
 	{
-		double normalizedHeading = heading % 360;
-		if (normalizedHeading < 0)
+		double normalizedHeading = heading;
+		while (normalizedHeading < 0)
 		{
 			normalizedHeading = 360 + normalizedHeading;
 		}
-		return normalizedHeading;
+
+		return normalizedHeading % 360;
 	}
 
 	static public double getChangeInHeading(double newHeading, double oldHeading)

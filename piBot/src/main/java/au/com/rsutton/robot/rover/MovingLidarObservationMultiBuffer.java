@@ -4,18 +4,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import au.com.rsutton.hazelcast.RobotLocation;
 
 public class MovingLidarObservationMultiBuffer
 {
 
-	private static final int MAX_BUFERS = 6;
+	private final  int MAX_BUFERS;
 	List<MovingLidarObservationBuffer> buffers = new CopyOnWriteArrayList<>();
 
 	MovingLidarObservationBuffer currentBuffer;
+
+	public MovingLidarObservationMultiBuffer(int maxBuffers)
+	{
+		MAX_BUFERS = maxBuffers;
+	}
 
 	public void addObservation(RobotLocation data)
 	{

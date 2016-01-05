@@ -1,16 +1,12 @@
 package au.com.rsutton.robot.rover;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -27,11 +23,11 @@ import au.com.rsutton.robot.stepper.StepperMotor;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.adafruit.AdafruitPCA9685;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.gpio.extension.lidar.LidarScanningService;
 import com.pi4j.gpio.extension.lsm303.CompassLSM303;
+import com.pi4j.gpio.extension.lsm303.HeadingData;
 import com.pi4j.io.gpio.PinMode;
 
 public class Rover implements Runnable, RobotLocationReporter
@@ -95,7 +91,7 @@ public class Rover implements Runnable, RobotLocationReporter
 		// pixy = new PixyLaserRangeService(new int[] {
 		// 0, 0, 0 });
 
-		Angle initialAngle = new Angle(compass.getHeading(), AngleUnits.DEGREES);
+		Angle initialAngle = new Angle(compass.getHeadingData().getHeading(), AngleUnits.DEGREES);
 		reconing = new DeadReconing(initialAngle);
 		previousLocation = new RobotLocation();
 		previousLocation.setHeading(initialAngle);
@@ -129,7 +125,7 @@ public class Rover implements Runnable, RobotLocationReporter
 		// pixy.getCurrentData();
 
 		speedHeadingController = new SpeedHeadingController(rightWheel,
-				leftWheel, compass.getHeading());
+				leftWheel, compass.getHeadingData().getHeading());
 
 		// listen for motion commands thru Hazelcast
 		SetMotion message = new SetMotion();
@@ -189,18 +185,18 @@ public class Rover implements Runnable, RobotLocationReporter
 			// System.out.println("run Rover");
 			getSpaceAhead();
 
+			HeadingData compassData = compass.getHeadingData();
+			
 			reconing.updateLocation(rightWheel.getDistance(), leftWheel
-					.getDistance(), new Angle(compass.getHeading(),
-					AngleUnits.DEGREES));
+					.getDistance(),compassData);
 
-			speedHeadingController.setActualHeading((int) reconing.getHeading()
-					.getDegrees());
+			speedHeadingController.setActualHeading( reconing.getHeading());
 
 			Speed speed = calculateSpeed();
 
 			// send location out on HazelCast
 			RobotLocation currentLocation = new RobotLocation();
-			currentLocation.setHeading(reconing.getHeading());
+			currentLocation.setHeading(new Angle(reconing.getHeading().getHeading(),AngleUnits.DEGREES));
 			currentLocation.setX(reconing.getX());
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);
@@ -210,6 +206,10 @@ public class Rover implements Runnable, RobotLocationReporter
 			
 			observations.addAll(currentObservations);
 			currentObservations.removeAll(observations);
+			if (currentObservations.size()>0)
+			{
+				System.out.println("Current observations isn't empty after publish");
+			}
 			currentLocation.addObservations(observations);
 
 			currentLocation.publish();

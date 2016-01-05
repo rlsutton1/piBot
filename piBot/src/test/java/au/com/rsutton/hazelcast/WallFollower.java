@@ -2,8 +2,6 @@ package au.com.rsutton.hazelcast;
 
 import java.util.Collection;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
@@ -46,7 +44,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 
 	double currentSpeed = 0;
 
-	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer();
+	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer(2);
 
 	WallFollowerUI ui = new WallFollowerUI();
 
@@ -60,6 +58,8 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 			setHeading = heading;
 		}
 		int speed = 100;
+
+		System.out.println("Size "+messageObject.getObservations().size());
 
 		buffer.addObservation(messageObject);
 
@@ -84,10 +84,10 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 				{
 					if (y < 50)
 					{
-						speed = -50;
+						speed = 0;
 					}
 					System.out.println("Something directly ahead, turning right");
-					setHeading = heading + 20;
+					setHeading = heading + 10;
 					break;
 				}
 			}
@@ -159,7 +159,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		SetMotion message2 = new SetMotion();
 		message2.setSpeed(new Speed(new Distance(currentSpeed, DistanceUnit.CM), Time.perSecond()));
 		message2.setHeading((double) setHeading);
-		message2.publish();
+	//	message2.publish();
 
 	}
 }

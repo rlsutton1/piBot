@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.util.concurrent.BrokenBarrierException;
 
 import au.com.rsutton.calabrate.CalabrateCompass;
+import au.com.rsutton.calabrate.CalabrateHallEffect;
 import au.com.rsutton.calabrate.CalabrateLidar;
 import au.com.rsutton.calabrate.CalabrateTelemetry;
 import au.com.rsutton.calabrate.TestStepper;
@@ -32,6 +33,8 @@ public class Main
 		System.out.println("Press 3 to calabrate telemetry");
 		System.out.println("Press 4 to test stepper");
 
+		System.out.println("Press 5 to hall effect");
+
 		int ch = br.read();
 		if (ch == '0')
 		{
@@ -53,6 +56,10 @@ public class Main
 		else if (ch == '4')
 		{
 			new TestStepper();
+		}
+		else if (ch == '5')
+		{
+			new CalabrateHallEffect();
 		}
 
 	}

@@ -34,7 +34,7 @@ public class GrovePiTest
 
 		for (int i = 0; i < 100; i++)
 		{
-			System.out.println("heading " + compass.getHeading());
+			System.out.println("heading " + compass.getHeadingData());
 			Thread.sleep(1000);
 		}
 
