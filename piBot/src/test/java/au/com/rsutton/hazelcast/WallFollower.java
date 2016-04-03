@@ -44,7 +44,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 
 	double currentSpeed = 0;
 
-	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer(2);
+	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer(1);
 
 	WallFollowerUI ui = new WallFollowerUI();
 
@@ -52,7 +52,7 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 	public void onMessage(Message<RobotLocation> message)
 	{
 		RobotLocation messageObject = message.getMessageObject();
-		int heading = (int) messageObject.getHeading().getDegrees();
+		int heading = (int) messageObject.getDeadReaconingHeading().getDegrees();
 		if (setHeading == null)
 		{
 			setHeading = heading;

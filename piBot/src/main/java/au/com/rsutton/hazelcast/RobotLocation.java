@@ -1,7 +1,6 @@
 package au.com.rsutton.hazelcast;
 
 import java.util.List;
-import java.util.Set;
 
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -9,19 +8,20 @@ import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.google.common.base.Objects;
+import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class RobotLocation extends MessageBase<RobotLocation>
 {
 
 	private static final long serialVersionUID = 938950572423708619L;
-	private Angle heading;
+	private Angle deadReaconingHeading;
 	private Distance x;
 	private Distance y;
 	private Speed speed;
 	private Distance clearSpaceAhead;
 	private long time = System.currentTimeMillis();
-	private Angle headingError;
 	private List<LidarObservation> observations;
+	private HeadingData compassHeading;
 
 	public RobotLocation()
 	{
@@ -32,21 +32,19 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	public void setTopic()
 	{
 
-		this.topicInstance = HazelCastInstance.getInstance().getTopic(
-				HcTopic.LOCATION.toString());
+		this.topicInstance = HazelCastInstance.getInstance().getTopic(HcTopic.LOCATION.toString());
 	}
 
-	public void setHeading(Angle angle)
+	public void setDeadReaconingHeading(Angle angle)
 	{
-		this.heading = angle;
+		this.deadReaconingHeading = angle;
 
 	}
 
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(RobotLocation.class).add("x", x)
-				.add("y", y).add("heading", heading).toString();
+		return Objects.toStringHelper(RobotLocation.class).add("x", x).add("y", y).add("heading", deadReaconingHeading).toString();
 	}
 
 	public void setX(Distance distance)
@@ -71,9 +69,9 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return y;
 	}
 
-	public Angle getHeading()
+	public Angle getDeadReaconingHeading()
 	{
-		return heading;
+		return deadReaconingHeading;
 	}
 
 	public void setSpeed(Speed speed)
@@ -98,21 +96,10 @@ public class RobotLocation extends MessageBase<RobotLocation>
 		return time;
 	}
 
-	public void setHeadingError(Angle headingError)
-	{
-		this.headingError = headingError;
-
-	}
-
-	public Angle getHeadingError()
-	{
-		return headingError;
-	}
-
 	public void addObservations(List<LidarObservation> observations)
 	{
 		this.observations = observations;
-		
+
 	}
 
 	public List<LidarObservation> getObservations()
@@ -123,5 +110,16 @@ public class RobotLocation extends MessageBase<RobotLocation>
 	public void setObservations(List<LidarObservation> observations)
 	{
 		this.observations = observations;
+	}
+
+	public void setCompassHeading(HeadingData compassData)
+	{
+		compassHeading = compassData;
+
+	}
+
+	public HeadingData getCompassHeading()
+	{
+		return compassHeading;
 	}
 }

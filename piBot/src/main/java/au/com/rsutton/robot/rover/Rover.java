@@ -10,6 +10,8 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -51,6 +53,9 @@ public class Rover implements Runnable, RobotLocationReporter
 	volatile private Distance clearSpaceAhead = new Distance(0, DistanceUnit.MM);
 
 	private GrovePiProvider grove;
+	
+	Vector3D lidarTransposeOnRobotChasis = new Vector3D(0,10,0);
+
 
 	public Rover() throws IOException, InterruptedException,
 			BrokenBarrierException
@@ -94,7 +99,7 @@ public class Rover implements Runnable, RobotLocationReporter
 		Angle initialAngle = new Angle(compass.getHeadingData().getHeading(), AngleUnits.DEGREES);
 		reconing = new DeadReconing(initialAngle);
 		previousLocation = new RobotLocation();
-		previousLocation.setHeading(initialAngle);
+		previousLocation.setDeadReaconingHeading(initialAngle);
 		previousLocation.setX(reconing.getX());
 		previousLocation.setY(reconing.getY());
 		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
@@ -116,7 +121,14 @@ public class Rover implements Runnable, RobotLocationReporter
 					public void onMessage(Message<LidarObservation> message)
 					{
 
-						currentObservations.add(message.getMessageObject());
+						LidarObservation lidarObservation = message.getMessageObject();
+						
+						// apply transpose for the position of the Lidar on the robot's Chasis
+						Vector3D vector = lidarObservation.getVector();
+						vector = vector.add(lidarTransposeOnRobotChasis);
+						LidarObservation observation = new LidarObservation(vector, lidarObservation.isStartOfScan());
+						
+						currentObservations.add(observation);
 
 					}
 				});
@@ -153,7 +165,6 @@ public class Rover implements Runnable, RobotLocationReporter
 
 	}
 
-	DataValueSmoother fs = new DataValueSmoother(0.90d);
 
 	Map<Integer, Integer> distVal = new HashMap<Integer, Integer>();
 	int lc = 0;
@@ -196,7 +207,8 @@ public class Rover implements Runnable, RobotLocationReporter
 
 			// send location out on HazelCast
 			RobotLocation currentLocation = new RobotLocation();
-			currentLocation.setHeading(new Angle(reconing.getHeading().getHeading(),AngleUnits.DEGREES));
+			currentLocation.setDeadReaconingHeading(new Angle(reconing.getHeading().getHeading(),AngleUnits.DEGREES));
+			currentLocation.setCompassHeading(compassData);
 			currentLocation.setX(reconing.getX());
 			currentLocation.setY(reconing.getY());
 			currentLocation.setSpeed(speed);

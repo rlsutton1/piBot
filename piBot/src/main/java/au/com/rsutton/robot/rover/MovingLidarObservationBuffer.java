@@ -17,7 +17,7 @@ public class MovingLidarObservationBuffer
 	void addLidarObservation(RobotLocation data)
 	{
 
-		double heading = data.getHeading().getRadians();
+		double heading = data.getDeadReaconingHeading().getRadians();
 		Rotation frameRotation = new Rotation(RotationOrder.XYZ, 0, 0, heading);
 
 		// due to a horrible bug in old code we have to invert the X axis
@@ -31,14 +31,23 @@ public class MovingLidarObservationBuffer
 
 			Vector3D resolvedObservation = frameRotation.applyTo(observation.getVector()).add(frameTranslation);
 
-			observations.add(new LidarObservation(resolvedObservation, observation.isStartOfScan()));
+			boolean notDup = true;
 			for (LidarObservation obs : observations)
 			{
 				if (obs.getVector().equals(resolvedObservation))
 				{
-					System.out.println("Error Error, duplicate observation in buffer " + resolvedObservation
-							+ " buffer size " + observations.size());
+					notDup = false;
 				}
+			}
+			if (notDup)
+			{
+				observations.add(new LidarObservation(resolvedObservation, observation.isStartOfScan()));
+
+			}else
+			{
+//				System.out.println("Error Error, duplicate observation in buffer " + resolvedObservation
+//						+ " buffer size " + observations.size());
+
 			}
 
 		}
@@ -47,7 +56,7 @@ public class MovingLidarObservationBuffer
 
 	List<LidarObservation> getTranslatedObservations(RobotLocation data)
 	{
-		double heading = data.getHeading().getRadians();
+		double heading = data.getDeadReaconingHeading().getRadians();
 		Rotation frameRotation = new Rotation(RotationOrder.XYZ, 0, 0, heading);
 
 		// due to a horrible bug in old code we have to invert the X axis

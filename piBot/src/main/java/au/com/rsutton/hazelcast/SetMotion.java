@@ -11,6 +11,7 @@ public class SetMotion extends MessageBase<SetMotion>
 	private Speed speed;
 	private Double heading;
 	private long timeStamp;
+	private boolean freeze = false;
 
 	public SetMotion()
 	{
@@ -25,6 +26,15 @@ public class SetMotion extends MessageBase<SetMotion>
 	public void setHeading(Double heading)
 	{
 		this.heading = heading;
+	}
+	
+	/**
+	 * disable motors completely
+	 * @param freeze
+	 */
+	public void setFreeze(boolean freeze)
+	{
+		this.freeze = freeze;
 	}
 
 	public Speed getSpeed()
@@ -52,5 +62,10 @@ public class SetMotion extends MessageBase<SetMotion>
 	{
 		return Objects.toStringHelper(SetMotion.class).add("Speed", speed)
 				.add("Heading", heading).toString();
+	}
+
+	public boolean getFreeze()
+	{
+		return freeze;
 	}
 }

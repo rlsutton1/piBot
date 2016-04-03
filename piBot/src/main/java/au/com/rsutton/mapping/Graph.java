@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,20 +13,21 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.v2.Line;
-import au.com.rsutton.mapping.v2.ScanEvaluator;
-import au.com.rsutton.mapping.v2.ScanEvaluatorIfc;
 import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.pixy.Coordinate;
 
 public class Graph extends JPanel implements MessageListener<RobotLocation>
 {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	private MapAccessor map;
 
@@ -99,31 +99,25 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		{
 			List<XY> translatedXyData = new LinkedList<>();
 
-			List<Double> angles = new LinkedList<>();
-
 			List<XY> newPoints = new LinkedList<>(translatedXyData);
-			lastHeading = robotLocation.getHeading().getDegrees();
+			lastHeading = robotLocation.getDeadReaconingHeading().getDegrees();
 
 			currentX = (int) (robotLocation.getX().convert(DistanceUnit.CM) * 10d);
 			currentY = (int) (robotLocation.getY().convert(DistanceUnit.CM) * 10d);
 
-			double robotSinAngle = Math.sin(Math.toRadians(lastHeading));
-			double robotCosAngle = Math.cos(Math.toRadians(lastHeading));
-
 			for (LidarObservation vector : robotLocation.getObservations())
 			{
 
-				XY xy =new XY(vector.getX()*10,vector.getY()*10);
+				XY xy = new XY(vector.getX() * 10, vector.getY() * 10);
 
 				xy = Translator2d.rotate(xy, lastHeading);
 				translatedXyData.add(xy);
 				newPoints.add(xy);
 
-				map.addObservation(new ObservationImpl(xy.getX() + currentX, xy
-						.getY() + currentY, 1, LocationStatus.OCCUPIED));
+				map.addObservation(new ObservationImpl(xy.getX() + currentX, xy.getY() + currentY, 1,
+						LocationStatus.OCCUPIED));
 
 			}
-
 			List<Line> lines = new LinkedList<>();
 			renderMap(newPoints, lines);
 		} catch (Exception e)
@@ -147,8 +141,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 	void renderMap(List<XY> translatedXyData, List<Line> lines)
 	{
 
-		BufferedImage image = new BufferedImage(600, 600,
-				BufferedImage.TYPE_INT_RGB);
+		BufferedImage image = new BufferedImage(600, 600, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g2 = image.createGraphics();
 		g2.setColor(new Color(255, 255, 255));
 
@@ -185,8 +178,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 			double ybot = -(Math.cos(Math.toRadians(lastHeading)) * 400d);// +(Math.sin(Math.toRadians(lastHeading))*10);
 
 			g2.setColor(new Color(255, 0, 0));
-			g2.draw(new Line2D.Double((offset * scale), (int) (offset * scale),
-					(int) ((offset + xbot) * scale),
+			g2.draw(new Line2D.Double((offset * scale), (int) (offset * scale), (int) ((offset + xbot) * scale),
 					(int) ((offset + ybot) * scale)));
 
 		}
@@ -199,12 +191,10 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		{
 			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				if (!map.isMapLocationClear(x + currentX, -y + currentY,
-						blockSize / 2))
+				if (!map.isMapLocationClear(x + currentX, -y + currentY, blockSize / 2))
 				{
 					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
-					g2.drawRect((int) ((x + offset) * scale) - r,
-							(int) ((y + offset) * scale) - r, r * 2, r * 2);
+					g2.drawRect((int) ((x + offset) * scale) - r, (int) ((y + offset) * scale) - r, r * 2, r * 2);
 
 				}
 			}
@@ -214,8 +204,8 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		for (XY xy : translatedXyData)
 		{
 			int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
-			g2.drawRect((int) ((xy.getX() + offset) * scale) - r,
-					(int) ((-xy.getY() + offset) * scale) - r, r * 2, r * 2);
+			g2.drawRect((int) ((xy.getX() + offset) * scale) - r, (int) ((-xy.getY() + offset) * scale) - r, r * 2,
+					r * 2);
 		}
 
 		g2.setStroke(new BasicStroke(3));
@@ -230,8 +220,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 				double y2 = (-line.getEnd().getY() + offset) * scale;
 				// g2.draw(new Line2D.Double(x1, y1, x2, y2));
 				g2.drawLine((int) x1, (int) y1, (int) x2, (int) y2);
-				System.out.println("Plot line " + x1 + " " + y1 + " " + x2
-						+ " " + y2 + " " + h + " " + w);
+				System.out.println("Plot line " + x1 + " " + y1 + " " + x2 + " " + y2 + " " + h + " " + w);
 
 			}
 		}

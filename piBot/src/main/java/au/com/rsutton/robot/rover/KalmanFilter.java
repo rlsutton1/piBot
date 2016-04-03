@@ -1,5 +1,6 @@
 package au.com.rsutton.robot.rover;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class KalmanFilter
@@ -32,15 +33,70 @@ public class KalmanFilter
 		double calculatedChange = calculatedValue.getEstimate() - previousEstimate;
 		double observationChange = observation.getEstimate() - previousEstimate;
 		double newEstimate = previousEstimate + (gain * observationChange) + ((1.0 - gain) * calculatedChange);
-		System.out.println("gain " + gain);
+		System.out.print("gain " + gain);
 
-		double newError = (1.0 - gain) * estError;
-		System.out.println("error " + newError);
+		double newError = ((1.0 - gain) * estError) + (gain * observation.getError());
+		System.out.println(" error " + newError);
 
 		value.set(new KalmanValue(newEstimate, newError));
 
 	}
 
+	/**
+	 * untested !!!!
+	 * 
+	 * @param dataProvider
+	 */
+	void calculate(KalmanMultiDataProvider dataProvider)
+	{
+
+		// KG = EstErr/(EstErr+MeasErr)
+		// EST = EST(-1) + KG*(Meas-Est)
+		// EstErr = (1-KG)*(EstErr)
+
+		KalmanValue previousValue = value.get();
+		List<KalmanValue> observations = dataProvider.getObservations(previousValue);
+
+		double previousEstimate = previousValue.getEstimate();
+
+		double minError = Double.MAX_VALUE;
+
+		for (KalmanValue observation : observations)
+		{
+			minError = Math.min(observation.getError(), minError);
+		}
+
+		double totalGain = 0;
+		for (KalmanValue observation : observations)
+		{
+			double gain = minError / observation.getError();
+			totalGain += gain;
+
+		}
+
+		double newEstimateOffset = 0;
+		double newEstimateError = 0;
+		for (KalmanValue observation : observations)
+		{
+			double gain = minError / observation.getError();
+			double proportion = gain / totalGain;
+
+			double observationChange = observation.getEstimate() - previousEstimate;
+			newEstimateOffset += observationChange * proportion;
+			newEstimateError += observation.getError() * proportion;
+
+		}
+
+		double newError = newEstimateError;
+		value.set(new KalmanValue(previousEstimate + newEstimateOffset, newError));
+
+	}
+
+	/**
+	 * untested !!!
+	 * 
+	 * @param dataProvider
+	 */
 	void calculateNoPrediction(KalmanDataProvider dataProvider)
 	{
 

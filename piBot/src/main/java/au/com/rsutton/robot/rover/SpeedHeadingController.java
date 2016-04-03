@@ -26,6 +26,7 @@ public class SpeedHeadingController implements Runnable
 	private WheelController rightWheel;
 	private int desiredHeading;
 	private HeadingData actualHeading;
+	volatile boolean freeze = false;
 
 	public SpeedHeadingController(WheelController leftWheel, WheelController rightWheel, float intialHeading)
 			throws IOException, InterruptedException
@@ -35,7 +36,7 @@ public class SpeedHeadingController implements Runnable
 		desiredHeading = (int) intialHeading;
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
 	}
-
+	
 	public void setActualHeading(HeadingData heading)
 	{
 		actualHeading = heading;
@@ -45,6 +46,7 @@ public class SpeedHeadingController implements Runnable
 	{
 		desiredHeading = motion.getHeading().intValue();
 		desiredSpeed = motion.getSpeed();
+		freeze = motion.getFreeze();
 	}
 
 	@Override
@@ -55,7 +57,7 @@ public class SpeedHeadingController implements Runnable
 		{
 			double changeInHeading = HeadingHelper.getChangeInHeading(actualHeading.getHeading(), desiredHeading);
 
-			if (isMovementRequired(changeInHeading) && isErrorSmallEnough())
+			if (!freeze && isMovementRequired(changeInHeading) && isErrorSmallEnough())
 			{
 				// we're either moving or our heading is off by more than 1
 				// degree
@@ -115,7 +117,7 @@ public class SpeedHeadingController implements Runnable
 
 	private boolean isErrorSmallEnough()
 	{
-		double maxError = 5;
+		double maxError = 8;
 		boolean ret = actualHeading.getError() < maxError;
 		if (!ret)
 		{

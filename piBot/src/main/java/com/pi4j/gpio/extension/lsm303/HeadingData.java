@@ -1,10 +1,21 @@
 package com.pi4j.gpio.extension.lsm303;
 
-public class HeadingData
+import java.io.Serializable;
+
+public class HeadingData implements Serializable
 {
-	private final float heading;
-	private final float error;
-	private final long stamp = System.currentTimeMillis();
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private float heading;
+	private float error;
+	private long stamp = System.currentTimeMillis();
+
+	public HeadingData()
+	{
+
+	}
 
 	public HeadingData(float heading, float error)
 	{

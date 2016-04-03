@@ -51,7 +51,7 @@ public class DataLogReader
 					messageReferenceTime = messageTime;
 				}
 				long eventOffset = messageTime - messageReferenceTime;
-				eventOffset *= 5;
+				//eventOffset *= 5;
 				long delay = eventOffset
 						- (System.currentTimeMillis() - referenceTime);
 				if (delay > 10)
@@ -60,7 +60,7 @@ public class DataLogReader
 				}
 				
 				//absolute delay between events
-				Thread.sleep(1000);
+			//	Thread.sleep(1000);
 
 				locationMessage.setTopic();
 				locationMessage.publish();

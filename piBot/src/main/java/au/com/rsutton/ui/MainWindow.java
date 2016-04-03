@@ -204,6 +204,7 @@ public class MainWindow extends JFrame implements
 						Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
 				message.setHeading((double) v);
+				message.setFreeze(true);
 				message.publish();
 
 			}
@@ -244,7 +245,7 @@ public class MainWindow extends JFrame implements
 				+ "cm");
 		yLocationLabel.setText("Y:" + (int) m.getY().convert(DistanceUnit.CM)
 				+ "cm");
-		headingLabel.setText("H:" + (int) m.getHeading().getDegrees());
+		headingLabel.setText("H:" + (int) m.getDeadReaconingHeading().getDegrees());
 		if (m.getClearSpaceAhead() != null)
 		{
 			spaceLabel.setText("S:"

@@ -55,4 +55,9 @@ public class LidarObservation extends MessageBase<LidarObservation> implements
 		return isStartOfScan ;
 	}
 
+	public double getAngleRadians()
+	{
+		return Math.atan2(vector.getY(),vector.getX())-(Math.PI/2.0);
+	}
+
 }

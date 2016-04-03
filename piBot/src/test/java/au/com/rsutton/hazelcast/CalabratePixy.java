@@ -213,7 +213,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 	{
 		RobotLocation m = message.getMessageObject();
 
-		heading = (int) m.getHeading().getDegrees();
+		heading = (int) m.getDeadReaconingHeading().getDegrees();
 		distance = m.getClearSpaceAhead();
 		throw new RuntimeException(
 				"This code is broken, following line was commented out to allow compile");

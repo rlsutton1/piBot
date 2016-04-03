@@ -57,7 +57,11 @@ public class LidarScanningService implements Runnable
 					{
 						publishPoint(scanner.scan(a), isStart);
 						isStart = false;
-					} catch (InterruptedException | IOException e)
+
+					} catch (IOException e)
+					{
+						e.printStackTrace();
+					} catch (InterruptedException e)
 					{
 						stop = true;
 					}
@@ -71,7 +75,10 @@ public class LidarScanningService implements Runnable
 					{
 						publishPoint(scanner.scan(a), isStart);
 						isStart = false;
-					} catch (InterruptedException | IOException e)
+					} catch (IOException e)
+					{
+
+					} catch (InterruptedException e)
 					{
 						stop = true;
 					}

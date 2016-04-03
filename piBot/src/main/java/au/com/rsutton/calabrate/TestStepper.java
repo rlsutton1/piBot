@@ -208,7 +208,7 @@ public class TestStepper
 
 		// send location out on HazelCast
 		RobotLocation currentLocation = new RobotLocation();
-		currentLocation.setHeading(new Angle(0, AngleUnits.DEGREES));
+		currentLocation.setDeadReaconingHeading(new Angle(0, AngleUnits.DEGREES));
 		currentLocation.setX(new Distance(0, DistanceUnit.CM));
 		currentLocation.setY(new Distance(0, DistanceUnit.CM));
 		currentLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
