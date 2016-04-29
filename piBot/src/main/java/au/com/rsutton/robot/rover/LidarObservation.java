@@ -7,8 +7,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import au.com.rsutton.hazelcast.HcTopic;
 import au.com.rsutton.hazelcast.MessageBase;
 
-public class LidarObservation extends MessageBase<LidarObservation> implements
-		Serializable
+public class LidarObservation extends MessageBase<LidarObservation> implements Serializable
 {
 
 	/**
@@ -17,13 +16,14 @@ public class LidarObservation extends MessageBase<LidarObservation> implements
 	private static final long serialVersionUID = 1L;
 	private Vector3D vector;
 	private boolean isStartOfScan = false;
+	private Double angleRadians;
 
 	public LidarObservation()
 	{
 		super(HcTopic.LIDAR_OBSERVATION);
 	}
 
-	public LidarObservation(Vector3D vector,boolean isStartOfScan)
+	public LidarObservation(Vector3D vector, boolean isStartOfScan)
 	{
 		super(HcTopic.LIDAR_OBSERVATION);
 		this.vector = vector;
@@ -52,12 +52,16 @@ public class LidarObservation extends MessageBase<LidarObservation> implements
 
 	public boolean isStartOfScan()
 	{
-		return isStartOfScan ;
+		return isStartOfScan;
 	}
 
 	public double getAngleRadians()
 	{
-		return Math.atan2(vector.getY(),vector.getX())-(Math.PI/2.0);
+		if (angleRadians == null)
+		{
+			angleRadians = Math.atan2(vector.getY(), vector.getX()) - (Math.PI / 2.0);
+		}
+		return angleRadians;
 	}
 
 }

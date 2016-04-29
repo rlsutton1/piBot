@@ -1,5 +1,9 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -18,8 +22,9 @@ import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.navigation.RoutePlannerTest;
 import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.ui.MapDataSource;
 
-public class RobotSimulator
+public class RobotSimulator implements MapDataSource
 {
 
 	Random random = new Random();
@@ -52,6 +57,9 @@ public class RobotSimulator
 		{
 			x = nx;
 			y = ny;
+		} else
+		{
+			System.out.println("Avoiding wall");
 		}
 	}
 
@@ -79,9 +87,9 @@ public class RobotSimulator
 
 		Particle particle = new Particle(x, y, heading);
 
-		for (int h = -180; h < 92; h += 5)
+		for (double h = -70; h < 70; h += 5)
 		{
-			double distance = particle.simulateObservation(map, h, 500);
+			double distance = particle.simulateObservation(map, h, 1000);
 
 			if (Math.abs(distance) > 1)
 			{
@@ -99,6 +107,7 @@ public class RobotSimulator
 		System.out.println("Observations " + observations.size());
 
 		observation.addObservations(observations);
+
 		observation.setCompassHeading(new HeadingData((float) heading, 10.0f));
 		return observation;
 	}
@@ -108,6 +117,32 @@ public class RobotSimulator
 		this.x = x;
 		this.y = y;
 		this.heading = heading;
+
+	}
+
+	@Override
+	public List<Point> getPoints()
+	{
+		List<Point> points = new LinkedList<>();
+		points.add(new Point((int) x, (int) y));
+		return points;
+	}
+
+	@Override
+	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+	{
+		Graphics graphics = image.getGraphics();
+
+		graphics.setColor(new Color(0, 255, 0));
+		int robotSize = 30;
+		graphics.drawOval((int) (pointOriginX - (robotSize * 0.5 * scale)),
+				(int) (pointOriginY - (robotSize * 0.5 * scale)), (int) (robotSize * scale), (int) (robotSize * scale));
+
+		Vector3D line = new Vector3D(60 * scale, 0, 0);
+		line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading + 90)).applyTo(line);
+
+		graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
+				(int) (pointOriginY + line.getY()));
 
 	}
 

@@ -1,0 +1,37 @@
+package au.com.rsutton.ui;
+
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.util.List;
+
+public class WrapperForMapInMapUI implements MapDataSource
+{
+
+	private PointSource map;
+
+	Color color;
+	
+	public WrapperForMapInMapUI(PointSource map, Color color)
+	{
+		this.map = map;
+		this.color = color;
+	}
+
+	@Override
+	public List<Point> getPoints()
+	{
+		return map.getOccupiedPoints();
+	}
+
+	@Override
+	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+	{
+		Graphics graphics = image.getGraphics();
+		
+		graphics.setColor(color);
+		graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) pointOriginX + 1, (int) pointOriginY + 1);
+
+	}
+}

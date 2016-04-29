@@ -1,10 +1,14 @@
 package au.com.rsutton.mapping.probability;
 
+import java.awt.Point;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.ui.PointSource;
 
-public class ProbabilityMap
+public class ProbabilityMap implements PointSource
 {
 
 	private int blockSize;
@@ -255,5 +259,22 @@ public class ProbabilityMap
 	public int getBlockSize()
 	{
 		return blockSize;
+	}
+
+	public List<Point> getOccupiedPoints()
+	{
+		List<Point> points = new LinkedList<>();
+		for (int x = world.getMinX() - 1; x < world.getMaxX() + 1; x += 1)
+		{
+			for (int y = world.getMinY() - 1; y < world.getMaxY() + 1; y += 1)
+			{
+				if (world.get(x, y) > 0.5)
+				{
+					points.add(new Point(x*blockSize, y*blockSize));
+				}
+			}
+
+		}
+		return points;
 	}
 }

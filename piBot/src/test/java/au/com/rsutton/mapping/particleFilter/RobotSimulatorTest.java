@@ -16,7 +16,7 @@ import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
-public class ParticleTest
+public class RobotSimulatorTest
 {
 
 	@Test

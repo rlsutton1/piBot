@@ -145,21 +145,23 @@ public class LidarScanner
 		}
 		stepper.moveTo(position);
 
-		Stopwatch timer = Stopwatch.createStarted();
-		int last = 0;
-		for (int i = 0; i < 10; i++)
-		{
-			Thread.sleep(LIDAR_POLL_RATE);
-			int reading = lidar.getLatestReading();
-			if (Math.abs(reading - last) < 2 && i > 0)
-			{
-				last = reading;
-				break;
-			}
-			last = reading;
-			// System.out.println("l " + last);
-
-		}
+		int last = lidar.getLatestReading();
+		
+//		Stopwatch timer = Stopwatch.createStarted();
+//		int last = 0;
+//		for (int i = 0; i < 10; i++)
+//		{
+//			Thread.sleep(LIDAR_POLL_RATE);
+//			int reading = lidar.getLatestReading();
+//			if (Math.abs(reading - last) < 2 && i > 0)
+//			{
+//				last = reading;
+//				break;
+//			}
+//			last = reading;
+//			// System.out.println("l " + last);
+//
+//		}
 
 		// last = 0;
 		// for (int i = 0; i < 3; i++)
@@ -170,7 +172,7 @@ public class LidarScanner
 		// last = (int) (last / 3.0);
 		// System.out.println("returng value " + last);
 
-		totalSettleTime += timer.elapsed(TimeUnit.MILLISECONDS);
+	//	totalSettleTime += timer.elapsed(TimeUnit.MILLISECONDS);
 		samples++;
 
 		// System.out
