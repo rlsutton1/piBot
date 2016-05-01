@@ -21,36 +21,34 @@ public class ParticleFilterTest
 	public void loopTest()
 	{
 		List<Long> times = new LinkedList<>();
-		for (int i = 0;i < 1;i++)
+		for (int i = 0; i < 1; i++)
 		{
 			long start = System.currentTimeMillis();
 			test();
-			long elapsed = System.currentTimeMillis()-start;
+			long elapsed = System.currentTimeMillis() - start;
 			times.add(elapsed);
 		}
-		
-		for (Long time:times)
+
+		for (Long time : times)
 		{
 			System.out.println(time);
 		}
 	}
-	
-	
-	
+
 	public void test()
 	{
 		MainPanel ui = new MainPanel();
-		
+
 		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
 		map.dumpTextWorld();
-		ui.addDataSource(map,new Color(255,255,255));
-		
+		ui.addDataSource(map, new Color(255, 255, 255));
+
 		final ParticleFilter pf = new ParticleFilter(map, 1000);
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
-		
-		ui.addDataSource(pf.getParticlePointSource(),new Color(255,0,0));
+
+		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
-		
+
 		ui.addStatisticSource(new StatisticSource()
 		{
 
@@ -66,7 +64,7 @@ public class ParticleFilterTest
 				return "StdDev";
 			}
 		});
-		
+
 		ui.addStatisticSource(new StatisticSource()
 		{
 
@@ -82,14 +80,14 @@ public class ParticleFilterTest
 				return "Best Match";
 			}
 		});
-		
+
 		RoutePlanner routePlanner = new RoutePlanner(map);
 		int pfX = 0;
 		int pfY = 0;
 
 		RobotSimulator robot = new RobotSimulator(map);
 		robot.setLocation(-150, 300, 0);
-		
+
 		ui.addDataSource(robot);
 
 		routePlanner.createRoute(120, -260);
@@ -103,29 +101,33 @@ public class ParticleFilterTest
 
 			double da = 5;
 			double distance = 0;
-			
+
 			double std = pf.getStdDev();
-			
-			if (std< 24)
+
+			if (std < 24)
 			{
-				speed+=0.05;
-			}else if (std> 26)
+				speed += 0.05;
+			} else if (std > 26)
 			{
-				speed-=0.05;
+				speed -= 0.05;
 			}
 			speed = Math.max(0.01, speed);
 
-			if (std< 30)
+			if (std < 30)
 			{
 				Vector3D ap = pf.dumpAveragePosition();
 				pfX = (int) ap.getX();
 				pfY = (int) ap.getY();
-				
+
 				lastAngle = pf.getAverageHeading();
 
 				System.out.println("XY " + pfX + " " + pfY);
 
 				ExpansionPoint next = routePlanner.getRouteForLocation(pfX, pfY);
+
+				for (int i = 0; i < 25; i++)
+					next = routePlanner.getRouteForLocation(next.getX(), next.getY());
+
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;
 				System.out.println(next + " " + dx + " " + dy);
@@ -137,20 +139,20 @@ public class ParticleFilterTest
 					distance = Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
 					Vector3D delta = new Vector3D(dx, dy, 0);
 					double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
-					if(angle < 0)
+					if (angle < 0)
 					{
-						angle+=360;
+						angle += 360;
 					}
 					if (angle > 360)
 					{
-						angle -=360;
+						angle -= 360;
 					}
 					da = HeadingHelper.getChangeInHeading(angle, lastAngle);
-					if (Math.abs(da)> 10)
+					if (Math.abs(da) > 10)
 					{
-						da = da* (5.0/Math.abs(da));
+						da = da * (5.0 / Math.abs(da));
 					}
-					
+
 				} else
 				{
 					routePlanner.getRouteForLocation(pfX, pfY);
@@ -158,8 +160,7 @@ public class ParticleFilterTest
 				}
 			}
 			robot.turn(da);
-			
-			
+
 			robot.move(distance);
 
 			update(map, pf, distance, da, robot);
@@ -194,7 +195,7 @@ public class ParticleFilterTest
 			}
 		});
 
-		pf.addObservation(map, robot.getObservation(),0d);
+		pf.addObservation(map, robot.getObservation(), 0d);
 
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 		pf.dumpAveragePosition();

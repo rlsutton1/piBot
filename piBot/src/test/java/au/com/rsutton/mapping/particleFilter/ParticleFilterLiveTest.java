@@ -229,7 +229,7 @@ public class ParticleFilterLiveTest
 		;
 
 		RoutePlanner routePlanner = new RoutePlanner(world);
-		routePlanner.createRoute(130, -280);
+		routePlanner.createRoute(110, -250);
 
 		int pfX = 0;
 		int pfY = 0;
@@ -248,7 +248,7 @@ public class ParticleFilterLiveTest
 			if (std < 24)
 			{
 				speed += 0.25;
-			} else if (std > 26)
+			} else if (std > 29)
 			{
 				speed -= 0.25;
 			}
@@ -265,6 +265,10 @@ public class ParticleFilterLiveTest
 				System.out.println("XY " + pfX + " " + pfY);
 
 				ExpansionPoint next = routePlanner.getRouteForLocation(pfX, pfY);
+
+				for (int i = 0; i < 25; i++)
+					next = routePlanner.getRouteForLocation(next.getX(), next.getY());
+
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;
 				System.out.println(next + " " + dx + " " + dy);
@@ -301,7 +305,7 @@ public class ParticleFilterLiveTest
 
 				if (stop > 0)
 				{
-					speed = 0;
+					speed = -5;
 				}
 				motion.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 				motion.publish();
@@ -324,8 +328,14 @@ public class ParticleFilterLiveTest
 				e.printStackTrace();
 			}
 		}
+		SetMotion motion = new SetMotion();
 
-		Thread.sleep(60 * 5 * 1000);
+		motion.setHeading(currentDeadReconingHeading.get() + 5);
+		motion.setFreeze(false);
+		motion.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+		motion.publish();
+
+		Thread.sleep(1000);
 	}
 
 }
