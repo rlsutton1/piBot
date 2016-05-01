@@ -221,12 +221,14 @@ public class ParticleFilter
 			@Override
 			public List<Point> getOccupiedPoints()
 			{
-				List<Point> points = new LinkedList<>();
+				TopNList<Point>  top = new TopNList<Point>(100);
+				
 				for (Particle particle : particles)
 				{
-					points.add(new Point((int) particle.getX(), (int) particle.getY()));
+					top.add(particle.getRating(), new Point((int) particle.getX(), (int) particle.getY()));
+					
 				}
-				return points;
+				return top.getTop();
 			}
 		};
 	}
@@ -250,22 +252,18 @@ public class ParticleFilter
 			{
 				Graphics graphics = image.getGraphics();
 
+				// draw robot body
 				graphics.setColor(new Color(0, 128, 128));
 				int robotSize = 30;
 				graphics.drawOval((int) (pointOriginX - (robotSize * 0.5 * scale)),
 						(int) (pointOriginY - (robotSize * 0.5 * scale)), (int) (robotSize * scale),
 						(int) (robotSize * scale));
 
-				Vector3D line = new Vector3D(60 * scale, 0, 0);
-				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading + 90)).applyTo(line);
-
-				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
-						(int) (pointOriginY + line.getY()));
-
-				graphics.setColor(new Color(0, 0, 255));
 
 				if (lastObservation.get() != null)
 				{
+					graphics.setColor(new Color(0, 0, 255));
+					// draw lidar observation lines
 					for (LidarObservation obs : lastObservation.get().getObservations())
 					{
 						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
@@ -275,6 +273,15 @@ public class ParticleFilter
 								(int) (pointOriginY + (vector.getY() * scale)));
 					}
 				}
+				// draw heading line
+				graphics.setColor(new Color(0, 128, 128));
+				Vector3D line = new Vector3D(60 * scale, 0, 0);
+				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading + 90)).applyTo(line);
+
+				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
+						(int) (pointOriginY + line.getY()));
+
+				
 			}
 		};
 	}

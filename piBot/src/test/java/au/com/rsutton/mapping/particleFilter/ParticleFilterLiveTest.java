@@ -43,6 +43,7 @@ public class ParticleFilterLiveTest
 	volatile private int stop;
 
 	Angle lastheading;
+	volatile double speed;
 
 	@Test
 	public void test() throws InterruptedException
@@ -83,17 +84,50 @@ public class ParticleFilterLiveTest
 			@Override
 			public String getValue()
 			{
-				if (lastheading != null)
-				{
-					return "" + lastheading.getDegrees();
-				}
-				return "";
+				return "" + pf.getBestRating();
 			}
 
 			@Override
 			public String getLabel()
 			{
-				return "Dead Rec Head";
+				return "Best Match";
+			}
+		});
+
+		ui.addStatisticSource(new StatisticSource()
+		{
+
+			@Override
+			public String getValue()
+			{
+				return "" + speed;
+			}
+
+			@Override
+			public String getLabel()
+			{
+				return "Speed cm/s";
+			}
+		});
+
+		ui.addStatisticSource(new StatisticSource()
+		{
+
+			@Override
+			public String getValue()
+			{
+				String value = "True";
+				if (stop <= 0)
+				{
+					value = "False";
+				}
+				return "" + value;
+			}
+
+			@Override
+			public String getLabel()
+			{
+				return "Proximity Stop";
 			}
 		});
 
@@ -142,8 +176,7 @@ public class ParticleFilterLiveTest
 
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
 
-				
-				pf.addObservation(world, robotLocation,-90d);
+				pf.addObservation(world, robotLocation, -90d);
 				if (lastx != null)
 				{
 					pf.moveParticles(new ParticleUpdate()
@@ -185,7 +218,7 @@ public class ParticleFilterLiveTest
 
 				}
 
-				//if (resample)
+				// if (resample)
 				{
 					pf.resample(world);
 				}
@@ -209,22 +242,20 @@ public class ParticleFilterLiveTest
 
 			double da = 5;
 			double distance = 0;
-			double speed = 0;
-
 
 			double std = pf.getStdDev();
-			
-			if (std< 24)
+
+			if (std < 24)
 			{
-				speed+=0.25;
-			}else if (std> 26)
+				speed += 0.25;
+			} else if (std > 26)
 			{
-				speed-=0.25;
+				speed -= 0.25;
 			}
 			speed = Math.max(0.01, speed);
 
-			if (std< 30)
-				{
+			if (std < 30)
+			{
 				Vector3D ap = pf.dumpAveragePosition();
 				pfX = (int) ap.getX();
 				pfY = (int) ap.getY();
@@ -267,7 +298,7 @@ public class ParticleFilterLiveTest
 				SetMotion motion = new SetMotion();
 
 				motion.setHeading(currentDeadReconingHeading.get() + da);
-				
+
 				if (stop > 0)
 				{
 					speed = 0;

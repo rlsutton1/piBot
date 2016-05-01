@@ -42,7 +42,7 @@ public class RobotSimulator implements MapDataSource
 
 	public void move(double distance)
 	{
-		distance += distance + (distance * (random.nextGaussian() * 0.5));
+		distance +=  (distance * (random.nextGaussian() * 0.5));
 		// random turn
 		turn(random.nextGaussian() * distance);
 		Vector3D unit = new Vector3D(0, distance, 0);
