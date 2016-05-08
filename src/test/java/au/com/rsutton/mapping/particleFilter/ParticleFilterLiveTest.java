@@ -1,12 +1,9 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import static org.junit.Assert.*;
-
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
-import java.security.acl.LastOwnerException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,10 +11,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
-
-import com.google.common.util.concurrent.AtomicDouble;
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -33,8 +26,11 @@ import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.ui.MainPanel;
 import au.com.rsutton.ui.MapDataSource;
-import au.com.rsutton.ui.PointSource;
 import au.com.rsutton.ui.StatisticSource;
+
+import com.google.common.util.concurrent.AtomicDouble;
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
 
 public class ParticleFilterLiveTest
 {
@@ -202,7 +198,7 @@ public class ParticleFilterLiveTest
 				lastheading = robotLocation.getDeadReaconingHeading();
 
 				boolean resample = false;
-				for (LidarObservation obs : robotLocation.getObservations())
+				for (ScanObservation obs : robotLocation.getObservations())
 				{
 					if (obs.isStartOfScan())
 					{

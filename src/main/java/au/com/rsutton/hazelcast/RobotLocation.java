@@ -1,16 +1,20 @@
 package au.com.rsutton.hazelcast;
 
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.LidarObservation;
 
 import com.google.common.base.Objects;
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
-public class RobotLocation extends MessageBase<RobotLocation>
+public class RobotLocation extends MessageBase<RobotLocation> implements ParticleFilterObservationSet
 {
 
 	private static final long serialVersionUID = 938950572423708619L;
@@ -102,9 +106,12 @@ public class RobotLocation extends MessageBase<RobotLocation>
 
 	}
 
-	public List<LidarObservation> getObservations()
+	public List<ScanObservation> getObservations()
 	{
-		return observations;
+	List<ScanObservation>	obs = new LinkedList<>();
+	obs.addAll((Collection<? extends ScanObservation>) observations);
+		
+		return obs;
 	}
 
 	public void setObservations(List<LidarObservation> observations)

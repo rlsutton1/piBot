@@ -13,7 +13,7 @@ public class RoutePlanner
 
 	private ProbabilityMap world;
 
-	int blockSize = 10;
+	int blockSize = 5;
 
 	private Dynamic2dSparseArray route;
 
@@ -52,7 +52,7 @@ public class RoutePlanner
 
 	public void createRouteOld(int toX, int toY)
 	{
-		int wall = 10000;
+		int wall = 100000;
 
 		route = new Dynamic2dSparseArray(wall);
 
@@ -82,7 +82,7 @@ public class RoutePlanner
 						int penalty = 0;
 						if (doWallCheck(temp, 2))
 						{
-							penalty = 2000;
+							penalty = 20000;
 						}
 
 						route.set(temp.x, temp.y, moveCounter + penalty);
@@ -152,6 +152,10 @@ public class RoutePlanner
 			tempPoints.add(new ExpansionPoint(point.x - 1, point.y));
 			tempPoints.add(new ExpansionPoint(point.x, point.y - 1));
 			tempPoints.add(new ExpansionPoint(point.x, point.y + 1));
+			tempPoints.add(new ExpansionPoint(point.x + 1, point.y + 1));
+			tempPoints.add(new ExpansionPoint(point.x - 1, point.y - 1));
+			tempPoints.add(new ExpansionPoint(point.x + 1, point.y - 1));
+			tempPoints.add(new ExpansionPoint(point.x - 1, point.y + 1));
 
 			for (ExpansionPoint temp : tempPoints)
 			{
@@ -161,7 +165,7 @@ public class RoutePlanner
 							&& route.get(temp.x, temp.y) > moveCounter.get() && route.get(temp.x, temp.y) == wall)
 					{
 
-						if (doWallCheck(temp, 3))
+						if (doWallCheck(temp, 6))
 						{
 							deferredPoints.add(temp);
 						} else

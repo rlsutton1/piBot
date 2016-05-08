@@ -14,9 +14,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.ui.MapDataSource;
 import au.com.rsutton.ui.PointSource;
 
@@ -30,7 +28,7 @@ public class ParticleFilter
 	volatile double bestRating = 0;
 
 	
-	AtomicReference<RobotLocation> lastObservation = new AtomicReference<>();
+	AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
 
 	ParticleFilter(ProbabilityMap map, int particles)
 	{
@@ -69,13 +67,15 @@ public class ParticleFilter
 		}
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, RobotLocation observations, double compassAdjustment)
+	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations, double compassAdjustment)
 	{
 		lastObservation.set(observations);
-		for (Particle particle : particles)
-		{
-			particle.addObservation(currentWorld, observations,compassAdjustment);
-		}
+		
+		particles.parallelStream().forEach(e->e.addObservation(currentWorld,observations,compassAdjustment));
+//		for (Particle particle : particles)
+//		{
+//			particle.addObservation(currentWorld, observations,compassAdjustment);
+//		}
 	}
 
 	public void resample(ProbabilityMap map)
@@ -135,6 +135,12 @@ public class ParticleFilter
 		double h2c = 0;
 		double h1 = 0;
 		double h2 = 0;
+		
+//		TopNList<Particle>  top = new TopNList<Particle>(550);
+//		for (Particle particle:particles)
+//		{
+//			top.add(particle.getRating(), particle);
+//		}
 		for (Particle particle : particles)
 		{
 			x += particle.getX();
@@ -221,7 +227,7 @@ public class ParticleFilter
 			@Override
 			public List<Point> getOccupiedPoints()
 			{
-				TopNList<Point>  top = new TopNList<Point>(100);
+				TopNList<Point>  top = new TopNList<Point>(40);
 				
 				for (Particle particle : particles)
 				{
@@ -264,7 +270,7 @@ public class ParticleFilter
 				{
 					graphics.setColor(new Color(0, 0, 255));
 					// draw lidar observation lines
-					for (LidarObservation obs : lastObservation.get().getObservations())
+					for (ScanObservation obs : lastObservation.get().getObservations())
 					{
 						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
 								.applyTo(obs.getVector());

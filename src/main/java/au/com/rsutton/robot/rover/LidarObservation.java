@@ -6,8 +6,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.hazelcast.HcTopic;
 import au.com.rsutton.hazelcast.MessageBase;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 
-public class LidarObservation extends MessageBase<LidarObservation> implements Serializable
+public class LidarObservation extends MessageBase<LidarObservation> implements Serializable,ScanObservation
 {
 
 	/**

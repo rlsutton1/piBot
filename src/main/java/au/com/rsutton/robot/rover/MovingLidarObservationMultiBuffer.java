@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 
 public class MovingLidarObservationMultiBuffer
 {
@@ -22,7 +23,7 @@ public class MovingLidarObservationMultiBuffer
 	public void addObservation(RobotLocation data)
 	{
 
-		for (LidarObservation observation : data.getObservations())
+		for (ScanObservation observation : data.getObservations())
 		{
 			if (observation.isStartOfScan())
 			{

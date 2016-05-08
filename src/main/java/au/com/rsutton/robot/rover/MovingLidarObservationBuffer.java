@@ -9,6 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 
 public class MovingLidarObservationBuffer
 {
@@ -26,7 +27,7 @@ public class MovingLidarObservationBuffer
 		double yCm = data.getY().convert(DistanceUnit.CM);
 		Vector3D frameTranslation = new Vector3D(xCm, yCm, 0);
 
-		for (LidarObservation observation : data.getObservations())
+		for (ScanObservation observation : data.getObservations())
 		{
 
 			Vector3D resolvedObservation = frameRotation.applyTo(observation.getVector()).add(frameTranslation);

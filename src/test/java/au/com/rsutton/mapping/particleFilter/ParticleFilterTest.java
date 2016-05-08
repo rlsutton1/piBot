@@ -1,6 +1,8 @@
 package au.com.rsutton.mapping.particleFilter;
 
 import java.awt.Color;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,6 +14,8 @@ import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.ui.MainPanel;
+import au.com.rsutton.ui.MapDataSource;
+import au.com.rsutton.ui.PointSource;
 import au.com.rsutton.ui.StatisticSource;
 
 public class ParticleFilterTest
@@ -81,7 +85,7 @@ public class ParticleFilterTest
 			}
 		});
 
-		RoutePlanner routePlanner = new RoutePlanner(map);
+		final RoutePlanner routePlanner = new RoutePlanner(map);
 		int pfX = 0;
 		int pfY = 0;
 
@@ -91,6 +95,40 @@ public class ParticleFilterTest
 		ui.addDataSource(robot);
 
 		routePlanner.createRoute(120, -260);
+
+		ui.addDataSource(new PointSource()
+		{
+
+			@Override
+			public List<Point> getOccupiedPoints()
+			{
+				
+				// determine the route from the current possition
+				Vector3D pos = pf.dumpAveragePosition();
+				double x = pos.getX();
+				double y = pos.getY();
+
+				List<Point> points = new LinkedList<>();
+
+				for (int i = 0; i < 150; i++)
+				{
+					ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
+					points.add(new Point(next.getX(), next.getY()));
+					double dx = (x-next.getX())*5;
+					x -= dx;
+					double dy = (y-next.getY())*5;
+					y -= dy;
+					if (dx==0 && dy==0)
+					{
+						// reached the target
+						break;
+					}
+				}
+
+				return points;
+			}
+
+		}, new Color(255,255,0));
 
 		double lastAngle = 0;
 		int ctr = 0;

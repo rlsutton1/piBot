@@ -8,9 +8,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.robot.rover.LidarObservation;
 
 public class Particle
 {
@@ -74,7 +72,7 @@ public class Particle
 
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, RobotLocation data,double compassAdjustment)
+	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data,double compassAdjustment)
 	{
 		if (data.getCompassHeading().getError() < 45)
 		{
@@ -101,8 +99,8 @@ public class Particle
 		// double maxBadError = 100.0 - maxGoodError;
 		// double maxBadVote = 3.0;
 
-		List<LidarObservation> observations = data.getObservations();
-		for (LidarObservation obs : observations)
+		List<ScanObservation> observations = data.getObservations();
+		for (ScanObservation obs : observations)
 		{
 			double distance = obs.getDisctanceCm();
 			double angle = Math.toDegrees(obs.getAngleRadians());

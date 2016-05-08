@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.v2.Line;
 import au.com.rsutton.robot.rover.LidarObservation;
 
@@ -105,7 +106,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 			currentX = (int) (robotLocation.getX().convert(DistanceUnit.CM) * 10d);
 			currentY = (int) (robotLocation.getY().convert(DistanceUnit.CM) * 10d);
 
-			for (LidarObservation vector : robotLocation.getObservations())
+			for (ScanObservation vector : robotLocation.getObservations())
 			{
 
 				XY xy = new XY(vector.getX() * 10, vector.getY() * 10);
