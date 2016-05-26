@@ -8,12 +8,12 @@ public class KalmanFilter
 
 	AtomicReference<KalmanValue> value = new AtomicReference<>();
 
-	KalmanFilter(KalmanValue initialValue)
+	public KalmanFilter(KalmanValue initialValue)
 	{
 		this.value.set(initialValue);
 	}
 
-	void calculate(KalmanDataProvider dataProvider)
+	public void calculate(KalmanDataProvider dataProvider)
 	{
 
 		// KG = EstErr/(EstErr+MeasErr)
@@ -121,7 +121,7 @@ public class KalmanFilter
 
 	}
 
-	KalmanValue getCurrentValue()
+	public KalmanValue getCurrentValue()
 	{
 		return value.get();
 	}

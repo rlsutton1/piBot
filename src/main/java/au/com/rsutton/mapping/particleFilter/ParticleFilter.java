@@ -15,6 +15,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.robot.rover.KalmanDataProvider;
+import au.com.rsutton.robot.rover.KalmanFilter;
+import au.com.rsutton.robot.rover.KalmanFilterForCompass;
+import au.com.rsutton.robot.rover.KalmanValue;
 import au.com.rsutton.ui.MapDataSource;
 import au.com.rsutton.ui.PointSource;
 
@@ -22,17 +26,17 @@ public class ParticleFilter
 {
 
 	List<Particle> particles = new LinkedList<>();
-	final int particleQty;
+	volatile int particleQty;
 	private double averageHeading;
 
 	volatile double bestRating = 0;
 
-	
 	AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
 
 	ParticleFilter(ProbabilityMap map, int particles)
 	{
 		particleQty = particles;
+		newParticleCount = particleQty;
 		createRandomStart(map);
 	}
 
@@ -67,15 +71,17 @@ public class ParticleFilter
 		}
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations, double compassAdjustment)
+	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
+			double compassAdjustment)
 	{
 		lastObservation.set(observations);
-		
-		particles.parallelStream().forEach(e->e.addObservation(currentWorld,observations,compassAdjustment));
-//		for (Particle particle : particles)
-//		{
-//			particle.addObservation(currentWorld, observations,compassAdjustment);
-//		}
+
+		particles.parallelStream().forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment));
+		// for (Particle particle : particles)
+		// {
+		// particle.addObservation(currentWorld,
+		// observations,compassAdjustment);
+		// }
 	}
 
 	public void resample(ProbabilityMap map)
@@ -86,7 +92,7 @@ public class ParticleFilter
 		double bestRatingSoFar = 0;
 		double next = 0.0;
 		Particle selectedParticle = null;
-		while (newSet.size() < particleQty)
+		while (newSet.size() < newParticleCount)
 		{
 			next += rand.nextDouble() * 2.0;// 50/50 chance of the same or next
 											// being picked if there are both
@@ -113,6 +119,8 @@ public class ParticleFilter
 		{
 			particles = newSet;
 		}
+		particleQty = newParticleCount;
+
 	}
 
 	public void dumpTextWorld(ProbabilityMap map)
@@ -135,12 +143,12 @@ public class ParticleFilter
 		double h2c = 0;
 		double h1 = 0;
 		double h2 = 0;
-		
-//		TopNList<Particle>  top = new TopNList<Particle>(550);
-//		for (Particle particle:particles)
-//		{
-//			top.add(particle.getRating(), particle);
-//		}
+
+		// TopNList<Particle> top = new TopNList<Particle>(550);
+		// for (Particle particle:particles)
+		// {
+		// top.add(particle.getRating(), particle);
+		// }
 		for (Particle particle : particles)
 		{
 			x += particle.getX();
@@ -200,6 +208,7 @@ public class ParticleFilter
 	}
 
 	int counter = 10;
+	private int newParticleCount;
 
 	public double getStdDev()
 	{
@@ -227,14 +236,14 @@ public class ParticleFilter
 			@Override
 			public List<Point> getOccupiedPoints()
 			{
-				TopNList<Point>  top = new TopNList<Point>(40);
-				
+				List<Point> points = new LinkedList<>();
+
 				for (Particle particle : particles)
 				{
-					top.add(particle.getRating(), new Point((int) particle.getX(), (int) particle.getY()));
-					
+					points.add(new Point((int) particle.getX(), (int) particle.getY()));
+
 				}
-				return top.getTop();
+				return points;
 			}
 		};
 	}
@@ -265,7 +274,6 @@ public class ParticleFilter
 						(int) (pointOriginY - (robotSize * 0.5 * scale)), (int) (robotSize * scale),
 						(int) (robotSize * scale));
 
-
 				if (lastObservation.get() != null)
 				{
 					graphics.setColor(new Color(0, 0, 255));
@@ -287,7 +295,6 @@ public class ParticleFilter
 				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
 						(int) (pointOriginY + line.getY()));
 
-				
 			}
 		};
 	}
@@ -300,6 +307,12 @@ public class ParticleFilter
 	public Double getBestRating()
 	{
 		return bestRating;
+	}
+
+	public void setParticleCount(int i)
+	{
+		newParticleCount = i;
+
 	}
 
 }

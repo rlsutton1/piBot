@@ -13,6 +13,9 @@ import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
+import au.com.rsutton.robot.rover.KalmanDataProvider;
+import au.com.rsutton.robot.rover.KalmanFilterForCompass;
+import au.com.rsutton.robot.rover.KalmanValue;
 import au.com.rsutton.ui.MainPanel;
 import au.com.rsutton.ui.MapDataSource;
 import au.com.rsutton.ui.PointSource;
@@ -43,11 +46,13 @@ public class ParticleFilterTest
 	{
 		MainPanel ui = new MainPanel();
 
+		MapBuilder mapBuilder = new MapBuilder();
+
 		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
 		map.dumpTextWorld();
 		ui.addDataSource(map, new Color(255, 255, 255));
 
-		final ParticleFilter pf = new ParticleFilter(map, 1000);
+		final ParticleFilter pf = new ParticleFilter(map, 2000);
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
@@ -102,7 +107,7 @@ public class ParticleFilterTest
 			@Override
 			public List<Point> getOccupiedPoints()
 			{
-				
+
 				// determine the route from the current possition
 				Vector3D pos = pf.dumpAveragePosition();
 				double x = pos.getX();
@@ -114,11 +119,11 @@ public class ParticleFilterTest
 				{
 					ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
 					points.add(new Point(next.getX(), next.getY()));
-					double dx = (x-next.getX())*5;
+					double dx = (x - next.getX()) * 5;
 					x -= dx;
-					double dy = (y-next.getY())*5;
+					double dy = (y - next.getY()) * 5;
 					y -= dy;
-					if (dx==0 && dy==0)
+					if (dx == 0 && dy == 0)
 					{
 						// reached the target
 						break;
@@ -128,7 +133,7 @@ public class ParticleFilterTest
 				return points;
 			}
 
-		}, new Color(255,255,0));
+		}, new Color(255, 255, 0));
 
 		double lastAngle = 0;
 		int ctr = 0;
@@ -142,14 +147,19 @@ public class ParticleFilterTest
 
 			double std = pf.getStdDev();
 
-			if (std < 24)
+			if (std < 18)
 			{
 				speed += 0.05;
-			} else if (std > 26)
+
+			} else if (std > 24)
 			{
 				speed -= 0.05;
 			}
+
+			pf.setParticleCount(Math.max(200, (int) (7 * std)));
+
 			speed = Math.max(0.01, speed);
+			speed = Math.min(0.15,speed);
 
 			if (std < 30)
 			{
@@ -169,32 +179,42 @@ public class ParticleFilterTest
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;
 				System.out.println(next + " " + dx + " " + dy);
-				dx *= speed;
-				dy *= speed;
 
-				if (dx != 0 || dy != 0)
+				if (mapBuilder.canMove(speed, ap))
 				{
-					distance = Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
-					Vector3D delta = new Vector3D(dx, dy, 0);
-					double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
-					if (angle < 0)
-					{
-						angle += 360;
-					}
-					if (angle > 360)
-					{
-						angle -= 360;
-					}
-					da = HeadingHelper.getChangeInHeading(angle, lastAngle);
-					if (Math.abs(da) > 10)
-					{
-						da = da * (5.0 / Math.abs(da));
-					}
+					dx *= speed;
+					dy *= speed;
 
+					if (dx != 0 || dy != 0)
+					{
+						distance = Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
+						Vector3D delta = new Vector3D(dx, dy, 0);
+						double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
+						if (angle < 0)
+						{
+							angle += 360;
+						}
+						if (angle > 360)
+						{
+							angle -= 360;
+						}
+						da = HeadingHelper.getChangeInHeading(angle, lastAngle);
+						if (Math.abs(da) > 10)
+						{
+							da = 10 * Math.signum(da);
+						}
+
+					} else
+					{
+						routePlanner.getRouteForLocation(pfX, pfY);
+						System.out.println("arrived at " + pfX + " " + pfY);
+						break;
+					}
 				} else
 				{
-					routePlanner.getRouteForLocation(pfX, pfY);
-					break;
+					da = 0;
+					distance = 0;
+					speed = 0;
 				}
 			}
 			robot.turn(da);
@@ -205,7 +225,7 @@ public class ParticleFilterTest
 			pf.resample(map);
 			try
 			{
-				Thread.sleep(0);
+				Thread.sleep(200);
 			} catch (InterruptedException e)
 			{
 				e.printStackTrace();
