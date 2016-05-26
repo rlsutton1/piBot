@@ -21,7 +21,7 @@ public class Particle
 
 	public Particle(double x, double y, double heading)
 	{
-		
+
 		this.x = x;
 		this.y = y;
 		this.heading = heading;
@@ -34,13 +34,16 @@ public class Particle
 		// the amount of noise will affect the size of the point cloud
 		// too little noise and it will fail to track
 
-		double hNoise = rand.nextGaussian() * 10.5;
+		double xn = rand.nextGaussian();
+		double yn = rand.nextGaussian();
+		double hn = rand.nextGaussian();
 
 		double distance = update.getMoveDistance();
 
-		double noiseScalerWhenStill = 0.5;
-		double xNoise = rand.nextGaussian() * 2.5 * Math.max(Math.abs(distance), noiseScalerWhenStill);
-		double yNoise = rand.nextGaussian() * 2.5 * Math.max(Math.abs(distance), noiseScalerWhenStill);
+		double noiseScalerWhenStill = 1.0;
+		double xNoise = Math.max(Math.abs(distance * xn * 0.65), Math.abs(xn * noiseScalerWhenStill)) * Math.signum(xn);
+		double yNoise = Math.max(Math.abs(distance * yn * 0.65), Math.abs(yn * noiseScalerWhenStill)) * Math.signum(yn);
+		double hNoise = Math.max(Math.abs(distance * hn * 1.65), Math.abs(hn * noiseScalerWhenStill*2)) * Math.signum(hn);
 
 		Vector3D unit = new Vector3D(0, 1, 0);
 		Vector3D move = unit.scalarMultiply(distance);
@@ -72,7 +75,7 @@ public class Particle
 
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data,double compassAdjustment)
+	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data, double compassAdjustment)
 	{
 		if (data.getCompassHeading().getError() < 45)
 		{
@@ -111,10 +114,11 @@ public class Particle
 			// world block size, but stay > 0
 			double error = Math.abs(simDistance - distance);
 
-			double e = 0;
+			double e = -2;
 			if (error < maxGoodError)
 			{
 				e = ((maxGoodError - error) / maxGoodError) * maxGoodVote;
+				e-=0.5;
 			}
 			// else
 			// {

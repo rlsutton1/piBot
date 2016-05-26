@@ -21,6 +21,8 @@ import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.navigation.RoutePlannerTest;
+import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.ui.MapDataSource;
 
@@ -42,7 +44,7 @@ public class RobotSimulator implements MapDataSource
 
 	public void move(double distance)
 	{
-		distance +=  (distance * (random.nextGaussian() * 0.5));
+		distance += (distance * (random.nextGaussian() * 0.5));
 		// random turn
 		turn(random.nextGaussian() * distance);
 		Vector3D unit = new Vector3D(0, distance, 0);
@@ -109,6 +111,7 @@ public class RobotSimulator implements MapDataSource
 		observation.addObservations(observations);
 
 		observation.setCompassHeading(new HeadingData((float) heading, 10.0f));
+		observation.setDeadReaconingHeading(new Angle((float) heading, AngleUnits.DEGREES));
 		return observation;
 	}
 

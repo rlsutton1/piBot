@@ -13,9 +13,13 @@ public class RoutePlanner
 
 	private ProbabilityMap world;
 
+	final static int WALL = 100000;
+
 	int blockSize = 5;
 
 	private Dynamic2dSparseArray route;
+
+	private ExpansionPoint target;
 
 	public RoutePlanner(ProbabilityMap world)
 	{
@@ -52,9 +56,10 @@ public class RoutePlanner
 
 	public void createRouteOld(int toX, int toY)
 	{
-		int wall = 100000;
 
-		route = new Dynamic2dSparseArray(wall);
+		target = new ExpansionPoint(toX, toY);
+
+		route = new Dynamic2dSparseArray(WALL);
 
 		int x = toX / blockSize;
 		int y = toY / blockSize;
@@ -77,7 +82,7 @@ public class RoutePlanner
 				if (temp.x > world.getMinX() / blockSize && temp.x < world.getMaxX() / blockSize
 						&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize)
 					if (world.get(temp.x * blockSize, temp.y * blockSize) < 0.55
-							&& route.get(temp.x, temp.y) > moveCounter && route.get(temp.x, temp.y) == wall)
+							&& route.get(temp.x, temp.y) > moveCounter && route.get(temp.x, temp.y) == WALL)
 					{
 						int penalty = 0;
 						if (doWallCheck(temp, 2))
@@ -196,36 +201,57 @@ public class RoutePlanner
 		return false;
 	}
 
-	public ExpansionPoint getRouteForLocation(int x, int y)
+	private ExpansionPoint getRouteForLocation(int x, int y, int radius)
 	{
 		// System.out.println("Route from " + x + "," + y);
 		int rx = x / blockSize;
 		int ry = y / blockSize;
 
 		List<ExpansionPoint> points = new LinkedList<>();
-		points.add(new ExpansionPoint(1, 0));
-		points.add(new ExpansionPoint(1, 1));
-		points.add(new ExpansionPoint(0, 1));
-		points.add(new ExpansionPoint(0, -1));
-		points.add(new ExpansionPoint(-1, 0));
-		points.add(new ExpansionPoint(-1, 1));
-		points.add(new ExpansionPoint(-1, -1));
+		points.add(new ExpansionPoint(radius, 0));
+		points.add(new ExpansionPoint(radius, radius));
+		points.add(new ExpansionPoint(radius, -radius));
+		points.add(new ExpansionPoint(0, radius));
+		points.add(new ExpansionPoint(0, -radius));
+		points.add(new ExpansionPoint(-radius, 0));
+		points.add(new ExpansionPoint(-radius, radius));
+		points.add(new ExpansionPoint(-radius, -radius));
 
-		ExpansionPoint target = new ExpansionPoint(x, y);
+		ExpansionPoint target = null;
 		double min = route.get(rx, ry);
 		// System.out.println("pre min " + min + "rx,ry " + rx + "," + ry);
 		for (ExpansionPoint point : points)
 		{
 			double value = route.get(rx + point.x, ry + point.y);
-			if (value <= min)
+			if (value < min)
 			{
 				min = value;
-				target = new ExpansionPoint((x + point.x), (y + point.y));
+				target = new ExpansionPoint(x + point.x , y + point.y );
 			}
 		}
 		// System.out.println("min " + min);
+		if (min == WALL)
+			return null;
 
 		return target;
+	}
+
+	public ExpansionPoint getRouteForLocation(int x, int y)
+	{
+		ExpansionPoint result = null;
+		for (int i = 1; i < 10; i++)
+		{
+			result = getRouteForLocation(x, y, i);
+			if (result != null)
+			{
+				return result;
+			}
+		}
+		if (result == null)
+		{
+			result = new ExpansionPoint(x, y);
+		}
+		return result;
 	}
 
 	void dumpRoute()

@@ -24,12 +24,12 @@ public class KalmanFilterForCompass extends KalmanFilter
 	 * 
 	 * @param initialValue
 	 */
-	KalmanFilterForCompass(KalmanValue initialValue)
+	public KalmanFilterForCompass(KalmanValue initialValue)
 	{
 		super(initialValue);
 	}
 
-	void calculate(final KalmanDataProvider dataProvider)
+	public void calculate(final KalmanDataProvider dataProvider)
 	{
 
 		super.calculate(getAngleDataProvider(dataProvider));
