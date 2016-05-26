@@ -71,17 +71,24 @@ public class StepperMotor
 			dirPin.setState(PinState.LOW);
 			currentPosition--;
 		}
-
+		busyWait(500);
 		for (int t = 0; t < 8; t++)
 		{
 			stepPin.setState(PinState.HIGH);
-			Thread.sleep(1);
+			busyWait(500);
 			stepPin.setState(PinState.LOW);
-			Thread.sleep(1);
+			busyWait(500);
 		}
 		lastDirection = (int) Math.signum(direction);
 		lastStep.reset();
 		lastStep.start();
+	}
+
+	private void busyWait(long duration)
+	{
+		// busy wait duration nanos
+		long start = System.nanoTime();
+		while (Math.abs(start-System.nanoTime())< duration);
 	}
 
 	public void moveTo(long position) throws InterruptedException
