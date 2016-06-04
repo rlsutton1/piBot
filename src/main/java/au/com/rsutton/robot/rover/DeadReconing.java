@@ -71,6 +71,55 @@ public class DeadReconing
 
 	}
 
+	public void replacement_updateLocation(Distance leftDistance, Distance rightDistance, final HeadingData compassData)
+	{
+
+		try
+		{
+
+			synchronized (sync)
+			{
+				if (leftDistance != null)
+				{
+					currentLeftWheelReading = leftDistance.convert(unit);
+				}
+				if (rightDistance != null)
+				{
+					currentRightWheelReading = rightDistance.convert(unit);
+				}
+
+				double leftDelta = currentLeftWheelReading - initialLeftWheelReading;
+				double rightDelta = currentRightWheelReading - initialRightWheelReading;
+
+				if (Math.abs(leftDelta - rightDelta) < 0.000005)
+				{
+					initialX += leftDelta * Math.cos(heading.getRadians());
+					initialY += leftDelta * Math.sin(heading.getRadians());
+				} else
+				{
+					double r = VEHICAL_WIDTH * (leftDelta + rightDelta) / (2.0 * (rightDelta - leftDelta));
+					double wd = (rightDelta - leftDelta) / VEHICAL_WIDTH;
+
+					initialX += r * Math.sin(wd + heading.getRadians()) - r * Math.sin(heading.getRadians());
+					initialY -= r * Math.cos(wd + heading.getRadians()) + r * Math.cos(heading.getRadians());
+					heading = new Angle(heading.getRadians() + wd, AngleUnits.RADIANS);
+				}
+
+				initialLeftWheelReading = currentLeftWheelReading;
+				initialRightWheelReading = currentRightWheelReading;
+
+				System.out.println("final " + heading.getDegrees());
+				System.out.println();
+
+			}
+
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
+	}
+
 	public Distance getX()
 	{
 
@@ -93,7 +142,7 @@ public class DeadReconing
 	{
 		synchronized (sync)
 		{
-			return new HeadingData((float) heading.getDegrees(), (float) 0);
+			return new HeadingData((float) heading.getDegrees(), 0);
 		}
 	}
 

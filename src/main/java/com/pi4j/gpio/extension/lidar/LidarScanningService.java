@@ -21,6 +21,9 @@ public class LidarScanningService implements Runnable
 	private final static Object sync = new Object();
 	volatile boolean stop = false;
 
+	// skip 8 steps between scans
+	int scanStepSkip = 8;
+
 	public LidarScanningService(GrovePiProvider grove, StepperMotor stepper, Config config)
 			throws InterruptedException, IOException, BrokenBarrierException
 	{
@@ -51,12 +54,19 @@ public class LidarScanningService implements Runnable
 				System.out.println("Start point scan");
 				int a = start + 1;
 				boolean isStart = true;
-				for (; a < end; a++)
+				for (; a < end; a += scanStepSkip)
 				{
 					try
 					{
-						publishPoint(scanner.scan(a), isStart);
-						isStart = false;
+						Vector3D scan = scanner.scan(a);
+						if (scan != null)
+						{
+							publishPoint(scan, isStart);
+							isStart = false;
+						} else
+						{
+							System.out.println("Null scan result");
+						}
 
 					} catch (IOException e)
 					{
@@ -67,17 +77,25 @@ public class LidarScanningService implements Runnable
 					}
 
 				}
-				a--;
+				a -= scanStepSkip;
 				isStart = true;
-				for (; a > start; a--)
+				for (; a > start; a -= scanStepSkip)
 				{
 					try
 					{
-						publishPoint(scanner.scan(a), isStart);
-						isStart = false;
+
+						Vector3D scan = scanner.scan(a);
+						if (scan != null)
+						{
+							publishPoint(scan, isStart);
+							isStart = false;
+						} else
+						{
+							System.out.println("Null scan result with sleep");
+						}
 					} catch (IOException e)
 					{
-
+						e.printStackTrace();
 					} catch (InterruptedException e)
 					{
 						stop = true;

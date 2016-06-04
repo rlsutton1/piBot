@@ -2,6 +2,8 @@ package au.com.rsutton.robot.rover;
 
 import java.io.Serializable;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+
 public class Angle implements Serializable
 {
 	/**
@@ -20,7 +22,7 @@ public class Angle implements Serializable
 	public Angle(Angle angle2)
 	{
 		this.angle = angle2.angle;
-		
+
 	}
 
 	private double convertTo(AngleUnits units)
@@ -30,29 +32,25 @@ public class Angle implements Serializable
 
 	Angle add(Angle angle)
 	{
-		return new Angle(this.angle + angle.convertTo(internalUnits),
-				internalUnits);
+		return new Angle(this.angle + angle.convertTo(internalUnits), internalUnits);
 
 	}
 
 	Angle add(double angle, AngleUnits units)
 	{
-		return new Angle(this.angle + units.convertTo(angle, internalUnits),
-				internalUnits);
+		return new Angle(this.angle + units.convertTo(angle, internalUnits), internalUnits);
 
 	}
 
 	Angle subtract(Angle angle)
 	{
-		return new Angle(this.angle - angle.convertTo(internalUnits),
-				internalUnits);
+		return new Angle(this.angle - angle.convertTo(internalUnits), internalUnits);
 
 	}
 
 	Angle subtract(double angle, AngleUnits units)
 	{
-		return new Angle(this.angle - units.convertTo(angle, internalUnits),
-				internalUnits);
+		return new Angle(this.angle - units.convertTo(angle, internalUnits), internalUnits);
 
 	}
 
@@ -69,32 +67,25 @@ public class Angle implements Serializable
 
 	private void rationalizeAngle()
 	{
-		double ax = Math.cos(Math.toRadians(angle));
-		double ay = Math.sin(Math.toRadians(angle));
-
-		angle = Math.toDegrees(Math.atan2(ay, ax));
-		if (angle < 0)
-		{
-			angle = 360 + angle;
-		}
+		angle = HeadingHelper.normalizeHeading(angle);
 
 	}
 
-	public double difference(double degrees, AngleUnits degrees2)
+	public double difference(double degrees, AngleUnits units)
 	{
-		double diff = subtract(new Angle(degrees,degrees2)).getDegrees();
-		
-		if (diff>180)
+		double diff = subtract(new Angle(degrees, units)).getDegrees();
+
+		if (diff > 180)
 		{
-			diff = 360-diff;
+			diff = 360 - diff;
 		}
-		
+
 		return diff;
 	}
 
 	public double difference(Angle angle2)
 	{
-		return difference(angle2.getDegrees(),AngleUnits.DEGREES);
+		return difference(angle2.getDegrees(), AngleUnits.DEGREES);
 	}
 
 }

@@ -57,7 +57,7 @@ public class CalabrateTelemetry
 //		// address
 //		pwm.setPWMFreq(60); // Set frequency to 60 Hz
 
-		StepperMotor driver = new StepperMotor();
+		StepperMotor driver = new StepperMotor(8);
 
 		LidarScanner lidar = new LidarScanner(driver, config, grove);
 

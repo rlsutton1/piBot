@@ -42,10 +42,10 @@ public class ParticleTest
 			{
 
 				Vector3D delta = new Vector3D(dx, dy, 0);
-				
-				double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX()))-90;
 
-				Particle particle = new Particle(x, y, angle);
+				double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
+
+				Particle particle = new Particle(x, y, angle, 2, 2);
 				update(map, particle, x, y, angle);
 				System.out.println("Heading " + angle + " Rating " + particle.getRating());
 
@@ -66,7 +66,7 @@ public class ParticleTest
 
 		List<LidarObservation> observations = new LinkedList<>();
 
-		Particle particle = new Particle(x, y, heading);
+		Particle particle = new Particle(x, y, heading, 2, 2);
 
 		for (int h = -80; h < 88; h += 5)
 		{
@@ -83,9 +83,10 @@ public class ParticleTest
 
 		observation.addObservations(observations);
 		observation.setCompassHeading(new HeadingData((float) heading, 10.0f));
-		testParticle.addObservation(map, observation,0d);
-		
-//		atan2 I think is 90 degrees out of phase with y = 0 degrees omg how much code will be broken as a result of that!!!!
+		testParticle.addObservation(map, observation, 0d);
+
+		// atan2 I think is 90 degrees out of phase with y = 0 degrees omg how
+		// much code will be broken as a result of that!!!!
 
 	}
 

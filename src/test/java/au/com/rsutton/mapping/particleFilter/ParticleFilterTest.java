@@ -2,7 +2,6 @@ package au.com.rsutton.mapping.particleFilter;
 
 import java.awt.Color;
 import java.awt.Point;
-import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,11 +12,7 @@ import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
-import au.com.rsutton.robot.rover.KalmanDataProvider;
-import au.com.rsutton.robot.rover.KalmanFilterForCompass;
-import au.com.rsutton.robot.rover.KalmanValue;
 import au.com.rsutton.ui.MainPanel;
-import au.com.rsutton.ui.MapDataSource;
 import au.com.rsutton.ui.PointSource;
 import au.com.rsutton.ui.StatisticSource;
 
@@ -52,43 +47,10 @@ public class ParticleFilterTest
 		map.dumpTextWorld();
 		ui.addDataSource(map, new Color(255, 255, 255));
 
-		final ParticleFilter pf = new ParticleFilter(map, 2000);
+		final ParticleFilter pf = new ParticleFilter(map, 2000, 2, 4);
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
-		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
-		ui.addDataSource(pf.getHeadingMapDataSource());
-
-		ui.addStatisticSource(new StatisticSource()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + pf.getStdDev();
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "StdDev";
-			}
-		});
-
-		ui.addStatisticSource(new StatisticSource()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + pf.getBestRating();
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "Best Match";
-			}
-		});
+		setupDataSources(ui, pf);
 
 		final RoutePlanner routePlanner = new RoutePlanner(map);
 		int pfX = 0;
@@ -99,48 +61,12 @@ public class ParticleFilterTest
 
 		ui.addDataSource(robot);
 
-		routePlanner.createRoute(120, -260);
-
-		ui.addDataSource(new PointSource()
-		{
-
-			@Override
-			public List<Point> getOccupiedPoints()
-			{
-
-				// determine the route from the current possition
-				Vector3D pos = pf.dumpAveragePosition();
-				double x = pos.getX();
-				double y = pos.getY();
-
-				List<Point> points = new LinkedList<>();
-
-				for (int i = 0; i < 150; i++)
-				{
-					ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
-					points.add(new Point(next.getX(), next.getY()));
-					double dx = (x - next.getX()) * 5;
-					x -= dx;
-					double dy = (y - next.getY()) * 5;
-					y -= dy;
-					if (dx == 0 && dy == 0)
-					{
-						// reached the target
-						break;
-					}
-				}
-
-				return points;
-			}
-
-		}, new Color(255, 255, 0));
+		setupRoutePlanner(ui, pf, routePlanner);
 
 		double lastAngle = 0;
-		int ctr = 0;
 		double speed = 0;
 		while (true)
 		{
-			ctr++;
 
 			double da = 5;
 			double distance = 0;
@@ -159,7 +85,7 @@ public class ParticleFilterTest
 			pf.setParticleCount(Math.max(200, (int) (7 * std)));
 
 			speed = Math.max(0.01, speed);
-			speed = Math.min(0.15,speed);
+			speed = Math.min(0.15, speed);
 
 			if (std < 30)
 			{
@@ -222,6 +148,7 @@ public class ParticleFilterTest
 			robot.move(distance);
 
 			update(map, pf, distance, da, robot);
+
 			pf.resample(map);
 			try
 			{
@@ -232,6 +159,83 @@ public class ParticleFilterTest
 			}
 		}
 
+	}
+
+	private void setupDataSources(MainPanel ui, final ParticleFilter pf)
+	{
+		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
+		ui.addDataSource(pf.getHeadingMapDataSource());
+
+		ui.addStatisticSource(new StatisticSource()
+		{
+
+			@Override
+			public String getValue()
+			{
+				return "" + pf.getStdDev();
+			}
+
+			@Override
+			public String getLabel()
+			{
+				return "StdDev";
+			}
+		});
+
+		ui.addStatisticSource(new StatisticSource()
+		{
+
+			@Override
+			public String getValue()
+			{
+				return "" + pf.getBestRating();
+			}
+
+			@Override
+			public String getLabel()
+			{
+				return "Best Match";
+			}
+		});
+	}
+
+	private void setupRoutePlanner(MainPanel ui, final ParticleFilter pf, final RoutePlanner routePlanner)
+	{
+		routePlanner.createRoute(120, -260);
+
+		ui.addDataSource(new PointSource()
+		{
+
+			@Override
+			public List<Point> getOccupiedPoints()
+			{
+
+				// determine the route from the current possition
+				Vector3D pos = pf.dumpAveragePosition();
+				double x = pos.getX();
+				double y = pos.getY();
+
+				List<Point> points = new LinkedList<>();
+
+				for (int i = 0; i < 150; i++)
+				{
+					ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
+					points.add(new Point(next.getX(), next.getY()));
+					double dx = (x - next.getX()) * 5;
+					x -= dx;
+					double dy = (y - next.getY()) * 5;
+					y -= dy;
+					if (dx == 0 && dy == 0)
+					{
+						// reached the target
+						break;
+					}
+				}
+
+				return points;
+			}
+
+		}, new Color(255, 255, 0));
 	}
 
 	private void update(ProbabilityMap map, ParticleFilter pf, final double distance, final double dh,

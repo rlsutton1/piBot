@@ -34,7 +34,7 @@ public class CalabrateLidar
 //		pwm.setPWMFreq(60); // Set frequency to 60 Hz
 		GrovePiProvider grove = new GrovePiProvider(I2cSettings.busNumber, 4);
 
-		StepperMotor driver = new StepperMotor();
+		StepperMotor driver = new StepperMotor(8);
 
 		config.loadSetting("lidar.c", 0);
 

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -13,7 +12,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import au.com.rsutton.config.Config;
 import au.com.rsutton.robot.stepper.StepperMotor;
 
-import com.google.common.base.Stopwatch;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.io.gpio.PinMode;
@@ -26,11 +24,15 @@ public class LidarScanner
 	private static final int MIN_ANGLE = -70;
 	private static final int MAX_ANGLE = 70;
 
-	private static final double STEP_ANGLE = 1.8;
+	static final double stepsPerRotation = 200;
+
+	static final double microSteps = 8;
+
+	private static final double STEP_ANGLE = 360.0 / (stepsPerRotation * microSteps);
 
 	private volatile boolean stop = false;
 
-	volatile int resolution = 1;
+	// volatile int resolution = 1;
 
 	private Config config;
 
@@ -39,9 +41,8 @@ public class LidarScanner
 	private Lidar lidar;
 	private GrovePiProvider grove;
 
-	public LidarScanner(StepperMotor stepper, Config config,
-			GrovePiProvider grove) throws InterruptedException, IOException,
-			BrokenBarrierException
+	public LidarScanner(StepperMotor stepper, Config config, GrovePiProvider grove) throws InterruptedException,
+			IOException, BrokenBarrierException
 	{
 
 		this.grove = grove;
@@ -56,8 +57,7 @@ public class LidarScanner
 
 	}
 
-	void init() throws InterruptedException, IOException,
-			BrokenBarrierException
+	void init() throws InterruptedException, IOException, BrokenBarrierException
 	{
 
 		buildPositionRotationMap();
@@ -66,7 +66,7 @@ public class LidarScanner
 
 		int maxPos = 0;
 
-		for (int i = 0; i < 200; i++)
+		for (int i = 0; i < stepsPerRotation * microSteps; i++)
 		{
 			stepper.moveTo(i);
 			double value = getLdrValue();
@@ -79,9 +79,9 @@ public class LidarScanner
 
 		}
 
-		stepper.moveTo(maxPos + 64);
+		stepper.moveTo((long) (maxPos + (64 * microSteps)));
 		stepper.setZero();
-		stepper.moveTo(75);
+		stepper.moveTo((long) (75 * microSteps));
 		Thread.sleep(1000);
 
 		double cm = 0;
@@ -97,7 +97,7 @@ public class LidarScanner
 			}
 			Thread.sleep(10);
 		}
-		double c = -34 ;//- (cm / 100.0);
+		double c = -34;// - (cm / 100.0);
 		lidar.setCalabrationC(c);
 		System.out.println("Setting calabration c to " + c);
 
@@ -117,8 +117,7 @@ public class LidarScanner
 	double totalSettleTime = 0;
 	int samples = 0;
 
-	public Vector3D scanAngle(double angleDegrees) throws InterruptedException,
-			BrokenBarrierException, IOException
+	public Vector3D scanAngle(double angleDegrees) throws InterruptedException, BrokenBarrierException, IOException
 	{
 		return scan(convertAngleToStepPosition(angleDegrees));
 
@@ -135,49 +134,30 @@ public class LidarScanner
 
 	}
 
+	int lastLidarReading = 0;
+
+	/**
+	 * returns null if the detected distance is the same as the last reading -
+	 * ensuring that the lidar has actually measured since the move
+	 * 
+	 * @param position
+	 * @return
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	public Vector3D scan(int position) throws InterruptedException, IOException
 	{
 		double angle = convertStepPositionToAnlge(position);
 		if (angle > MAX_ANGLE || angle < MIN_ANGLE)
 		{
-			throw new RuntimeException("Angle " + angle
-					+ " out of bounds (position " + position + ")");
+			throw new RuntimeException("Angle " + angle + " out of bounds (position " + position + ")");
 		}
 		stepper.moveTo(position);
 
+		Thread.sleep(10);
 		int last = lidar.getLatestReading();
-		
-//		Stopwatch timer = Stopwatch.createStarted();
-//		int last = 0;
-//		for (int i = 0; i < 10; i++)
-//		{
-//			Thread.sleep(LIDAR_POLL_RATE);
-//			int reading = lidar.getLatestReading();
-//			if (Math.abs(reading - last) < 2 && i > 0)
-//			{
-//				last = reading;
-//				break;
-//			}
-//			last = reading;
-//			// System.out.println("l " + last);
-//
-//		}
 
-		// last = 0;
-		// for (int i = 0; i < 3; i++)
-		// {
-		// Thread.sleep(LIDAR_POLL_RATE);
-		// last += lidar.getLatestReading();
-		// }
-		// last = (int) (last / 3.0);
-		// System.out.println("returng value " + last);
-
-	//	totalSettleTime += timer.elapsed(TimeUnit.MILLISECONDS);
-		samples++;
-
-		// System.out
-		// .println("Average settle time " + (totalSettleTime / samples));
-
+		lastLidarReading = last;
 		Rotation rotation = positionRotationMap.get(position);
 		if (rotation == null)
 		{
@@ -206,8 +186,7 @@ public class LidarScanner
 		for (int i = minPosition; i <= maxPosition; i++)
 		{
 			double angle = convertStepPositionToAnlge(i);
-			positionRotationMap.put(i, new Rotation(RotationOrder.XYZ, 0, 0,
-					Math.toRadians(angle)));
+			positionRotationMap.put(i, new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle)));
 		}
 
 	}

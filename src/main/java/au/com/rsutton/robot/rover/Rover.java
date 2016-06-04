@@ -109,7 +109,7 @@ public class Rover implements Runnable, RobotLocationReporter
 //		// address
 //		pwm.setPWMFreq(1000); // Set frequency to 60 Hz
 
-		StepperMotor stepper = new StepperMotor();
+		StepperMotor stepper = new StepperMotor(8);
 
 		new LidarScanningService(grove, stepper, config);
 

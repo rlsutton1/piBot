@@ -11,20 +11,15 @@ import java.util.Random;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.junit.Test;
 
-import com.pi4j.gpio.extension.lsm303.HeadingData;
-
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.navigation.RoutePlanner;
-import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
-import au.com.rsutton.navigation.RoutePlannerTest;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.ui.MapDataSource;
+
+import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class RobotSimulator implements MapDataSource
 {
@@ -87,7 +82,7 @@ public class RobotSimulator implements MapDataSource
 
 		List<LidarObservation> observations = new LinkedList<>();
 
-		Particle particle = new Particle(x, y, heading);
+		Particle particle = new Particle(x, y, heading, 2, 2);
 
 		for (double h = -70; h < 70; h += 5)
 		{

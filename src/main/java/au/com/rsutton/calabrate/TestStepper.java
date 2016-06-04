@@ -45,7 +45,7 @@ public class TestStepper
 //		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
 //
 //		pwm.setPWMFreq(1000);
-		StepperMotor driver = new StepperMotor();
+		StepperMotor driver = new StepperMotor(8);
 
 		new LidarScanningService(grove, driver, config);
 

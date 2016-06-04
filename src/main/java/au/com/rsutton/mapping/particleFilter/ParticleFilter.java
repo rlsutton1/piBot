@@ -15,10 +15,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.robot.rover.KalmanDataProvider;
-import au.com.rsutton.robot.rover.KalmanFilter;
-import au.com.rsutton.robot.rover.KalmanFilterForCompass;
-import au.com.rsutton.robot.rover.KalmanValue;
 import au.com.rsutton.ui.MapDataSource;
 import au.com.rsutton.ui.PointSource;
 
@@ -32,9 +28,13 @@ public class ParticleFilter
 	volatile double bestRating = 0;
 
 	AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
+	private double headingNoise;
+	private double distanceNoise;
 
-	ParticleFilter(ProbabilityMap map, int particles)
+	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise)
 	{
+		this.headingNoise = headingNoise;
+		this.distanceNoise = distanceNoise;
 		particleQty = particles;
 		newParticleCount = particleQty;
 		createRandomStart(map);
@@ -59,7 +59,7 @@ public class ParticleFilter
 			double x = (int) ((rand.nextDouble() * xd) + minX);
 			double y = (int) ((rand.nextDouble() * yd) + minY);
 			double heading = (int) (rand.nextDouble() * 360);
-			particles.add(new Particle(x, y, heading));
+			particles.add(new Particle(x, y, heading, distanceNoise, headingNoise));
 		}
 	}
 
@@ -71,7 +71,7 @@ public class ParticleFilter
 		}
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
+	synchronized public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
 		lastObservation.set(observations);
@@ -84,7 +84,7 @@ public class ParticleFilter
 		// }
 	}
 
-	public void resample(ProbabilityMap map)
+	synchronized public void resample(ProbabilityMap map)
 	{
 		Random rand = new Random();
 		List<Particle> newSet = new LinkedList<>();
@@ -92,6 +92,7 @@ public class ParticleFilter
 		double bestRatingSoFar = 0;
 		double next = 0.0;
 		Particle selectedParticle = null;
+		int size = particles.size();
 		while (newSet.size() < newParticleCount)
 		{
 			next += rand.nextDouble() * 2.0;// 50/50 chance of the same or next
@@ -103,12 +104,13 @@ public class ParticleFilter
 
 				next -= selectedParticle.getRating();
 				pos++;
-				pos %= particleQty;
+				pos %= size;
 
 			}
 			// System.out.println(selectedParticle.getRating());
 			bestRatingSoFar = Math.max(bestRatingSoFar, selectedParticle.getRating());
-			newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading()));
+			newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading(),
+					distanceNoise, headingNoise));
 		}
 		bestRating = bestRatingSoFar;
 		System.out.println("Best rating " + bestRating);

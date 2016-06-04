@@ -18,13 +18,17 @@ public class Particle
 	double heading;
 	private double totalVotes = 0.0;
 	private double totalObservations;
+	private double distanceNoise;
+	private double headingNoise;
 
-	public Particle(double x, double y, double heading)
+	public Particle(double x, double y, double heading, double distanceNoise, double headingNoise)
 	{
 
 		this.x = x;
 		this.y = y;
 		this.heading = heading;
+		this.distanceNoise = distanceNoise;
+		this.headingNoise = headingNoise;
 	}
 
 	public void move(ParticleUpdate update)
@@ -40,10 +44,12 @@ public class Particle
 
 		double distance = update.getMoveDistance();
 
-		double noiseScalerWhenStill = 1.0;
-		double xNoise = Math.max(Math.abs(distance * xn * 0.65), Math.abs(xn * noiseScalerWhenStill)) * Math.signum(xn);
-		double yNoise = Math.max(Math.abs(distance * yn * 0.65), Math.abs(yn * noiseScalerWhenStill)) * Math.signum(yn);
-		double hNoise = Math.max(Math.abs(distance * hn * 1.65), Math.abs(hn * noiseScalerWhenStill*2)) * Math.signum(hn);
+		double xNoise = Math.max(Math.abs(distance * xn * distanceNoise), Math.abs(xn * distanceNoise * 2.0))
+				* Math.signum(xn);
+		double yNoise = Math.max(Math.abs(distance * yn * distanceNoise), Math.abs(yn * distanceNoise * 2.0))
+				* Math.signum(yn);
+		double hNoise = Math.max(Math.abs(distance * hn * headingNoise), Math.abs(hn * headingNoise * 2.0))
+				* Math.signum(hn);
 
 		Vector3D unit = new Vector3D(0, 1, 0);
 		Vector3D move = unit.scalarMultiply(distance);
@@ -91,6 +97,9 @@ public class Particle
 				totalVotes -= 1000000;
 
 			}
+		} else
+		{
+			System.out.println("Good Value");
 		}
 
 		// max error is 30cm, after that we vote negative
@@ -118,7 +127,7 @@ public class Particle
 			if (error < maxGoodError)
 			{
 				e = ((maxGoodError - error) / maxGoodError) * maxGoodVote;
-				e-=0.5;
+				e -= 0.5;
 			}
 			// else
 			// {
