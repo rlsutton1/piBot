@@ -1,6 +1,6 @@
 package au.com.rsutton.ui;
 
-public interface StatisticSource
+public interface DataSourceStatistic
 {
 
 	String getLabel();

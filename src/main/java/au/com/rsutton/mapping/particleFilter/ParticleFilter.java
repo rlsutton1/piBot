@@ -7,6 +7,8 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
@@ -14,22 +16,26 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.ui.MapDataSource;
-import au.com.rsutton.ui.PointSource;
+import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.ui.DataSourcePoint;
+
+import com.google.common.base.Stopwatch;
 
 public class ParticleFilter
 {
 
-	List<Particle> particles = new LinkedList<>();
+	private static final double MINIMUM_MEANINGFUL_RATING = 0.02;
+	final List<Particle> particles = new CopyOnWriteArrayList<>();
 	volatile int particleQty;
-	private double averageHeading;
+	volatile private double averageHeading;
 
 	volatile double bestRating = 0;
 
 	AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
-	private double headingNoise;
-	private double distanceNoise;
+	final private double headingNoise;
+	final private double distanceNoise;
 
 	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise)
 	{
@@ -71,21 +77,37 @@ public class ParticleFilter
 		}
 	}
 
+	volatile long lastResampe = 0L;
+
 	synchronized public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
 		lastObservation.set(observations);
+		boolean useCompass = getStdDev() > 30;
 
-		particles.parallelStream().forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment));
+		particles.parallelStream().forEach(
+				e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
 		// for (Particle particle : particles)
 		// {
 		// particle.addObservation(currentWorld,
 		// observations,compassAdjustment);
 		// }
+
+		long now = System.currentTimeMillis();
+		if (now - lastResampe > 400)
+		{
+			lastResampe = now;
+			resample(currentWorld);
+		}
 	}
 
-	synchronized public void resample(ProbabilityMap map)
+	synchronized private void resample(ProbabilityMap map)
 	{
+
+		Stopwatch timer = Stopwatch.createStarted();
+
+		removeUnusableParticles();
+
 		Random rand = new Random();
 		List<Particle> newSet = new LinkedList<>();
 		int pos = 0;
@@ -114,14 +136,46 @@ public class ParticleFilter
 		}
 		bestRating = bestRatingSoFar;
 		System.out.println("Best rating " + bestRating);
-		if (bestRating < 0.02 && getStdDev() > 30)
+		if (bestRating < MINIMUM_MEANINGFUL_RATING && getStdDev() > 30)
 		{
+			// there is no useful data, re-seed the particle filter
 			createRandomStart(map);
 		} else
 		{
-			particles = newSet;
+			particles.clear();
+			particles.addAll(newSet);
 		}
 		particleQty = newParticleCount;
+
+		System.out.println("Resample took " + timer.elapsed(TimeUnit.MILLISECONDS));
+
+		if (listener != null)
+		{
+			listener.update(dumpAveragePosition(), stablisedHeading, getStdDev(), lastObservation.get());
+		}
+
+	}
+
+	private void removeUnusableParticles()
+	{
+		List<Particle> particlesToRemove = new LinkedList<>();
+		for (Particle particle : particles)
+		{
+			if (particle.getRating() < MINIMUM_MEANINGFUL_RATING)
+			{
+				particlesToRemove.add(particle);
+			}
+		}
+
+		// always keep at least 100 particles, if there are less than 100 good
+		// particles then we probably should keep all our particles
+		if (particlesToRemove.size() + 100 < particles.size())
+		{
+			System.out.println("removing " + particlesToRemove.size() + " useless particles");
+			// strip particles with ratings that are below the minimum threshold
+			particles.removeAll(particlesToRemove);
+
+		}
 
 	}
 
@@ -196,9 +250,12 @@ public class ParticleFilter
 			h += 360;
 		}
 
-		System.out.println("Average Heading " + h);
+		// System.out.println("Average Heading " + h);
 
 		averageHeading = h;
+
+		stablisedHeading = stablisedHeading
+				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.6);
 
 		return new Vector3D((x / particles.size()), (y / particles.size()), 0);
 
@@ -226,13 +283,13 @@ public class ParticleFilter
 			// xdev.increment(particle.x);
 		}
 		double dev = xdev.getResult() + ydev.getResult();
-		System.out.println("Deviation " + dev);
+		// System.out.println("Deviation " + dev);
 		return dev;
 	}
 
-	PointSource getParticlePointSource()
+	DataSourcePoint getParticlePointSource()
 	{
-		return new PointSource()
+		return new DataSourcePoint()
 		{
 
 			@Override
@@ -250,9 +307,17 @@ public class ParticleFilter
 		};
 	}
 
-	MapDataSource getHeadingMapDataSource()
+	double stablisedHeading = 0;
+	private ParticleFilterListener listener;
+
+	/**
+	 * draw recent observations
+	 * 
+	 * @return
+	 */
+	DataSourceMap getHeadingMapDataSource()
 	{
-		return new MapDataSource()
+		return new DataSourceMap()
 		{
 
 			@Override
@@ -282,7 +347,7 @@ public class ParticleFilter
 					// draw lidar observation lines
 					for (ScanObservation obs : lastObservation.get().getObservations())
 					{
-						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
+						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(stablisedHeading))
 								.applyTo(obs.getVector());
 						graphics.drawLine((int) pointOriginX, (int) pointOriginY,
 								(int) (pointOriginX + (vector.getX() * scale)),
@@ -292,7 +357,7 @@ public class ParticleFilter
 				// draw heading line
 				graphics.setColor(new Color(0, 128, 128));
 				Vector3D line = new Vector3D(60 * scale, 0, 0);
-				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading + 90)).applyTo(line);
+				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(stablisedHeading + 90)).applyTo(line);
 
 				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
 						(int) (pointOriginY + line.getY()));
@@ -314,6 +379,12 @@ public class ParticleFilter
 	public void setParticleCount(int i)
 	{
 		newParticleCount = i;
+
+	}
+
+	public void addListener(ParticleFilterListener listener)
+	{
+		this.listener = listener;
 
 	}
 

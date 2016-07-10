@@ -5,7 +5,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-public interface MapDataSource
+public interface DataSourceMap
 {
 
 	List<Point> getPoints();

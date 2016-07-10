@@ -16,15 +16,14 @@ public enum HazelCastInstance
 	{
 
 		config = new Config();
-		config.getNetworkConfig().getJoin().getMulticastConfig()
-				.setEnabled(true);
-		TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin()
-				.getTcpIpConfig();
+		config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(true);
+		TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
 		tcpIpConfig.setEnabled(true);
 		for (int i = 100; i < 122; i++)
 		{
 			tcpIpConfig.addMember("192.168.0." + i);
 		}
+		tcpIpConfig.addMember("10.10.0.41");
 
 		h = Hazelcast.newHazelcastInstance(config);
 

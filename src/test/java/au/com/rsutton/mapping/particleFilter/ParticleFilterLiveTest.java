@@ -2,10 +2,12 @@ package au.com.rsutton.mapping.particleFilter;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -24,10 +26,11 @@ import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
+import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.ui.DataSourcePaintRegion;
+import au.com.rsutton.ui.DataSourcePoint;
+import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MainPanel;
-import au.com.rsutton.ui.MapDataSource;
-import au.com.rsutton.ui.PointSource;
-import au.com.rsutton.ui.StatisticSource;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.hazelcast.core.Message;
@@ -44,10 +47,7 @@ public class ParticleFilterLiveTest
 
 	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
 
-	private MapBuilder mapBuilder;
-
-	volatile private boolean mapping = false;
-	private double sampleSize = 1.0;
+	List<Tuple<Double, Double>> headingTuples = new CopyOnWriteArrayList<>();
 
 	@Test
 	public void test() throws InterruptedException
@@ -55,13 +55,13 @@ public class ParticleFilterLiveTest
 
 		MainPanel ui = new MainPanel();
 
-		mapBuilder = new MapBuilder();
-
 		final ProbabilityMap world = KitchenMapBuilder.buildKitchenMap();
 		ui.addDataSource(world, new Color(255, 255, 255));
 
-		final ParticleFilter pf = new ParticleFilter(world, 2000, 1.75, 0.75);
+		final ParticleFilter pf = new ParticleFilter(world, 1000, 0.75, 3.75);
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
+
+		MapBuilder mapBuilder = new MapBuilder(pf);
 
 		setupDataSources(ui, pf);
 		setupRobotListener(currentDeadReconingHeading, world, pf);
@@ -77,7 +77,6 @@ public class ParticleFilterLiveTest
 		{
 
 			double da = 5;
-			double distance = 0;
 
 			double std = pf.getStdDev();
 
@@ -89,9 +88,8 @@ public class ParticleFilterLiveTest
 				speed -= 0.25;
 			}
 			speed = Math.max(0.01, speed);
-			pf.setParticleCount(Math.max(200, (int) (7 * std)));
+			pf.setParticleCount(Math.max(500, (int) (7 * std)));
 			Vector3D ap = pf.dumpAveragePosition();
-			mapping = !mapBuilder.canMove(speed, ap);
 
 			// if (!mapping)
 			{
@@ -119,7 +117,6 @@ public class ParticleFilterLiveTest
 
 					if (dx != 0 || dy != 0)
 					{
-						distance = Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
 						Vector3D delta = new Vector3D(dx, dy, 0);
 						double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
 						if (angle < 0)
@@ -194,6 +191,10 @@ public class ParticleFilterLiveTest
 		Thread.sleep(1000);
 	}
 
+	double lastCompassHeading = 0;
+
+	double lastDeadreconningHeading = 0;
+
 	private void setupRobotListener(final AtomicDouble currentDeadReconingHeading, final ProbabilityMap world,
 			final ParticleFilter pf)
 	{
@@ -202,18 +203,25 @@ public class ParticleFilterLiveTest
 
 			Double lastx = null;
 			Double lasty = null;
-			private int updateCounter;
+
+			// MovingLidarObservationMultiBuffer buffer = new
+			// MovingLidarObservationMultiBuffer(2);
 
 			@Override
 			public void onMessage(Message<RobotLocation> message)
 			{
 
 				final RobotLocation robotLocation = message.getMessageObject();
-				compassHeading = robotLocation.getCompassHeading().getHeading();
 
+				storeHeadingDeltas(robotLocation);
+
+				compassHeading = robotLocation.getCompassHeading().getHeading();
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
 
+				// ParticleFilterObservationSet bufferedObservations =
+				// updateBuffer(robotLocation);
 				pf.addObservation(world, robotLocation, -90d);
+
 				if (lastx != null)
 				{
 					pf.moveParticles(new ParticleUpdate()
@@ -239,37 +247,72 @@ public class ParticleFilterLiveTest
 				lastx = robotLocation.getX().convert(DistanceUnit.CM);
 				lastheading = robotLocation.getDeadReaconingHeading();
 
-				boolean resample = false;
 				for (ScanObservation obs : robotLocation.getObservations())
 				{
-					if (obs.isStartOfScan())
-					{
-						// reduce stop counter
-						resample = true;
-						stop--;
-					}
+
 					if (Vector3D.distance(Vector3D.ZERO, obs.getVector()) < 20)
 					{
-						// stop for 2 full sweeps
-						stop = 1;
+						// stop for 2 seconds
+						stop = 20;
 					}
 
 				}
 
-				if (!mapping || resample)
-				{
-					System.out.println("Resample >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-					updateCounter++;
-					if (updateCounter >= sampleSize)
-					{
-						updateCounter = 0;
-
-						pf.resample(world);
-					}
-				}
+				stop--;
 				// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 			}
+
+			private void storeHeadingDeltas(final RobotLocation robotLocation)
+			{
+				double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading, robotLocation
+						.getCompassHeading().getHeading());
+				double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading,
+						robotLocation.getDeadReaconingHeading().getDegrees());
+
+				deltaCompassHeading *= 4.0;
+
+				deltaDeadreconningHeading *= 4.0;
+				headingTuples.add(new Tuple<Double, Double>(deltaCompassHeading, deltaDeadreconningHeading));
+				if (headingTuples.size() > 240)
+				{
+					headingTuples.remove(0);
+				}
+
+				lastCompassHeading = robotLocation.getCompassHeading().getHeading();
+				lastDeadreconningHeading = robotLocation.getDeadReaconingHeading().getDegrees();
+			}
+
+			// private ParticleFilterObservationSet updateBuffer(final
+			// RobotLocation robotLocation)
+			// {
+			// buffer.addObservation(robotLocation);
+			// ParticleFilterObservationSet bufferedObservations = new
+			// ParticleFilterObservationSet()
+			// {
+			//
+			// @Override
+			// public List<ScanObservation> getObservations()
+			// {
+			// List<ScanObservation> result = new LinkedList<>();
+			// result.addAll(buffer.getObservations(robotLocation));
+			// return result;
+			// }
+			//
+			// @Override
+			// public Angle getDeadReaconingHeading()
+			// {
+			// return robotLocation.getDeadReaconingHeading();
+			// }
+			//
+			// @Override
+			// public HeadingData getCompassHeading()
+			// {
+			// return robotLocation.getCompassHeading();
+			// }
+			// };
+			// return bufferedObservations;
+			// }
 		});
 	}
 
@@ -278,7 +321,7 @@ public class ParticleFilterLiveTest
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
 
-		ui.addStatisticSource(new StatisticSource()
+		ui.addStatisticSource(new DataSourceStatistic()
 		{
 
 			@Override
@@ -294,7 +337,7 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addStatisticSource(new StatisticSource()
+		ui.addStatisticSource(new DataSourceStatistic()
 		{
 
 			@Override
@@ -310,7 +353,7 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addStatisticSource(new StatisticSource()
+		ui.addStatisticSource(new DataSourceStatistic()
 		{
 
 			@Override
@@ -326,7 +369,7 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addStatisticSource(new StatisticSource()
+		ui.addStatisticSource(new DataSourceStatistic()
 		{
 
 			@Override
@@ -342,7 +385,7 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addStatisticSource(new StatisticSource()
+		ui.addStatisticSource(new DataSourceStatistic()
 		{
 
 			@Override
@@ -358,7 +401,7 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addStatisticSource(new StatisticSource()
+		ui.addStatisticSource(new DataSourceStatistic()
 		{
 
 			@Override
@@ -379,7 +422,7 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addDataSource(new MapDataSource()
+		ui.addDataSource(new DataSourceMap()
 		{
 
 			@Override
@@ -395,6 +438,8 @@ public class ParticleFilterLiveTest
 			@Override
 			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
 			{
+				// draw line showing which way the bot is facing
+
 				Graphics graphics = image.getGraphics();
 
 				graphics.setColor(new Color(255, 255, 255));
@@ -409,13 +454,32 @@ public class ParticleFilterLiveTest
 
 			}
 		});
+
+		ui.addDataSource(new DataSourcePaintRegion()
+		{
+
+			@Override
+			public void paint(Graphics2D graphics)
+			{
+				// draw chart of last 50 compass/pf heading
+				int ctr = 50;
+				for (Tuple<Double, Double> tuple : headingTuples)
+				{
+					graphics.setColor(new Color(255, 0, 0));
+					graphics.drawLine(ctr, 180 + tuple.getV1().intValue(), ctr + 1, 180 + tuple.getV1().intValue() + 1);
+					graphics.setColor(new Color(0, 0, 255));
+					graphics.drawLine(ctr, 180 + tuple.getV2().intValue(), ctr - 1, 180 + tuple.getV2().intValue() - 1);
+					ctr++;
+				}
+			}
+		});
 	}
 
 	private void setupRoutePlanner(MainPanel ui, final ParticleFilter pf, final RoutePlanner routePlanner)
 	{
 		routePlanner.createRoute(110, -250);
 
-		ui.addDataSource(new PointSource()
+		ui.addDataSource(new DataSourcePoint()
 		{
 
 			@Override

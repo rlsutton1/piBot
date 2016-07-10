@@ -6,9 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
-import au.com.rsutton.ui.PointSource;
+import au.com.rsutton.ui.DataSourcePoint;
 
-public class ProbabilityMap implements PointSource
+public class ProbabilityMap implements DataSourcePoint
 {
 
 	private int blockSize;

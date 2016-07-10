@@ -1,14 +1,13 @@
 package au.com.rsutton.entryPoint;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
+import au.com.rsutton.hazelcast.RobotLocation;
+
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
-
-import au.com.rsutton.hazelcast.RobotLocation;
 
 public class DataLogger implements MessageListener<RobotLocation>
 {
@@ -26,7 +25,8 @@ public class DataLogger implements MessageListener<RobotLocation>
 	{
 		try
 		{
-			fout = new FileOutputStream("robotFlightRecord.obj");
+			long stamp = System.currentTimeMillis();
+			fout = new FileOutputStream("robotFlightRecord-" + stamp + ".obj");
 			oos = new ObjectOutputStream(fout);
 		} catch (IOException e)
 		{

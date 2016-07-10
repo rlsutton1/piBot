@@ -12,16 +12,18 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
-import au.com.rsutton.ui.MapDataSource;
+import au.com.rsutton.ui.DataSourceMap;
 
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
-public class RobotSimulator implements MapDataSource
+public class RobotSimulator implements DataSourceMap
 {
 
 	Random random = new Random();
@@ -107,6 +109,8 @@ public class RobotSimulator implements MapDataSource
 
 		observation.setCompassHeading(new HeadingData((float) heading, 10.0f));
 		observation.setDeadReaconingHeading(new Angle((float) heading, AngleUnits.DEGREES));
+		observation.setX(new Distance(x, DistanceUnit.CM));
+		observation.setY(new Distance(y, DistanceUnit.CM));
 		return observation;
 	}
 

@@ -20,6 +20,8 @@ public class Particle
 	private double totalObservations;
 	private double distanceNoise;
 	private double headingNoise;
+	private double totalDistanceTravelled = 0;
+	private double totalHeadingChange = 0;
 
 	public Particle(double x, double y, double heading, double distanceNoise, double headingNoise)
 	{
@@ -33,35 +35,15 @@ public class Particle
 
 	public void move(ParticleUpdate update)
 	{
-		Random rand = new Random();
-
-		// the amount of noise will affect the size of the point cloud
-		// too little noise and it will fail to track
-
-		double xn = rand.nextGaussian();
-		double yn = rand.nextGaussian();
-		double hn = rand.nextGaussian();
-
 		double distance = update.getMoveDistance();
 
-		double xNoise = Math.max(Math.abs(distance * xn * distanceNoise), Math.abs(xn * distanceNoise * 2.0))
-				* Math.signum(xn);
-		double yNoise = Math.max(Math.abs(distance * yn * distanceNoise), Math.abs(yn * distanceNoise * 2.0))
-				* Math.signum(yn);
-		double hNoise = Math.max(Math.abs(distance * hn * headingNoise), Math.abs(hn * headingNoise * 2.0))
-				* Math.signum(hn);
+		totalDistanceTravelled += Math.abs(distance);
+		totalHeadingChange += Math.abs(update.getDeltaHeading());
 
 		Vector3D unit = new Vector3D(0, 1, 0);
 		Vector3D move = unit.scalarMultiply(distance);
 
 		heading += update.getDeltaHeading();
-		if (Math.abs(hNoise * update.getDeltaHeading()) > Math.abs(hNoise))
-		{
-			heading += hNoise * update.getDeltaHeading();
-		} else
-		{
-			heading += hNoise;
-		}
 
 		if (heading < 0)
 		{
@@ -76,14 +58,45 @@ public class Particle
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
 
 		Vector3D newPosition = rotation.applyTo(move).add(position);
-		x = newPosition.getX() + xNoise;
-		y = newPosition.getY() + yNoise;
+		x = newPosition.getX();
+		y = newPosition.getY();
+		addNoise();
 
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data, double compassAdjustment)
+	private void addNoise()
 	{
-		if (data.getCompassHeading().getError() < 45)
+		Random rand = new Random();
+
+		// the amount of noise will affect the size of the point cloud
+		// too little noise and it will fail to track
+
+		double xn = rand.nextGaussian();
+		double yn = rand.nextGaussian();
+		double hn = rand.nextGaussian();
+
+		double xNoise = Math.max(Math.abs(totalDistanceTravelled * xn * distanceNoise),
+				Math.abs(xn * distanceNoise * 2.0))
+				* Math.signum(xn);
+		double yNoise = Math.max(Math.abs(totalDistanceTravelled * yn * distanceNoise),
+				Math.abs(yn * distanceNoise * 2.0))
+				* Math.signum(yn);
+		double hNoise = Math.max(Math.abs(totalHeadingChange * hn * headingNoise), Math.abs(hn * headingNoise * 2.0))
+				* Math.signum(hn);
+
+		totalDistanceTravelled = 0;
+		totalHeadingChange = 0;
+
+		x += xNoise;
+		y += yNoise;
+		heading += hNoise;
+
+	}
+
+	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data,
+			double compassAdjustment, boolean useCompass)
+	{
+		if (useCompass && data.getCompassHeading().getError() < 45)
 		{
 
 			double compassDiff = Math.abs(HeadingHelper.getChangeInHeading(data.getCompassHeading().getHeading()
@@ -97,9 +110,6 @@ public class Particle
 				totalVotes -= 1000000;
 
 			}
-		} else
-		{
-			System.out.println("Good Value");
 		}
 
 		// max error is 30cm, after that we vote negative

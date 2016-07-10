@@ -25,6 +25,7 @@ import au.com.rsutton.robot.stepper.StepperMotor;
 
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
+import com.pi4j.gpio.extension.adafruit.GyroProvider;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.gpio.extension.lidar.LidarScanningService;
@@ -53,12 +54,10 @@ public class Rover implements Runnable, RobotLocationReporter
 	volatile private Distance clearSpaceAhead = new Distance(0, DistanceUnit.MM);
 
 	private GrovePiProvider grove;
-	
-	Vector3D lidarTransposeOnRobotChasis = new Vector3D(0,10,0);
 
+	Vector3D lidarTransposeOnRobotChasis = new Vector3D(0, 10, 0);
 
-	public Rover() throws IOException, InterruptedException,
-			BrokenBarrierException
+	public Rover() throws IOException, InterruptedException, BrokenBarrierException
 	{
 
 		Config config = new Config();
@@ -69,14 +68,14 @@ public class Rover implements Runnable, RobotLocationReporter
 
 		compass = new CompassLSM303(config);
 
+		GyroProvider gyro = new GyroProvider(I2cSettings.busNumber, GyroProvider.Addr);
+
 		rightWheel = WheelFactory.setupRightWheel(grove, config);
 
 		leftWheel = WheelFactory.setupLeftWheel(grove, config);
 
-		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
+		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
 		// provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 		// provider.setPWMFreq(30);
@@ -97,47 +96,46 @@ public class Rover implements Runnable, RobotLocationReporter
 		// 0, 0, 0 });
 
 		Angle initialAngle = new Angle(compass.getHeadingData().getHeading(), AngleUnits.DEGREES);
-		reconing = new DeadReconing(initialAngle);
+		reconing = new DeadReconing(initialAngle, gyro);
 		previousLocation = new RobotLocation();
 		previousLocation.setDeadReaconingHeading(initialAngle);
 		previousLocation.setX(reconing.getX());
 		previousLocation.setY(reconing.getY());
-		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
-				Time.perSecond()));
+		previousLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
 
-//		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
-//		// address
-//		pwm.setPWMFreq(1000); // Set frequency to 60 Hz
+		// AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
+		// // address
+		// pwm.setPWMFreq(1000); // Set frequency to 60 Hz
 
 		StepperMotor stepper = new StepperMotor(8);
 
 		new LidarScanningService(grove, stepper, config);
 
-		new LidarObservation()
-				.addMessageListener(new MessageListener<LidarObservation>()
-				{
+		new LidarObservation().addMessageListener(new MessageListener<LidarObservation>()
+		{
 
-					@Override
-					public void onMessage(Message<LidarObservation> message)
-					{
+			@Override
+			public void onMessage(Message<LidarObservation> message)
+			{
 
-						LidarObservation lidarObservation = message.getMessageObject();
-						
-						// apply transpose for the position of the Lidar on the robot's Chasis
-						Vector3D vector = lidarObservation.getVector();
-						vector = vector.add(lidarTransposeOnRobotChasis);
-						LidarObservation observation = new LidarObservation(vector, lidarObservation.isStartOfScan());
-						
-						currentObservations.add(observation);
+				LidarObservation lidarObservation = message.getMessageObject();
 
-					}
-				});
+				// apply transpose for the position of the Lidar on the robot's
+				// Chasis
+				Vector3D vector = lidarObservation.getVector();
+				vector = vector.add(lidarTransposeOnRobotChasis);
+				LidarObservation observation = new LidarObservation(vector, lidarObservation.isStartOfScan());
+
+				currentObservations.add(observation);
+
+			}
+		});
 
 		getSpaceAhead();
 		// pixy.getCurrentData();
 
-		speedHeadingController = new SpeedHeadingController(rightWheel,
-				leftWheel, compass.getHeadingData().getHeading());
+		speedHeadingController = new SpeedHeadingController(rightWheel, leftWheel, compass.getHeadingData()
+				.getHeading());
 
 		// listen for motion commands thru Hazelcast
 		SetMotion message = new SetMotion();
@@ -150,8 +148,7 @@ public class Rover implements Runnable, RobotLocationReporter
 				SetMotion data = message.getMessageObject();
 				if (clearSpaceAhead.convert(DistanceUnit.CM) < 20)
 				{
-					data.setSpeed(new Speed(new Distance(0, DistanceUnit.MM),
-							Time.perSecond()));
+					data.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
 				}
 
 				// System.out.println("Setting speed" + data.getSpeed());
@@ -160,11 +157,9 @@ public class Rover implements Runnable, RobotLocationReporter
 			}
 		});
 
-		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
-				200, 200, TimeUnit.MILLISECONDS);
+		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 200, TimeUnit.MILLISECONDS);
 
 	}
-
 
 	Map<Integer, Integer> distVal = new HashMap<Integer, Integer>();
 	int lc = 0;
@@ -176,12 +171,10 @@ public class Rover implements Runnable, RobotLocationReporter
 		// System.out.println("Raw csa "+value);
 		clearSpaceAhead = forwardSonar.getCurrentDistance((int) value);
 		clearSpaceAhead = new Distance(40, DistanceUnit.CM);
-		if (lastData != null
-				&& lastData.getSpeed().getSpeed(distUnit, timeUnit) > 0
+		if (lastData != null && lastData.getSpeed().getSpeed(distUnit, timeUnit) > 0
 				&& clearSpaceAhead.convert(DistanceUnit.CM) < 30)
 		{
-			lastData.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
-					.perSecond()));
+			lastData.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
 			speedHeadingController.setDesiredMotion(lastData);
 		}
 
@@ -197,17 +190,16 @@ public class Rover implements Runnable, RobotLocationReporter
 			getSpaceAhead();
 
 			HeadingData compassData = compass.getHeadingData();
-			
-			reconing.updateLocation(rightWheel.getDistance(), leftWheel
-					.getDistance(),compassData);
 
-			speedHeadingController.setActualHeading( reconing.getHeading());
+			reconing.updateLocation(rightWheel.getDistance(), leftWheel.getDistance(), compassData);
+
+			speedHeadingController.setActualHeading(reconing.getHeading());
 
 			Speed speed = calculateSpeed();
 
 			// send location out on HazelCast
 			RobotLocation currentLocation = new RobotLocation();
-			currentLocation.setDeadReaconingHeading(new Angle(reconing.getHeading().getHeading(),AngleUnits.DEGREES));
+			currentLocation.setDeadReaconingHeading(new Angle(reconing.getHeading().getHeading(), AngleUnits.DEGREES));
 			currentLocation.setCompassHeading(compassData);
 			currentLocation.setX(reconing.getX());
 			currentLocation.setY(reconing.getY());
@@ -215,10 +207,10 @@ public class Rover implements Runnable, RobotLocationReporter
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
 
 			List<LidarObservation> observations = new LinkedList<>();
-			
+
 			observations.addAll(currentObservations);
 			currentObservations.removeAll(observations);
-			if (currentObservations.size()>0)
+			if (currentObservations.size() > 0)
 			{
 				System.out.println("Current observations isn't empty after publish");
 			}
@@ -242,16 +234,14 @@ public class Rover implements Runnable, RobotLocationReporter
 
 		// use pythag to calculate distance between current location and
 		// previous location
-		double distance = Math.sqrt(Math.pow(reconing.getX().convert(distUnit)
-				- previousLocation.getX().convert(distUnit), 2)
-				+ (Math.pow(reconing.getY().convert(distUnit)
-						- previousLocation.getY().convert(distUnit), 2)));
+		double distance = Math.sqrt(Math.pow(
+				reconing.getX().convert(distUnit) - previousLocation.getX().convert(distUnit), 2)
+				+ (Math.pow(reconing.getY().convert(distUnit) - previousLocation.getY().convert(distUnit), 2)));
 
 		// scale up distance to a per second rate
-		distance = distance * (1000.0d / ((double) (now - lastTime)));
+		distance = distance * (1000.0d / (now - lastTime));
 
-		Speed speed = new Speed(new Distance(distance, distUnit),
-				Time.perSecond());
+		Speed speed = new Speed(new Distance(distance, distUnit), Time.perSecond());
 		lastTime = now;
 		return speed;
 	}

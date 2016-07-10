@@ -83,7 +83,7 @@ public class ParticleTest
 
 		observation.addObservations(observations);
 		observation.setCompassHeading(new HeadingData((float) heading, 10.0f));
-		testParticle.addObservation(map, observation, 0d);
+		testParticle.addObservation(map, observation, 0d, true);
 
 		// atan2 I think is 90 degrees out of phase with y = 0 degrees omg how
 		// much code will be broken as a result of that!!!!

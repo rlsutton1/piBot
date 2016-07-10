@@ -3,15 +3,8 @@ package au.com.rsutton.ui;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 
 import javax.swing.JFrame;
-
-import org.junit.Test;
-
-import au.com.rsutton.mapping.particleFilter.KitchenMapBuilder;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
 
 public class MainPanel extends JFrame implements Runnable
 {
@@ -46,20 +39,20 @@ public class MainPanel extends JFrame implements Runnable
 
 	}
 
-	public void addDataSource(PointSource map,Color color)
+	public void addDataSource(DataSourcePoint map, Color color)
 	{
-		WrapperForMapInMapUI mapSource = new WrapperForMapInMapUI(map,color);
+		WrapperForMapInMapUI mapSource = new WrapperForMapInMapUI(map, color);
 		graph.addDataSource(mapSource);
 
 	}
 
-	public void addDataSource(MapDataSource map)
+	public void addDataSource(DataSourceMap map)
 	{
 		graph.addDataSource(map);
 
 	}
-	
-	public void addStatisticSource(StatisticSource source)
+
+	public void addStatisticSource(DataSourceStatistic source)
 	{
 		graph.addStatisticSource(source);
 	}
@@ -80,6 +73,12 @@ public class MainPanel extends JFrame implements Runnable
 				throw new RuntimeException("Exiting");
 			}
 		}
+	}
+
+	public void addDataSource(DataSourcePaintRegion dataSourcePaintRegion)
+	{
+		graph.addDataSource(dataSourcePaintRegion);
+
 	}
 
 }

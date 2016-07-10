@@ -6,14 +6,14 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-public class WrapperForMapInMapUI implements MapDataSource
+public class WrapperForMapInMapUI implements DataSourceMap
 {
 
-	private PointSource map;
+	private DataSourcePoint map;
 
 	Color color;
 	
-	public WrapperForMapInMapUI(PointSource map, Color color)
+	public WrapperForMapInMapUI(DataSourcePoint map, Color color)
 	{
 		this.map = map;
 		this.color = color;

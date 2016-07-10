@@ -13,7 +13,6 @@ import com.pi4j.io.gpio.GpioProvider;
 import com.pi4j.io.gpio.GpioProviderBase;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
-import com.pi4j.io.i2c.I2CFactory;
 import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 /*
@@ -59,11 +58,10 @@ import com.pi4j.io.i2c.impl.I2CBusImplBanana;
  * @author Robert Savage
  * 
  */
-public class GyroProvider extends GpioProviderBase implements GpioProvider,
-		Runnable
+public class GyroProvider extends GpioProviderBase implements GpioProvider, Runnable
 {
 	public static final String NAME = GyroProvider.class.getCanonicalName();
-	public static final String DESCRIPTION = "Adafruit 16 channel PWM Provider";
+	public static final String DESCRIPTION = "GYRO";
 
 	final private I2CBus bus;
 	final private I2CDevice device;
@@ -74,7 +72,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 	public static final int CTRL_REG4 = 0x23;
 	private static final int SECOND = 1000;
 
-	int Addr = 105; // I2C address of gyro
+	public static final int Addr = 105; // I2C address of gyro
 	volatile double x, y, z;
 	volatile double currentX, currentY, currentZ;
 	// int ctr = 50;
@@ -91,7 +89,6 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 	int driftCnt;
 	private long calabrationStart;
 	boolean calabrated = false;
-	private volatile boolean setZero;
 	private Set<GyroListener> gyroListeners = new HashSet<GyroListener>();
 
 	@Override
@@ -138,8 +135,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 
 			double scaler = scaling / filter;
 
-			if (calabrationStart + (10 * SECOND) > System.currentTimeMillis()
-					|| driftCnt < 10)
+			if (calabrationStart + (10 * SECOND) > System.currentTimeMillis() || driftCnt < 10)
 			{
 
 				xDrift += x;
@@ -159,21 +155,13 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 
 			}
 
-			if (setZero)
-			{
-				currentX = 0;
-				currentY = 0;
-				currentZ = 0;
-				setZero = false;
-			}
 			outx = (int) (currentX / scaler);
 			outy = (int) (currentY / scaler);
 			outz = (int) (currentZ / scaler);
 
 			values = "X:" + (outx) + " Y:" + (outy) + " Z:" + (outz);
 
-			if (previousValues == null
-					|| values.compareToIgnoreCase(previousValues) != 0)
+			if (previousValues == null || values.compareToIgnoreCase(previousValues) != 0)
 			{
 
 				previousValues = values;
@@ -198,8 +186,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 		return outz;
 	}
 
-	public GyroProvider(int busNumber, int address) throws IOException,
-			InterruptedException
+	public GyroProvider(int busNumber, int address) throws IOException, InterruptedException
 	{
 		// create I2C communications bus instance
 		// default = 0x40
@@ -215,8 +202,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 		// delay(100); // Wait to synchronize
 
 		calabrationStart = System.currentTimeMillis();
-		worker = GpioFactory.getExecutorServiceFactory()
-				.getScheduledExecutorService();
+		worker = GpioFactory.getExecutorServiceFactory().getScheduledExecutorService();
 
 		worker.scheduleAtFixedRate(this, 10, 10, TimeUnit.MILLISECONDS);
 	}
@@ -230,45 +216,9 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider,
 	@Override
 	public void shutdown()
 	{
-		try
-		{
 
-			worker.shutdown();
-			// close the I2C bus communication
-			bus.close();
-		} catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
-
-	public boolean isCalabrated()
-	{
-
-		return calabrated;
-	}
-
-	public void setZero() throws InterruptedException
-	{
-		setZero = true;
-
-		// now wait for the reset to take effect
-		while (setZero == true)
-		{
-			Thread.sleep(10);
-		}
+		worker.shutdown();
 
 	}
-
-	public void setCorrectedHeading(int heading)
-	{
-		currentZ = heading;
-
-	}
-
-	
-	
-
-	
 
 }

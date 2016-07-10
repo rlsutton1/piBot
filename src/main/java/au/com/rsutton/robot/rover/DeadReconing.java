@@ -1,14 +1,16 @@
 package au.com.rsutton.robot.rover;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 
+import com.pi4j.gpio.extension.adafruit.GyroProvider;
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class DeadReconing
 {
 
-	private static final int VEHICAL_WIDTH = 200;
+	private static final int VEHICAL_WIDTH = 225;
 
 	private final static DistanceUnit unit = DistanceUnit.MM;
 
@@ -24,9 +26,12 @@ public class DeadReconing
 
 	final private Object sync = new Object();
 
-	public DeadReconing(Angle angle)
+	private GyroProvider gyro;
+
+	public DeadReconing(Angle angle, GyroProvider gyro)
 	{
 		heading = angle;
+		this.gyro = gyro;
 	}
 
 	public void updateLocation(Distance leftDistance, Distance rightDistance, final HeadingData compassData)
@@ -55,9 +60,15 @@ public class DeadReconing
 				initialLeftWheelReading = currentLeftWheelReading;
 				initialRightWheelReading = currentRightWheelReading;
 
-				final double telemetryHeading = heading.getDegrees() - Math.toDegrees((t2 - t1) / VEHICAL_WIDTH);
+				int gyroHeading = gyro.getHeading();
 
-				heading = new Angle(telemetryHeading, AngleUnits.DEGREES);
+				if (Math.abs(0 - Math.toDegrees((t2 - t1) / VEHICAL_WIDTH)) > 0.1)
+				{
+					final double telemetryHeading = HeadingHelper.normalizeHeading(gyroHeading);
+
+					heading = new Angle(telemetryHeading, AngleUnits.DEGREES);
+
+				}
 
 				System.out.println("final " + heading.getDegrees());
 				System.out.println();
