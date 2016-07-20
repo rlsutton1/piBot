@@ -25,7 +25,6 @@ import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -58,7 +57,8 @@ public class ParticleFilterLiveTest
 		final ProbabilityMap world = KitchenMapBuilder.buildKitchenMap();
 		ui.addDataSource(world, new Color(255, 255, 255));
 
-		final ParticleFilter pf = new ParticleFilter(world, 1000, 0.75, 3.75);
+		double headingNoise = 1.0; // degrees/second
+		final ParticleFilter pf = new ParticleFilter(world, 1000, 0.75, headingNoise);
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		MapBuilder mapBuilder = new MapBuilder(pf);
@@ -68,6 +68,11 @@ public class ParticleFilterLiveTest
 
 		RoutePlanner routePlanner = new RoutePlanner(world);
 		setupRoutePlanner(ui, pf, routePlanner);
+
+		Integer initialX = null;
+		Integer initialY = null;
+
+		routePlanner.createRoute(110, -250);
 
 		int pfX = 0;
 		int pfY = 0;
@@ -80,13 +85,14 @@ public class ParticleFilterLiveTest
 
 			double std = pf.getStdDev();
 
-			if (std < 24)
-			{
-				speed += 0.25;
-			} else if (std > 29)
-			{
-				speed -= 0.25;
-			}
+			speed = Math.max(22 - std, 0);
+			// if (std < 24)
+			// {
+			// speed += 0.25;
+			// } else if (std > 29)
+			// {
+			// speed -= 0.25;
+			// }
 			speed = Math.max(0.01, speed);
 			pf.setParticleCount(Math.max(500, (int) (7 * std)));
 			Vector3D ap = pf.dumpAveragePosition();
@@ -98,6 +104,12 @@ public class ParticleFilterLiveTest
 
 					pfX = (int) ap.getX();
 					pfY = (int) ap.getY();
+
+					if (initialX == null)
+					{
+						initialX = pfX;
+						initialY = pfY;
+					}
 
 					lastAngle = pf.getAverageHeading();
 
@@ -136,7 +148,14 @@ public class ParticleFilterLiveTest
 					} else
 					{
 						routePlanner.getRouteForLocation(pfX, pfY);
-						break;
+
+						if (pfX != initialX && pfY != initialY)
+						{
+							routePlanner.createRoute(initialX, initialY);
+						} else
+						{
+							break;
+						}
 					}
 					SetMotion motion = new SetMotion();
 
@@ -230,8 +249,13 @@ public class ParticleFilterLiveTest
 						@Override
 						public double getDeltaHeading()
 						{
-							return lastheading.difference(new Angle(HeadingHelper.normalizeHeading(robotLocation
-									.getDeadReaconingHeading().getDegrees()), AngleUnits.DEGREES));
+							// return -lastheading.difference(new
+							// Angle(HeadingHelper.normalizeHeading(robotLocation
+							// .getDeadReaconingHeading().getDegrees()),
+							// AngleUnits.DEGREES));
+
+							return HeadingHelper.getChangeInHeading(robotLocation.getDeadReaconingHeading()
+									.getDegrees(), lastheading.getDegrees());
 						}
 
 						@Override
@@ -477,7 +501,6 @@ public class ParticleFilterLiveTest
 
 	private void setupRoutePlanner(MainPanel ui, final ParticleFilter pf, final RoutePlanner routePlanner)
 	{
-		routePlanner.createRoute(110, -250);
 
 		ui.addDataSource(new DataSourcePoint()
 		{

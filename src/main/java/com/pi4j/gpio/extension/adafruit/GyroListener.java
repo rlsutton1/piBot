@@ -3,6 +3,6 @@ package com.pi4j.gpio.extension.adafruit;
 public interface GyroListener
 {
 
-	void gyroChanged(int outx, int outy, int outz);
+	void gyroChanged(double outx, double outy, double outz);
 
 }

@@ -111,28 +111,46 @@ public class ParticleFilter
 		Random rand = new Random();
 		List<Particle> newSet = new LinkedList<>();
 		int pos = 0;
-		double bestRatingSoFar = 0;
 		double next = 0.0;
-		Particle selectedParticle = null;
 		int size = particles.size();
-		while (newSet.size() < newParticleCount)
-		{
-			next += rand.nextDouble() * 2.0;// 50/50 chance of the same or next
-											// being picked if there are both
-											// rated 1.0
-			while (next > 0.0)
-			{
-				selectedParticle = particles.get(pos);
 
-				next -= selectedParticle.getRating();
-				pos++;
-				pos %= size;
+		double bestRatingSoFar = 0;
+		for (Particle selectedParticle : particles)
+		{
+			bestRatingSoFar = Math.max(bestRatingSoFar, selectedParticle.getRating());
+		}
+		if (bestRatingSoFar < MINIMUM_MEANINGFUL_RATING)
+		{
+			for (Particle selectedParticle : particles)
+			{
+				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(),
+						selectedParticle.getHeading(), distanceNoise, headingNoise));
 
 			}
-			// System.out.println(selectedParticle.getRating());
-			bestRatingSoFar = Math.max(bestRatingSoFar, selectedParticle.getRating());
-			newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading(),
-					distanceNoise, headingNoise));
+		} else
+		{
+			Particle selectedParticle = null;
+
+			while (newSet.size() < newParticleCount)
+			{
+				next += rand.nextDouble() * 2.0;// 50/50 chance of the same or
+												// next
+												// being picked if there are
+												// both
+												// rated 1.0
+				while (next > 0.0)
+				{
+					selectedParticle = particles.get(pos);
+
+					next -= selectedParticle.getRating();
+					pos++;
+					pos %= size;
+
+				}
+				// System.out.println(selectedParticle.getRating());
+				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(),
+						selectedParticle.getHeading(), distanceNoise, headingNoise));
+			}
 		}
 		bestRating = bestRatingSoFar;
 		System.out.println("Best rating " + bestRating);

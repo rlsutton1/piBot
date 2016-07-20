@@ -4,9 +4,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import com.hazelcast.core.Message;
-
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
+
+import com.hazelcast.core.Message;
 
 public class DataLogReader
 {
@@ -33,13 +34,15 @@ public class DataLogReader
 		long messageReferenceTime = 0;
 		try
 		{
-			fout = new FileInputStream("robotFlightRecord.obj");
+			fout = new FileInputStream("robotFlightRecord-gyro2.obj");
 			oos = new ObjectInputStream(fout);
 			boolean canContinue = true;
+
+			double lastHeading = 0;
+
 			while (canContinue == true && stop == false)
 			{
-				RobotLocation locationMessage = (RobotLocation) ((Message) oos
-						.readObject()).getMessageObject();
+				RobotLocation locationMessage = (RobotLocation) ((Message) oos.readObject()).getMessageObject();
 				if (locationMessage == null)
 				{
 					canContinue = false;
@@ -51,16 +54,21 @@ public class DataLogReader
 					messageReferenceTime = messageTime;
 				}
 				long eventOffset = messageTime - messageReferenceTime;
-				//eventOffset *= 5;
-				long delay = eventOffset
-						- (System.currentTimeMillis() - referenceTime);
+				// eventOffset *= 5;
+				long delay = eventOffset - (System.currentTimeMillis() - referenceTime);
 				if (delay > 10)
 				{
 					Thread.sleep(delay);
 				}
-				
-				//absolute delay between events
-			//	Thread.sleep(1000);
+
+				// absolute delay between events
+				// Thread.sleep(1000);
+
+				double change = HeadingHelper.getChangeInHeading(lastHeading, locationMessage.getDeadReaconingHeading()
+						.getDegrees());
+				System.out.println("'heading'," + change + "," + locationMessage.getTime());
+
+				lastHeading = locationMessage.getDeadReaconingHeading().getDegrees();
 
 				locationMessage.setTopic();
 				locationMessage.publish();

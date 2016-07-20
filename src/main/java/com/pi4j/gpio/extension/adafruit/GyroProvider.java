@@ -77,11 +77,9 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 	volatile double currentX, currentY, currentZ;
 	// int ctr = 50;
 	private ScheduledExecutorService worker;
-	private String previousValues;
-	private String values;
-	volatile private int outx;
-	volatile private int outy;
-	volatile private int outz;
+	volatile private double outx;
+	volatile private double outy;
+	volatile private double outz;
 
 	double xDrift;
 	double yDrift;
@@ -129,9 +127,9 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 			double scaling = 11000;
 			double filter = 20;
 
-			x = (int) (x / (filter));
-			y = (int) (y / (filter));
-			z = (int) (z / (filter));
+			x = (x / (filter));
+			y = (y / (filter));
+			z = (z / (filter));
 
 			double scaler = scaling / filter;
 
@@ -155,20 +153,13 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 
 			}
 
-			outx = (int) (currentX / scaler);
-			outy = (int) (currentY / scaler);
-			outz = (int) (currentZ / scaler);
+			outx = (currentX / scaler);
+			outy = (currentY / scaler);
+			outz = (currentZ / scaler);
 
-			values = "X:" + (outx) + " Y:" + (outy) + " Z:" + (outz);
-
-			if (previousValues == null || values.compareToIgnoreCase(previousValues) != 0)
+			for (GyroListener listener : gyroListeners)
 			{
-
-				previousValues = values;
-				for (GyroListener listener : gyroListeners)
-				{
-					listener.gyroChanged(outx, outy, outz);
-				}
+				listener.gyroChanged(outx, outy, outz);
 			}
 		} catch (IOException i)
 		{
@@ -181,7 +172,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 		gyroListeners.add(listener);
 	}
 
-	public int getHeading()
+	public double getHeading()
 	{
 		return outz;
 	}

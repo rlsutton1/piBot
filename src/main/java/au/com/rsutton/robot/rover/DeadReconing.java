@@ -28,11 +28,17 @@ public class DeadReconing
 
 	private GyroProvider gyro;
 
+	private double gyroSlip;
+
+	private double lastGyroHeading;
+
 	public DeadReconing(Angle angle, GyroProvider gyro)
 	{
 		heading = angle;
 		this.gyro = gyro;
 	}
+
+	long lastTime = System.currentTimeMillis();
 
 	public void updateLocation(Distance leftDistance, Distance rightDistance, final HeadingData compassData)
 	{
@@ -60,18 +66,40 @@ public class DeadReconing
 				initialLeftWheelReading = currentLeftWheelReading;
 				initialRightWheelReading = currentRightWheelReading;
 
-				int gyroHeading = gyro.getHeading();
+				long now = System.currentTimeMillis();
+				double elapsedMillis = now - lastTime;
+				lastTime = now;
+				double fraction = elapsedMillis / 1000.0;
 
-				if (Math.abs(0 - Math.toDegrees((t2 - t1) / VEHICAL_WIDTH)) > 0.1)
+				// max change = 25 deg/sec
+				double maxChange = 25 * fraction;
+
+				// get gyro delta and prepare for the next
+				double gyroHeading = gyro.getHeading();
+				double deltaGyroHeading = gyroHeading - lastGyroHeading;
+				lastGyroHeading = gyroHeading;
+
+				// check change in heading, based on odometry
+				final double odoHeadingChange = Math.toDegrees((t2 - t1) / VEHICAL_WIDTH) * 2.0;
+
+				if (Math.abs(odoHeadingChange) < 0.2)
 				{
-					final double telemetryHeading = HeadingHelper.normalizeHeading(gyroHeading);
+					// stationary, any change in gyro heading is slippage
+					gyroSlip += deltaGyroHeading;
 
-					heading = new Angle(telemetryHeading, AngleUnits.DEGREES);
-
+				} else if (Math.abs(deltaGyroHeading) > maxChange)
+				{
+					// excessive change in gyro heading, must be slipapge
+					gyroSlip += (Math.abs(deltaGyroHeading) - maxChange) * Math.signum(deltaGyroHeading);
 				}
 
+				// determine heading allowing for slippage
+				final double telemetryHeading = HeadingHelper.normalizeHeading(gyroHeading - gyroSlip);
+
+				heading = new Angle(telemetryHeading, AngleUnits.DEGREES);
+
+				System.out.println(gyroHeading + " " + gyroSlip);
 				System.out.println("final " + heading.getDegrees());
-				System.out.println();
 
 			}
 

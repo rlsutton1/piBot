@@ -71,6 +71,13 @@ public class Angle implements Serializable
 
 	}
 
+	/**
+	 * always returns a positive value
+	 * 
+	 * @param degrees
+	 * @param units
+	 * @return
+	 */
 	public double difference(double degrees, AngleUnits units)
 	{
 		double diff = subtract(new Angle(degrees, units)).getDegrees();
@@ -83,6 +90,12 @@ public class Angle implements Serializable
 		return diff;
 	}
 
+	/**
+	 * always returns a positive value
+	 * 
+	 * @param angle2
+	 * @return
+	 */
 	public double difference(Angle angle2)
 	{
 		return difference(angle2.getDegrees(), AngleUnits.DEGREES);

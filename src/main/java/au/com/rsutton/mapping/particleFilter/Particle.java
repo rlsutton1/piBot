@@ -81,8 +81,7 @@ public class Particle
 		double yNoise = Math.max(Math.abs(totalDistanceTravelled * yn * distanceNoise),
 				Math.abs(yn * distanceNoise * 2.0))
 				* Math.signum(yn);
-		double hNoise = Math.max(Math.abs(totalHeadingChange * hn * headingNoise), Math.abs(hn * headingNoise * 2.0))
-				* Math.signum(hn);
+		double hNoise = hn * headingNoise;
 
 		totalDistanceTravelled = 0;
 		totalHeadingChange = 0;

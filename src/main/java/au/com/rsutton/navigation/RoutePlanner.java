@@ -19,8 +19,6 @@ public class RoutePlanner
 
 	private Dynamic2dSparseArray route;
 
-	private ExpansionPoint target;
-
 	public RoutePlanner(ProbabilityMap world)
 	{
 		this.world = world;
@@ -51,51 +49,6 @@ public class RoutePlanner
 		public int getY()
 		{
 			return y;
-		}
-	}
-
-	public void createRouteOld(int toX, int toY)
-	{
-
-		target = new ExpansionPoint(toX, toY);
-
-		route = new Dynamic2dSparseArray(WALL);
-
-		int x = toX / blockSize;
-		int y = toY / blockSize;
-		int moveCounter = 0;
-
-		List<ExpansionPoint> expansionPoints = new LinkedList<>();
-		expansionPoints.add(new ExpansionPoint(x, y));
-		route.set(x, y, moveCounter);
-		while (!expansionPoints.isEmpty())
-		{
-			ExpansionPoint point = expansionPoints.remove(0);
-			List<ExpansionPoint> tempPoints = new LinkedList<>();
-			tempPoints.add(new ExpansionPoint(point.x + 1, point.y));
-			tempPoints.add(new ExpansionPoint(point.x - 1, point.y));
-			tempPoints.add(new ExpansionPoint(point.x, point.y - 1));
-			tempPoints.add(new ExpansionPoint(point.x, point.y + 1));
-
-			for (ExpansionPoint temp : tempPoints)
-			{
-				if (temp.x > world.getMinX() / blockSize && temp.x < world.getMaxX() / blockSize
-						&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize)
-					if (world.get(temp.x * blockSize, temp.y * blockSize) < 0.55
-							&& route.get(temp.x, temp.y) > moveCounter && route.get(temp.x, temp.y) == WALL)
-					{
-						int penalty = 0;
-						if (doWallCheck(temp, 2))
-						{
-							penalty = 20000;
-						}
-
-						route.set(temp.x, temp.y, moveCounter + penalty);
-						expansionPoints.add(temp);
-						moveCounter++;
-					}
-			}
-
 		}
 	}
 
@@ -226,7 +179,7 @@ public class RoutePlanner
 			if (value < min)
 			{
 				min = value;
-				target = new ExpansionPoint(x + point.x , y + point.y );
+				target = new ExpansionPoint(x + point.x, y + point.y);
 			}
 		}
 		// System.out.println("min " + min);
