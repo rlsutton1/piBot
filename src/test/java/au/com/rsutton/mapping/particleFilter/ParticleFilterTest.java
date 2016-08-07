@@ -20,7 +20,7 @@ import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
 import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
-import au.com.rsutton.ui.MainPanel;
+import au.com.rsutton.ui.MapDrawingWindow;
 
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
@@ -49,7 +49,7 @@ public class ParticleFilterTest
 
 	public void test()
 	{
-		MainPanel ui = new MainPanel();
+		MapDrawingWindow ui = new MapDrawingWindow();
 
 		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
 		map.dumpTextWorld();
@@ -179,7 +179,7 @@ public class ParticleFilterTest
 
 	}
 
-	private void setupDataSources(MainPanel ui, final ParticleFilter pf)
+	private void setupDataSources(MapDrawingWindow ui, final ParticleFilter pf)
 	{
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
@@ -217,7 +217,7 @@ public class ParticleFilterTest
 		});
 	}
 
-	private void setupRoutePlanner(MainPanel ui, final ParticleFilter pf, final RoutePlanner routePlanner)
+	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilter pf, final RoutePlanner routePlanner)
 	{
 		routePlanner.createRoute(120, -260);
 
@@ -336,4 +336,5 @@ public class ParticleFilterTest
 		lastCompassHeading = robotLocation.getCompassHeading().getHeading();
 		lastDeadreconningHeading = robotLocation.getDeadReaconingHeading().getDegrees();
 	}
+
 }

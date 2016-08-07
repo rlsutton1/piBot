@@ -7,13 +7,16 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.robot.rover.Angle;
@@ -23,7 +26,7 @@ import au.com.rsutton.ui.DataSourceMap;
 
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
-public class RobotSimulator implements DataSourceMap
+public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 {
 
 	Random random = new Random();
@@ -33,10 +36,16 @@ public class RobotSimulator implements DataSourceMap
 	double y;
 
 	double heading;
+	private boolean freeze;
+	private double rspeed;
+	private double targetHeading;
+	private RobotListener listener;
 
 	RobotSimulator(ProbabilityMap map)
 	{
 		this.map = map;
+
+		new Thread(this, "Robot").start();
 	}
 
 	public void move(double distance)
@@ -107,7 +116,7 @@ public class RobotSimulator implements DataSourceMap
 
 		observation.addObservations(observations);
 
-		observation.setCompassHeading(new HeadingData((float) heading, 10.0f));
+		observation.setCompassHeading(new HeadingData((float) heading + 90, 10.0f));
 		observation.setDeadReaconingHeading(new Angle((float) heading, AngleUnits.DEGREES));
 		observation.setX(new Distance(x, DistanceUnit.CM));
 		observation.setY(new Distance(y, DistanceUnit.CM));
@@ -145,6 +154,74 @@ public class RobotSimulator implements DataSourceMap
 
 		graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
 				(int) (pointOriginY + line.getY()));
+
+	}
+
+	@Override
+	public void freeze(boolean b)
+	{
+		freeze = b;
+	}
+
+	@Override
+	public void setSpeed(Speed speed)
+	{
+		rspeed = speed.getSpeed(DistanceUnit.CM, TimeUnit.SECONDS);
+
+	}
+
+	@Override
+	public void setHeading(double normalizeHeading)
+	{
+		targetHeading = normalizeHeading;
+
+	}
+
+	@Override
+	public void publishUpdate()
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void run()
+	{
+
+		double hz = 10;
+		while (true)
+		{
+			if (!freeze)
+			{
+				move(rspeed / hz);
+				System.out.println(rspeed);
+
+				double delta = HeadingHelper.getChangeInHeading(heading, targetHeading - 180);
+
+				double absDelta = Math.abs(delta);
+				delta = Math.min(absDelta, (25.0 / hz)) * Math.signum(delta);
+
+				turn(delta);
+				if (listener != null)
+				{
+					listener.observed(getObservation());
+				}
+			}
+			try
+			{
+				Thread.sleep((long) (1000.0 / hz));
+			} catch (InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	@Override
+	public void addMessageListener(RobotListener listener)
+	{
+		this.listener = listener;
 
 	}
 

@@ -29,7 +29,7 @@ import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
-import au.com.rsutton.ui.MainPanel;
+import au.com.rsutton.ui.MapDrawingWindow;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.hazelcast.core.Message;
@@ -52,7 +52,7 @@ public class ParticleFilterLiveTest
 	public void test() throws InterruptedException
 	{
 
-		MainPanel ui = new MainPanel();
+		MapDrawingWindow ui = new MapDrawingWindow();
 
 		final ProbabilityMap world = KitchenMapBuilder.buildKitchenMap();
 		ui.addDataSource(world, new Color(255, 255, 255));
@@ -60,8 +60,6 @@ public class ParticleFilterLiveTest
 		double headingNoise = 1.0; // degrees/second
 		final ParticleFilter pf = new ParticleFilter(world, 1000, 0.75, headingNoise);
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
-
-		MapBuilder mapBuilder = new MapBuilder(pf);
 
 		setupDataSources(ui, pf);
 		setupRobotListener(currentDeadReconingHeading, world, pf);
@@ -72,7 +70,7 @@ public class ParticleFilterLiveTest
 		Integer initialX = null;
 		Integer initialY = null;
 
-		routePlanner.createRoute(110, -250);
+		routePlanner.createRoute(60, -80);
 
 		int pfX = 0;
 		int pfY = 0;
@@ -140,9 +138,9 @@ public class ParticleFilterLiveTest
 							angle -= 360;
 						}
 						da = HeadingHelper.getChangeInHeading(angle, lastAngle);
-						if (Math.abs(da) > 30)
+						if (Math.abs(da) > 90)
 						{
-							speed *= 0.8;
+							speed *= 0.0;
 						}
 
 					} else
@@ -172,7 +170,7 @@ public class ParticleFilterLiveTest
 				{
 					SetMotion motion = new SetMotion();
 
-					motion.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + 5));
+					motion.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + 15));
 					motion.setFreeze(false);
 					motion.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 					motion.publish();
@@ -340,7 +338,7 @@ public class ParticleFilterLiveTest
 		});
 	}
 
-	private void setupDataSources(MainPanel ui, final ParticleFilter pf)
+	private void setupDataSources(MapDrawingWindow ui, final ParticleFilter pf)
 	{
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
@@ -499,7 +497,7 @@ public class ParticleFilterLiveTest
 		});
 	}
 
-	private void setupRoutePlanner(MainPanel ui, final ParticleFilter pf, final RoutePlanner routePlanner)
+	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilter pf, final RoutePlanner routePlanner)
 	{
 
 		ui.addDataSource(new DataSourcePoint()

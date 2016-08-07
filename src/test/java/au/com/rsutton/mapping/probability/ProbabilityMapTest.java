@@ -1,7 +1,5 @@
 package au.com.rsutton.mapping.probability;
 
-import static org.junit.Assert.*;
-
 import java.util.Random;
 
 import org.junit.Test;
@@ -45,7 +43,7 @@ public class ProbabilityMapTest
 				int x = i + noise;
 				if (x > 0 && x < worldSize)
 				{
-					world.updatePoint(x, x, 0.5, 2);
+					world.updatePoint(x, x, 1.0, 2);
 				}
 			}
 
@@ -56,6 +54,18 @@ public class ProbabilityMapTest
 	}
 
 	@Test
+	public void testUp()
+	{
+		ProbabilityMap world = new ProbabilityMap(1);
+
+		for (int i = 0; i < 20; i++)
+		{
+			world.updatePoint(1, 1, 1.0, 2);
+			System.out.println("Prob: " + world.get(1, 1));
+		}
+	}
+
+	@Test
 	public void drawWorld()
 	{
 		ProbabilityMap world = new ProbabilityMap(10);
@@ -63,8 +73,8 @@ public class ProbabilityMapTest
 		drawLine(0, 0, -141, 0, world);// b
 		drawLine(-141, 0, -141, 42, world);// c
 		drawLine(-141, 42, -266, 42, world);// d
-		
-		drawLine(-266, 42, -266, 180, world);// 
+
+		drawLine(-266, 42, -266, 180, world);//
 		drawLine(-266, 180, -194, 180, world);// e
 		drawLine(-194, 180, -194, 252, world);// f
 		drawLine(-194, 252, -223, 252, world);// g
@@ -74,7 +84,7 @@ public class ProbabilityMapTest
 		drawLine(-49, 325, -57, 325, world);// k
 		drawLine(-57, 325, -57, 170, world);// l
 		drawLine(-57, 170, 0, 170, world);// m
-		
+
 		drawLine(-57, 170, 110, 170, world);// m
 		drawLine(110, 170, 110, -86, world);// m
 
@@ -83,11 +93,6 @@ public class ProbabilityMapTest
 		drawLine(110, -86, 165, -86, world);// m
 		drawLine(165, -86, 165, -346, world);// m
 		drawLine(165, -346, 0, -346, world);// m
-
-
-		
-		
-		
 
 		world.dumpTextWorld();
 
@@ -121,7 +126,7 @@ public class ProbabilityMapTest
 				{
 					x = x1;
 				}
-				world.updatePoint((int) x, (int) y, 0.5, 2);
+				world.updatePoint((int) x, y, 1.0, 2);
 			}
 
 		}
@@ -137,7 +142,7 @@ public class ProbabilityMapTest
 				{
 					y = y1;
 				}
-				world.updatePoint(x, (int) y, 0.5, 2);
+				world.updatePoint(x, (int) y, 1.0, 2);
 			}
 		}
 

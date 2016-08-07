@@ -6,20 +6,20 @@ import java.awt.FlowLayout;
 
 import javax.swing.JFrame;
 
-public class MainPanel extends JFrame implements Runnable
+public class MapDrawingWindow extends JFrame implements Runnable
 {
 
 	private static final long serialVersionUID = -4490943128993707547L;
 
 	private MapUI graph;
 
-	static public void main(String[] args)
-	{
-		new MainPanel();
+	// static public void main(String[] args)
+	// {
+	// new MapDrawingWindow();
+	//
+	// }
 
-	}
-
-	public MainPanel()
+	public MapDrawingWindow()
 	{
 		this.setBounds(0, 0, 850, 900);
 

@@ -22,13 +22,14 @@ public class ProbabilityMap implements DataSourcePoint
 		this.blockSize = blockSize;
 	}
 
-	public double[][] createGausian(int radius, double sigma)
+	public double[][] createGausian(int radius, double sigma, double centerValue)
 	{
 
 		int W = (radius * 2) + 1;
 		double[][] kernel = new double[W][W];
 		double mean = W / 2;
 		double sum = 0.0; // For accumulating the kernel values
+		double max = 0.0;
 		for (int x = 0; x < W; ++x)
 			for (int y = 0; y < W; ++y)
 			{
@@ -37,12 +38,19 @@ public class ProbabilityMap implements DataSourcePoint
 
 				// Accumulate the kernel values
 				sum += kernel[x][y];
+				max = Math.max(max, kernel[x][y]);
 			}
 
-		// Normalize the kernel
+		// create a scaler
+		double scaler = centerValue / max;
+
+		// Normalize the kernel, with a center value o centerValue
 		for (int x = 0; x < W; ++x)
 			for (int y = 0; y < W; ++y)
-				kernel[x][y] /= sum;
+			{
+				kernel[x][y] *= scaler;
+				// kernel[x][y] /= sum;
+			}
 
 		return kernel;
 	}
@@ -56,9 +64,10 @@ public class ProbabilityMap implements DataSourcePoint
 		y = y / blockSize;
 
 		int gr = Math.min(1, gausianRadius / blockSize);
-		double[][] occupancyProbability = createGausian(gr, probability);
+		double[][] occupancyProbability = createGausian(gr, 1.0, 1.0);
 
-		occupancyProbability = shiftProbability(occupancyProbability, 0.2, 0.3);
+		// occupancyProbability = shiftProbability(occupancyProbability, 0.2,
+		// 0.3);
 		// scale x and y by blocksize
 
 		int xl = occupancyProbability.length;
@@ -78,7 +87,13 @@ public class ProbabilityMap implements DataSourcePoint
 				int xpos = x + xc + xstart;
 				int ypos = y + yc + ystart;
 
-				updatePoint(xpos, ypos, occupancyProbability[xc][yc]);
+				double gausian = occupancyProbability[xc][yc];
+
+				double centered = probability - 0.5;
+				centered *= gausian;
+				centered += 0.5;
+
+				updatePoint(xpos, ypos, centered);
 
 			}
 
@@ -165,7 +180,11 @@ public class ProbabilityMap implements DataSourcePoint
 	private void updatePoint(int x, int y, double occupancyProbability)
 	{
 
-		world.set(x, y, world.get(x, y) + ((0.9995 - world.get(x, y)) * occupancyProbability));
+		double currentValue = world.get(x, y);
+
+		double newValue = (currentValue * 0.75) + (occupancyProbability * 0.25);
+
+		world.set(x, y, newValue);
 	}
 
 	public void dumpWorld()
@@ -195,7 +214,7 @@ public class ProbabilityMap implements DataSourcePoint
 		{
 			for (int x = world.getMinX() - 1; x < world.getMaxX() + 1; x++)
 			{
-				if (world.get(x, y) >= 0.7)
+				if (world.get(x, y) >= 0.51)
 				{
 					line[x + Math.abs(world.getMinX()) + 1] |= true;
 					// System.out.print("*");
@@ -261,6 +280,7 @@ public class ProbabilityMap implements DataSourcePoint
 		return blockSize;
 	}
 
+	@Override
 	public List<Point> getOccupiedPoints()
 	{
 		List<Point> points = new LinkedList<>();
@@ -270,7 +290,7 @@ public class ProbabilityMap implements DataSourcePoint
 			{
 				if (world.get(x, y) > 0.5)
 				{
-					points.add(new Point(x*blockSize, y*blockSize));
+					points.add(new Point(x * blockSize, y * blockSize));
 				}
 			}
 

@@ -218,4 +218,20 @@ public class RoutePlanner
 			System.out.println("");
 		}
 	}
+
+	/**
+	 * searches the current route for the farthest point from the destination
+	 * 
+	 * @return
+	 */
+	public ExpansionPoint getFurthestPoint()
+	{
+		return null;
+
+	}
+
+	public boolean hasPlannedRoute()
+	{
+		return route != null;
+	}
 }

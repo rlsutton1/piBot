@@ -8,18 +8,16 @@ public class KitchenMapBuilder
 	public static ProbabilityMap buildKitchenMap()
 	{
 		ProbabilityMap world = new ProbabilityMap(10);
-		
-		//table leg
-		drawLine(-120,60,-120,70,world);
-		
-		
-		//bin
-//		drawLine(-40,70,-10,70,world);
-//		drawLine(-40,70,-40,40,world);
-//		drawLine(-10,40,-10,70,world);
-//		drawLine(-40,40,-10,40,world);
 
-		
+		// table leg
+		drawLine(-120, 60, -120, 70, world);
+
+		// bin
+		// drawLine(-40,70,-10,70,world);
+		// drawLine(-40,70,-40,40,world);
+		// drawLine(-10,40,-10,70,world);
+		// drawLine(-40,40,-10,40,world);
+
 		drawLine(0, 0, 0, 89, world);// a
 		drawLine(0, 0, -141, 0, world);// b
 		drawLine(-141, 0, -141, 42, world);// c
@@ -79,7 +77,7 @@ public class KitchenMapBuilder
 				{
 					x = x1;
 				}
-				world.updatePoint((int) x, (int) y, 0.5, 2);
+				world.updatePoint((int) x, y, 1.0, 2);
 			}
 
 		}
@@ -95,7 +93,7 @@ public class KitchenMapBuilder
 				{
 					y = y1;
 				}
-				world.updatePoint(x, (int) y, 0.5, 2);
+				world.updatePoint(x, (int) y, 1.0, 2);
 			}
 		}
 
