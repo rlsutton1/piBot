@@ -1,5 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 
 public class KitchenMapBuilder
@@ -77,7 +78,7 @@ public class KitchenMapBuilder
 				{
 					x = x1;
 				}
-				world.updatePoint((int) x, y, 1.0, 2);
+				world.updatePoint((int) x, y, Occupancy.OCCUPIED, 1.0, 2);
 			}
 
 		}
@@ -93,7 +94,7 @@ public class KitchenMapBuilder
 				{
 					y = y1;
 				}
-				world.updatePoint(x, (int) y, 1.0, 2);
+				world.updatePoint(x, (int) y, Occupancy.OCCUPIED, 1.0, 2);
 			}
 		}
 

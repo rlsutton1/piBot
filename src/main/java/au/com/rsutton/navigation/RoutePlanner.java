@@ -52,7 +52,7 @@ public class RoutePlanner
 		}
 	}
 
-	public void createRoute(int toX, int toY)
+	public void createRoute(int toX, int toY, RouteOption routeOption)
 	{
 		List<ExpansionPoint> immediatePoints = new LinkedList<>();
 		List<ExpansionPoint> deferredPoints = new LinkedList<>();
@@ -69,7 +69,7 @@ public class RoutePlanner
 
 		while (!immediatePoints.isEmpty() || !deferredPoints.isEmpty())
 		{
-			deferredPoints.addAll(expandPoints(immediatePoints, wall, moveCounter));
+			deferredPoints.addAll(expandPoints(immediatePoints, wall, moveCounter, routeOption));
 			immediatePoints.addAll(expandDeferredPoints(deferredPoints, moveCounter));
 		}
 	}
@@ -94,11 +94,13 @@ public class RoutePlanner
 
 	/**
 	 * 
-	 * @param immediatePoints
+	 * @param imme
+	 * @param routeOption
+	 *            diatePoints
 	 * @return a list of deferred points
 	 */
 	private Collection<ExpansionPoint> expandPoints(List<ExpansionPoint> immediatePoints, int wall,
-			AtomicInteger moveCounter)
+			AtomicInteger moveCounter, RouteOption routeOption)
 	{
 		List<ExpansionPoint> deferredPoints = new LinkedList<>();
 
@@ -117,10 +119,9 @@ public class RoutePlanner
 
 			for (ExpansionPoint temp : tempPoints)
 			{
-				if (temp.x > world.getMinX() / blockSize && temp.x < world.getMaxX() / blockSize
-						&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize)
-					if (world.get(temp.x * blockSize, temp.y * blockSize) < 0.55
-							&& route.get(temp.x, temp.y) > moveCounter.get() && route.get(temp.x, temp.y) == wall)
+				if (isPointWithinWorldBountries(temp))
+					if (routeOption.isPointRoutable(world.get(temp.x * blockSize, temp.y * blockSize))
+							&& route.get(temp.x, temp.y) > moveCounter.get() && !isPointRoutedAlready(wall, temp))
 					{
 
 						if (doWallCheck(temp, 6))
@@ -138,6 +139,17 @@ public class RoutePlanner
 
 		}
 		return deferredPoints;
+	}
+
+	private boolean isPointRoutedAlready(int wall, ExpansionPoint temp)
+	{
+		return route.get(temp.x, temp.y) != wall;
+	}
+
+	private boolean isPointWithinWorldBountries(ExpansionPoint temp)
+	{
+		return temp.x > world.getMinX() / blockSize && temp.x < world.getMaxX() / blockSize
+				&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize;
 	}
 
 	boolean doWallCheck(ExpansionPoint point, int size)

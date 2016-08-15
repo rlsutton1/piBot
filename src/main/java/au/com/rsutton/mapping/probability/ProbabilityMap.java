@@ -8,6 +8,8 @@ import java.util.List;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.ui.DataSourcePoint;
 
+import com.google.common.base.Preconditions;
+
 public class ProbabilityMap implements DataSourcePoint
 {
 
@@ -55,8 +57,28 @@ public class ProbabilityMap implements DataSourcePoint
 		return kernel;
 	}
 
-	public void updatePoint(int x, int y, double probability, int gausianRadius)
+	/**
+	 * 
+	 * @param x
+	 * @param y
+	 * @param occupied
+	 * @param certainty
+	 *            - Indicates how strongly the location should be updated to the
+	 *            new state <br>
+	 *            ie. location = (location * certainty) + ((location
+	 *            *(1.0-certainty))
+	 * @param gausianRadius
+	 */
+	public void updatePoint(int x, int y, Occupancy occupied, double certainty, int gausianRadius)
 	{
+
+		Preconditions.checkArgument(certainty >= 0 && certainty <= 1.0, "Certainty must be between 0.0 and 1.0");
+
+		double probability = 1.0;
+		if (occupied == Occupancy.VACANT)
+		{
+			probability = 0.0;
+		}
 
 		// scale gausianRadis by blockSize
 
@@ -93,7 +115,7 @@ public class ProbabilityMap implements DataSourcePoint
 				centered *= gausian;
 				centered += 0.5;
 
-				updatePoint(xpos, ypos, centered);
+				updatePoint(xpos, ypos, centered, certainty);
 
 			}
 
@@ -177,12 +199,13 @@ public class ProbabilityMap implements DataSourcePoint
 		return shift;
 	}
 
-	private void updatePoint(int x, int y, double occupancyProbability)
+	private void updatePoint(int x, int y, double occupancyProbability, double certainty)
 	{
+		Preconditions.checkArgument(certainty >= 0 && certainty <= 1.0, "Certainty must be between 0.0 and 1.0");
 
 		double currentValue = world.get(x, y);
 
-		double newValue = (currentValue * 0.75) + (occupancyProbability * 0.25);
+		double newValue = (currentValue * (1.0 - certainty)) + (occupancyProbability * certainty);
 
 		world.set(x, y, newValue);
 	}

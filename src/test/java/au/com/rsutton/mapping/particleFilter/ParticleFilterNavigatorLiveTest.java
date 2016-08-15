@@ -27,7 +27,7 @@ public class ParticleFilterNavigatorLiveTest
 
 		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
 
-		final ParticleFilter pf = new ParticleFilter(map, 2000, 0.75, 1.0);
+		final ParticleFilter pf = new ParticleFilter(map, 2000, 0.75, 1.0, StartPosition.RANDOM);
 
 		RobotInterface robot = getRobot(map);
 

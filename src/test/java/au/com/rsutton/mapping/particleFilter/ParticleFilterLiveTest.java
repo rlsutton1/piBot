@@ -22,6 +22,7 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.Angle;
@@ -58,7 +59,7 @@ public class ParticleFilterLiveTest
 		ui.addDataSource(world, new Color(255, 255, 255));
 
 		double headingNoise = 1.0; // degrees/second
-		final ParticleFilter pf = new ParticleFilter(world, 1000, 0.75, headingNoise);
+		final ParticleFilter pf = new ParticleFilter(world, 1000, 0.75, headingNoise, StartPosition.RANDOM);
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		setupDataSources(ui, pf);
@@ -70,7 +71,7 @@ public class ParticleFilterLiveTest
 		Integer initialX = null;
 		Integer initialY = null;
 
-		routePlanner.createRoute(60, -80);
+		routePlanner.createRoute(60, -80, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 
 		int pfX = 0;
 		int pfY = 0;
@@ -149,7 +150,7 @@ public class ParticleFilterLiveTest
 
 						if (pfX != initialX && pfY != initialY)
 						{
-							routePlanner.createRoute(initialX, initialY);
+							routePlanner.createRoute(initialX, initialY, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 						} else
 						{
 							break;

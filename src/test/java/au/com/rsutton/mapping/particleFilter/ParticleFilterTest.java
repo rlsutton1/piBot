@@ -13,6 +13,7 @@ import org.junit.Test;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.Angle;
@@ -55,7 +56,7 @@ public class ParticleFilterTest
 		map.dumpTextWorld();
 		ui.addDataSource(map, new Color(255, 255, 255));
 
-		final ParticleFilter pf = new ParticleFilter(map, 2000, 2, 4);
+		final ParticleFilter pf = new ParticleFilter(map, 2000, 2, 4, StartPosition.RANDOM);
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		setupDataSources(ui, pf);
@@ -219,7 +220,7 @@ public class ParticleFilterTest
 
 	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilter pf, final RoutePlanner routePlanner)
 	{
-		routePlanner.createRoute(120, -260);
+		routePlanner.createRoute(120, -260, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 
 		ui.addDataSource(new DataSourcePoint()
 		{

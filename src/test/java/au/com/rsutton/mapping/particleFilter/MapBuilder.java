@@ -1,15 +1,16 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import java.awt.Color;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.navigation.RoutePlanner;
-import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
 public class MapBuilder implements ParticleFilterListener
 {
@@ -20,17 +21,19 @@ public class MapBuilder implements ParticleFilterListener
 
 	private NavigatorControl navigatorControl;
 
-	MapBuilder(ParticleFilter particleFilter, NavigatorControl navigatorControl)
+	MapBuilder(ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
 	{
 		panel = new MapDrawingWindow();
 		this.navigatorControl = navigatorControl;
 
-		panel.addDataSource(world, new Color(255, 255, 255));
+		panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
 		particleFilter.addListener(this);
 	}
 
 	int lastHeading = 0;
+
+	private boolean complete = false;
 
 	@Override
 	public void update(Vector3D averagePosition, double averageHeading, double stdDev,
@@ -48,7 +51,8 @@ public class MapBuilder implements ParticleFilterListener
 						.getVector());
 				point = pos.add(point);
 
-				world.updatePoint((int) (point.getX()), (int) (point.getY()), 1.0, 2);
+				clearPoints(pos, point);
+				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.85, 5);
 			}
 
 		}
@@ -70,33 +74,107 @@ public class MapBuilder implements ParticleFilterListener
 
 	void setNewTarget(int currentX, int currentY)
 	{
-		RoutePlanner planner = new RoutePlanner(world);
 
-		// plan route to current Location.
-		planner.createRoute(currentX, currentY);
+		int xspread = Math.abs(world.getMinX() - world.getMaxX());
+		int yspread = Math.abs(world.getMinY() - world.getMaxY());
 
-		// search route for furthest Point.
-		ExpansionPoint farthestPoint = planner.getFurthestPoint();
-
-		// less a few steps so we don't hit a wall
-		for (int i = 0; i < 10; i++)
+		for (int xo = 0; xo < xspread; xo += 10)
 		{
-			farthestPoint = planner.getRouteForLocation(farthestPoint.getX(), farthestPoint.getY());
+			for (int yo = 0; yo < yspread; yo += 10)
+			{
+				int x = currentX + xo;
+				int y = currentY + yo;
+				if (isTarget(x, y))
+				{
+					return;
+				}
+				x = currentX - xo;
+				y = currentY + yo;
+				if (isTarget(x, y))
+				{
+					return;
+				}
+				x = currentX + xo;
+				y = currentY - yo;
+				if (isTarget(x, y))
+				{
+					return;
+				}
+				x = currentX - xo;
+				y = currentY - yo;
+				if (isTarget(x, y))
+				{
+					return;
+				}
+			}
 		}
 
-		navigatorControl.calculateRouteTo(farthestPoint.getX(), farthestPoint.getY(), 0);
+		complete = true;
+	}
+
+	Set<Vector3D> previousTargets = new HashSet<>();
+
+	private boolean isTarget(int x, int y)
+	{
+		if (x >= world.getMinX() && x <= world.getMaxX())
+		{
+			if (y >= world.getMinY() && y <= world.getMaxY())
+			{
+				if (checkIsValidRouteTarget(x, y))
+				{
+					for (int heading = 0; heading < 360; heading += 45)
+					{
+						Vector3D position = new Vector3D(x, y, 0);
+						if (isUnexplored(position, heading, -25, 25, 1000))
+						{
+							Vector3D target = new Vector3D(x, y, heading);
+							if (!previousTargets.contains(target))
+							{
+								previousTargets.add(target);
+								navigatorControl.calculateRouteTo(x, y, heading);
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean checkIsValidRouteTarget(int x, int y)
+	{
+		double requiredValue = 0.25;
+		boolean isValid = world.get(x, y) < requiredValue;
+		int checkRadius = 30;
+		isValid &= world.get(x + checkRadius, y) < requiredValue;
+		isValid &= world.get(x - checkRadius, y) < requiredValue;
+		isValid &= world.get(x, y + checkRadius) < requiredValue;
+		isValid &= world.get(x, y - checkRadius) < requiredValue;
+		isValid &= world.get(x + checkRadius, y + checkRadius) < requiredValue;
+		isValid &= world.get(x - checkRadius, y - checkRadius) < requiredValue;
+		isValid &= world.get(x + checkRadius, y - checkRadius) < requiredValue;
+		isValid &= world.get(x - checkRadius, y + checkRadius) < requiredValue;
+
+		return isValid;
+
 	}
 
 	boolean doWeNeedToStopWhileScanningCatchesUp(Vector3D averagePosition, double averageHeading)
 	{
 
-		Particle particle = new Particle(averagePosition.getX(), averagePosition.getY(), averageHeading, 0, 0);
+		return isUnexplored(averagePosition, averageHeading, -70, 70, 1000);
+	}
+
+	boolean isUnexplored(Vector3D position, double heading, int from, int to, int maxDistance)
+	{
+		Particle particle = new Particle(position.getX(), position.getY(), heading, 0, 0);
 
 		int existInMap = 0;
 
-		for (double h = -70; h < 70; h += 5)
+		for (double h = from; h < to; h += 5)
 		{
-			int maxDistance = 1000;
+
 			if (particle.simulateObservation(world, h, maxDistance) < maxDistance)
 			{
 				existInMap++;
@@ -104,10 +182,10 @@ public class MapBuilder implements ParticleFilterListener
 			}
 		}
 		// there is too much unexplored (unmapped) in sight
-		return existInMap < 55;
+		return existInMap < (Math.abs(to - from) / 5.0) * .5;
 	}
 
-	void clearPoints(Vector3D pos, Vector3D point, ScanObservation obs)
+	void clearPoints(Vector3D pos, Vector3D point)
 	{
 		// clear out points
 
@@ -117,16 +195,21 @@ public class MapBuilder implements ParticleFilterListener
 		double x2 = point.getX();
 		double y2 = point.getY();
 
-		double dist = obs.getDisctanceCm();
+		double dist = pos.distance(point) - 10;
 		if (dist > 0)
 		{
 			for (int i = 0; i < dist; i++)
 			{
 				double percent = i / dist;
-				double x = (percent * x1) + ((1.0 - percent) * x2);
-				double y = (percent * y1) + ((1.0 - percent) * y2);
-				world.updatePoint((int) (x), (int) (y), 0, 2);
+				double x = (percent * x2) + ((1.0 - percent) * x1);
+				double y = (percent * y2) + ((1.0 - percent) * y1);
+				world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, 0.05, 2);
 			}
 		}
+	}
+
+	public boolean isComplete()
+	{
+		return complete;
 	}
 }

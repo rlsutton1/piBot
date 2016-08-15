@@ -43,7 +43,7 @@ public class ProbabilityMapTest
 				int x = i + noise;
 				if (x > 0 && x < worldSize)
 				{
-					world.updatePoint(x, x, 1.0, 2);
+					world.updatePoint(x, x, Occupancy.OCCUPIED, 1.0, 2);
 				}
 			}
 
@@ -60,7 +60,7 @@ public class ProbabilityMapTest
 
 		for (int i = 0; i < 20; i++)
 		{
-			world.updatePoint(1, 1, 1.0, 2);
+			world.updatePoint(1, 1, Occupancy.OCCUPIED, 1.0, 2);
 			System.out.println("Prob: " + world.get(1, 1));
 		}
 	}
@@ -126,7 +126,7 @@ public class ProbabilityMapTest
 				{
 					x = x1;
 				}
-				world.updatePoint((int) x, y, 1.0, 2);
+				world.updatePoint((int) x, y, Occupancy.OCCUPIED, 1.0, 2);
 			}
 
 		}
@@ -142,7 +142,7 @@ public class ProbabilityMapTest
 				{
 					y = y1;
 				}
-				world.updatePoint(x, (int) y, 1.0, 2);
+				world.updatePoint(x, (int) y, Occupancy.OCCUPIED, 1.0, 2);
 			}
 		}
 

@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.LidarObservation;
@@ -29,7 +30,7 @@ public class RobotSimulatorTest
 		int x = -100;
 		int y = 300;
 
-		routePlanner.createRoute(30, -140);
+		routePlanner.createRoute(30, -140, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 
 		while (true)
 		{

@@ -17,6 +17,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.Angle;
@@ -30,14 +31,14 @@ public class Navigator implements Runnable, NavigatorControl
 {
 
 	private ProbabilityMap map;
-	private ParticleFilter pf;
+	private ParticleFilterIfc pf;
 	private RoutePlanner routePlanner;
 	private RobotInterface robot;
 	private MapDrawingWindow ui;
 	private ScheduledExecutorService pool;
-	private boolean stopped = true;
+	private volatile boolean stopped = true;
 
-	Navigator(ProbabilityMap map, ParticleFilter pf, RobotInterface robot)
+	Navigator(ProbabilityMap map, ParticleFilterIfc pf, RobotInterface robot)
 	{
 		ui = new MapDrawingWindow();
 		this.map = map;
@@ -61,7 +62,7 @@ public class Navigator implements Runnable, NavigatorControl
 	Integer initialX;
 	Integer initialY;
 	double lastAngle;
-	private boolean reachedDestination;
+	private boolean reachedDestination = false;
 	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
 
 	double speed = 0;
@@ -97,17 +98,20 @@ public class Navigator implements Runnable, NavigatorControl
 				}
 				lastAngle = pf.getAverageHeading();
 
-				ExpansionPoint next = routePlanner.getRouteForLocation(pfX, pfY);
+				ExpansionPoint next = new ExpansionPoint(pfX, pfY);
+				if (routePlanner.hasPlannedRoute())
+				{
+					next = routePlanner.getRouteForLocation(pfX, pfY);
 
-				for (int i = 0; i < 25; i++)
-					next = routePlanner.getRouteForLocation(next.getX(), next.getY());
-
+					for (int i = 0; i < 25; i++)
+						next = routePlanner.getRouteForLocation(next.getX(), next.getY());
+				}
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;
 				System.out.println(next + " " + dx + " " + dy);
 
 				double da = 5;
-				if (dx != 0 || dy != 0)
+				if (Math.abs(dx) > 5 || Math.abs(dy) > 5)
 				{
 					dx *= speed;
 					dy *= speed;
@@ -133,9 +137,17 @@ public class Navigator implements Runnable, NavigatorControl
 
 				} else
 				{
-					stopped = true;
-					reachedDestination = true;
-					robot.freeze(true);
+					if (Math.abs(lastAngle - targetHeading) > 5)
+					{
+						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
+						robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+						robot.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + da));
+					} else
+					{
+						stopped = true;
+						reachedDestination = true;
+						robot.freeze(true);
+					}
 				}
 
 			} else
@@ -153,6 +165,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	private boolean proximityStop;
 	private float compassHeading;
+	private double targetHeading;
 
 	private void setupRobotListener()
 	{
@@ -268,7 +281,7 @@ public class Navigator implements Runnable, NavigatorControl
 		}, new Color(255, 255, 0));
 	}
 
-	private void setupDataSources(MapDrawingWindow ui, final ParticleFilter pf)
+	private void setupDataSources(MapDrawingWindow ui, final ParticleFilterIfc pf)
 	{
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
@@ -392,7 +405,9 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public void calculateRouteTo(int x, int y, double heading)
 	{
-		routePlanner.createRoute(x, y);
+		routePlanner.createRoute(x, y, RouteOption.ROUTE_THROUGH_UNEXPLORED);
+		targetHeading = heading;
+		reachedDestination = false;
 
 	}
 

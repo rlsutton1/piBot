@@ -17,13 +17,14 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 
 import com.google.common.base.Stopwatch;
 
-public class ParticleFilter
+public class ParticleFilter implements ParticleFilterIfc
 {
 
 	private static final double MINIMUM_MEANINGFUL_RATING = 0.02;
@@ -37,13 +38,32 @@ public class ParticleFilter
 	final private double headingNoise;
 	final private double distanceNoise;
 
-	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise)
+	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise,
+			StartPosition startPosition)
 	{
 		this.headingNoise = headingNoise;
 		this.distanceNoise = distanceNoise;
 		particleQty = particles;
 		newParticleCount = particleQty;
-		createRandomStart(map);
+		if (startPosition == StartPosition.RANDOM)
+		{
+			createRandomStart(map);
+		} else
+		{
+			createFixedStart(0, 0);
+		}
+	}
+
+	void createFixedStart(int x, int y)
+	{
+		particles.clear();
+		// generate initial random scattering of particles
+
+		for (int i = 0; i < particleQty; i++)
+		{
+			double heading = 0;
+			particles.add(new Particle(x, y, heading, distanceNoise, headingNoise));
+		}
 	}
 
 	private void createRandomStart(ProbabilityMap map)
@@ -201,7 +221,7 @@ public class ParticleFilter
 	{
 		for (Particle particle : particles)
 		{
-			map.updatePoint((int) particle.getX(), (int) particle.getY(), 1.0, 10);
+			map.updatePoint((int) particle.getX(), (int) particle.getY(), Occupancy.OCCUPIED, 1.0, 10);
 		}
 
 		map.dumpTextWorld();
@@ -279,6 +299,14 @@ public class ParticleFilter
 
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.particleFilter.ParticleFilterIfc#getAverageHeading
+	 * ()
+	 */
+	@Override
 	public double getAverageHeading()
 	{
 		return averageHeading;
@@ -287,6 +315,12 @@ public class ParticleFilter
 	int counter = 10;
 	private int newParticleCount;
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.particleFilter.ParticleFilterIfc#getStdDev()
+	 */
+	@Override
 	public double getStdDev()
 	{
 
@@ -305,7 +339,8 @@ public class ParticleFilter
 		return dev;
 	}
 
-	DataSourcePoint getParticlePointSource()
+	@Override
+	public DataSourcePoint getParticlePointSource()
 	{
 		return new DataSourcePoint()
 		{
@@ -333,7 +368,8 @@ public class ParticleFilter
 	 * 
 	 * @return
 	 */
-	DataSourceMap getHeadingMapDataSource()
+	@Override
+	public DataSourceMap getHeadingMapDataSource()
 	{
 		return new DataSourceMap()
 		{
@@ -400,6 +436,14 @@ public class ParticleFilter
 
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.particleFilter.ParticleFilterIfc#addListener(au
+	 * .com.rsutton.mapping.particleFilter.ParticleFilterListener)
+	 */
+	@Override
 	public void addListener(ParticleFilterListener listener)
 	{
 		this.listener = listener;

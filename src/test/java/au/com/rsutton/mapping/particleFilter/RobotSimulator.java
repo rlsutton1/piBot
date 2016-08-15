@@ -36,7 +36,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	double y;
 
 	double heading;
-	private boolean freeze;
+	private volatile boolean freeze;
 	private double rspeed;
 	private double targetHeading;
 	private RobotListener listener;
@@ -51,8 +51,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	public void move(double distance)
 	{
 		distance += (distance * (random.nextGaussian() * 0.5));
-		// random turn
-		turn(random.nextGaussian() * distance);
+
 		Vector3D unit = new Vector3D(0, distance, 0);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
 		Vector3D location = new Vector3D(x, y, 0);
@@ -73,7 +72,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	public void turn(double angle)
 	{
-		heading += angle + (random.nextGaussian() * 0.5);
+		double noise = (random.nextGaussian() * 0.5) * (1.0 / hz);
+		heading += angle + noise;
 		if (heading < 0)
 		{
 			heading += 360.0;
@@ -88,7 +88,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	public RobotLocation getObservation()
 	{
 
-		System.out.println("Robot x,y,angle " + x + " " + y + " " + heading);
+		// System.out.println("Robot x,y,angle " + x + " " + y + " " + heading);
 		RobotLocation observation = new RobotLocation();
 
 		List<LidarObservation> observations = new LinkedList<>();
@@ -112,7 +112,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		{
 			System.out.println("NO observations!");
 		}
-		System.out.println("Observations " + observations.size());
+		// System.out.println("Observations " + observations.size());
 
 		observation.addObservations(observations);
 
@@ -157,10 +157,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
+	boolean freezeSet = false;
+
 	@Override
 	public void freeze(boolean b)
 	{
 		freeze = b;
+		freezeSet = true;
 	}
 
 	@Override
@@ -180,15 +183,21 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	@Override
 	public void publishUpdate()
 	{
-		// TODO Auto-generated method stub
+		if (!freezeSet)
+		{
+			freeze = false;
+		}
+
+		freezeSet = false;
 
 	}
+
+	double hz = 10;
 
 	@Override
 	public void run()
 	{
 
-		double hz = 10;
 		while (true)
 		{
 			if (!freeze)
@@ -202,10 +211,10 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 				delta = Math.min(absDelta, (25.0 / hz)) * Math.signum(delta);
 
 				turn(delta);
-				if (listener != null)
-				{
-					listener.observed(getObservation());
-				}
+			}
+			if (listener != null)
+			{
+				listener.observed(getObservation());
 			}
 			try
 			{
