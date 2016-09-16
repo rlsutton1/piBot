@@ -5,6 +5,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.Test;
 
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -12,9 +15,6 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 public class ParticleFilterNavigatorLiveTest
 {
@@ -25,18 +25,21 @@ public class ParticleFilterNavigatorLiveTest
 	public void test() throws InterruptedException
 	{
 
-		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
-
-		final ParticleFilter pf = new ParticleFilter(map, 2000, 0.75, 1.0, StartPosition.RANDOM);
-
+		ProbabilityMap map = new ProbabilityMap(10);
 		RobotInterface robot = getRobot(map);
+
+		InitialWorldBuilder a = new InitialWorldBuilder(map, robot, 0);
+
+		final ParticleFilter pf = new ParticleFilter(map, 2000, 0.75, 1.0, StartPosition.ZERO);
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
 
-		navigator.calculateRouteTo(120, -260, 0);
-		navigator.go();
+		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);
 
-		while (!navigator.hasReachedDestination())
+		// navigator.calculateRouteTo(120, -260, 0);
+		// navigator.go();
+
+		while (!mapBuilder.isComplete())
 		{
 			Thread.sleep(100);
 		}

@@ -13,6 +13,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.pi4j.gpio.extension.lidar.LidarScanner;
+import com.pi4j.gpio.extension.lsm303.HeadingData;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -23,8 +26,6 @@ import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.ui.DataSourceMap;
-
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 {
@@ -95,9 +96,9 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
-		for (double h = -70; h < 70; h += 5)
+		for (double h = LidarScanner.MIN_ANGLE; h < LidarScanner.MAX_ANGLE; h += 5)
 		{
-			double distance = particle.simulateObservation(map, h, 1000);
+			double distance = particle.simulateObservation(map, h, 1000, 0.5);
 
 			if (Math.abs(distance) > 1)
 			{
@@ -192,7 +193,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
-	double hz = 10;
+	double hz = 2.0;
 
 	@Override
 	public void run()

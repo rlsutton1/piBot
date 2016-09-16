@@ -5,11 +5,11 @@ import java.util.concurrent.BrokenBarrierException;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.robot.stepper.StepperMotor;
-
-import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 
 public class LidarScanningService implements Runnable
 {

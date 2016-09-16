@@ -9,20 +9,20 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.config.Config;
-import au.com.rsutton.robot.stepper.StepperMotor;
-
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.io.gpio.PinMode;
+
+import au.com.rsutton.config.Config;
+import au.com.rsutton.robot.stepper.StepperMotor;
 
 public class LidarScanner
 {
 
 	private static final int LIDAR_POLL_RATE = 10;
 
-	private static final int MIN_ANGLE = -70;
-	private static final int MAX_ANGLE = 70;
+	public static final int MIN_ANGLE = -125;
+	public static final int MAX_ANGLE = 125;
 
 	static final double stepsPerRotation = 200;
 
@@ -41,8 +41,8 @@ public class LidarScanner
 	private Lidar lidar;
 	private GrovePiProvider grove;
 
-	public LidarScanner(StepperMotor stepper, Config config, GrovePiProvider grove) throws InterruptedException,
-			IOException, BrokenBarrierException
+	public LidarScanner(StepperMotor stepper, Config config, GrovePiProvider grove)
+			throws InterruptedException, IOException, BrokenBarrierException
 	{
 
 		this.grove = grove;
@@ -79,24 +79,24 @@ public class LidarScanner
 
 		}
 
-		stepper.moveTo((long) (maxPos + (64 * microSteps)));
+		stepper.moveTo((long) (maxPos + (100 * microSteps)));
 		stepper.setZero();
-		stepper.moveTo((long) (75 * microSteps));
+		// stepper.moveTo((long) (75 * microSteps));
 		Thread.sleep(1000);
 
-		double cm = 0;
-		int ctr = 0;
-		while (ctr < 10)
-		{
-
-			int latestReading = lidar.getLatestReading();
-			if (latestReading != 0)
-			{
-				cm += latestReading;
-				ctr++;
-			}
-			Thread.sleep(10);
-		}
+		// double cm = 0;
+		// int ctr = 0;
+		// while (ctr < 10)
+		// {
+		//
+		// int latestReading = lidar.getLatestReading();
+		// if (latestReading != 0)
+		// {
+		// cm += latestReading;
+		// ctr++;
+		// }
+		// Thread.sleep(10);
+		// }
 		double c = -34;// - (cm / 100.0);
 		lidar.setCalabrationC(c);
 		System.out.println("Setting calabration c to " + c);

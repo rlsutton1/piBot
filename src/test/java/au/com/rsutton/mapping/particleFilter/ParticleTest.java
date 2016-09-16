@@ -8,14 +8,14 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
+import com.pi4j.gpio.extension.lsm303.HeadingData;
+
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
 import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.LidarObservation;
-
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class ParticleTest
 {
@@ -71,7 +71,7 @@ public class ParticleTest
 
 		for (int h = -80; h < 88; h += 5)
 		{
-			double distance = particle.simulateObservation(map, h, 500);
+			double distance = particle.simulateObservation(map, h, 500, 0.5);
 
 			if (Math.abs(distance) > 1)
 			{

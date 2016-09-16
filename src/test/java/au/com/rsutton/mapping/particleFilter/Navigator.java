@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.google.common.util.concurrent.AtomicDouble;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -24,8 +26,6 @@ import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
-
-import com.google.common.util.concurrent.AtomicDouble;
 
 public class Navigator implements Runnable, NavigatorControl
 {
@@ -72,6 +72,7 @@ public class Navigator implements Runnable, NavigatorControl
 	{
 		try
 		{
+			robot.freeze(false);
 			if (proximityStop)
 			{
 				robot.setSpeed(new Speed(new Distance(-5, DistanceUnit.CM), Time.perSecond()));
@@ -147,6 +148,14 @@ public class Navigator implements Runnable, NavigatorControl
 						stopped = true;
 						reachedDestination = true;
 						robot.freeze(true);
+						robot.publishUpdate();
+						try
+						{
+							Thread.sleep(10000);
+						} catch (InterruptedException e)
+						{
+							e.printStackTrace();
+						}
 					}
 				}
 
@@ -203,8 +212,8 @@ public class Navigator implements Runnable, NavigatorControl
 							// .getDeadReaconingHeading().getDegrees()),
 							// AngleUnits.DEGREES));
 
-							return HeadingHelper.getChangeInHeading(robotLocation.getDeadReaconingHeading()
-									.getDegrees(), lastheading.getDegrees());
+							return HeadingHelper.getChangeInHeading(
+									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());
 						}
 
 						@Override
@@ -415,6 +424,18 @@ public class Navigator implements Runnable, NavigatorControl
 	public boolean hasReachedDestination()
 	{
 		return reachedDestination;
+	}
+
+	@Override
+	public boolean isStuck()
+	{
+		return proximityStop;
+	}
+
+	@Override
+	public boolean isStopped()
+	{
+		return stopped;
 	}
 
 }

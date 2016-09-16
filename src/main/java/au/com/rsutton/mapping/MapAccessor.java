@@ -12,7 +12,7 @@ import varunpant.QuadTree;
 public class MapAccessor
 {
 
-	QuadTree<Observation> qt = new QuadTree<Observation>(-100000, -100000, 100000, 100000);
+	QuadTree qt = new QuadTree(-100000, -100000, 100000, 100000);
 
 	/**
 	 * add this observation to all map locations that fit into the accuracy
@@ -22,8 +22,7 @@ public class MapAccessor
 	 */
 	public void addObservation(Observation observation)
 	{
-		qt.set(observation.getX(), observation.getY(),
-				observation);
+		qt.set(observation.getX(), observation.getY(), observation);
 
 	}
 
@@ -38,8 +37,7 @@ public class MapAccessor
 	boolean isMapLocationClear(int x, int y, int spread)
 	{
 
-		Point<Observation>[] result = qt.searchWithin(x - spread, y - spread, x + spread, y
-				+ spread);
+		Point[] result = qt.searchWithin(x - spread, y - spread, x + spread, y + spread);
 		return result.length < 1;
 	}
 
@@ -56,13 +54,13 @@ public class MapAccessor
 
 	public List<Observation> getPointsInRange(Rectangle rectangle)
 	{
-		Point<Observation>[] points = qt.searchWithin(rectangle.getMinX(),
-				rectangle.getMinY(), rectangle.getMaxX(), rectangle.getMaxY());
+		Point[] points = qt.searchWithin(rectangle.getMinX(), rectangle.getMinY(), rectangle.getMaxX(),
+				rectangle.getMaxY());
 
 		List<Observation> results = new LinkedList<>();
-		for (Point<Observation> point : points)
+		for (Point point : points)
 		{
-			results.add(point.getValue());
+			results.add((Observation) point.getValue());
 		}
 		return results;
 	}

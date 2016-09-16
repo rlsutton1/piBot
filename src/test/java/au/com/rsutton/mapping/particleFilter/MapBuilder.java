@@ -7,6 +7,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.pi4j.gpio.extension.lidar.LidarScanner;
+
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -17,12 +19,13 @@ public class MapBuilder implements ParticleFilterListener
 
 	private MapDrawingWindow panel;
 
-	ProbabilityMap world = new ProbabilityMap(10);
+	ProbabilityMap world;
 
 	private NavigatorControl navigatorControl;
 
-	MapBuilder(ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
+	MapBuilder(ProbabilityMap map, ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
 	{
+		world = map;
 		panel = new MapDrawingWindow();
 		this.navigatorControl = navigatorControl;
 
@@ -42,19 +45,26 @@ public class MapBuilder implements ParticleFilterListener
 
 		if (stdDev < 30 && Math.abs(lastHeading - averageHeading) < 3)
 		{
-			Vector3D pos = averagePosition;
-
-			for (ScanObservation obs : particleFilterObservationSet.getObservations())
+			if (navigatorControl.isStopped())
 			{
+				Vector3D pos = averagePosition;
 
-				Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading)).applyTo(obs
-						.getVector());
-				point = pos.add(point);
+				Particle particle = new Particle(pos.getX(), pos.getY(), averageHeading, 0, 0);
 
-				clearPoints(pos, point);
-				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.85, 5);
+				for (ScanObservation obs : particleFilterObservationSet.getObservations())
+				{
+
+					Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
+							.applyTo(obs.getVector());
+					point = pos.add(point);
+
+					clearPoints(pos, point);
+					if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000, 0.90) >= 1000)
+					{
+						world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5, 5);
+					}
+				}
 			}
-
 		}
 		lastHeading = (int) averageHeading;
 
@@ -66,7 +76,7 @@ public class MapBuilder implements ParticleFilterListener
 			navigatorControl.go();
 		}
 
-		if (navigatorControl.hasReachedDestination())
+		if (navigatorControl.hasReachedDestination() || navigatorControl.isStuck())
 		{
 			setNewTarget((int) averagePosition.getX(), (int) averagePosition.getY());
 		}
@@ -125,7 +135,7 @@ public class MapBuilder implements ParticleFilterListener
 					for (int heading = 0; heading < 360; heading += 45)
 					{
 						Vector3D position = new Vector3D(x, y, 0);
-						if (isUnexplored(position, heading, -25, 25, 1000))
+						if (isUnexplored(position, heading))
 						{
 							Vector3D target = new Vector3D(x, y, heading);
 							if (!previousTargets.contains(target))
@@ -163,26 +173,31 @@ public class MapBuilder implements ParticleFilterListener
 	boolean doWeNeedToStopWhileScanningCatchesUp(Vector3D averagePosition, double averageHeading)
 	{
 
-		return isUnexplored(averagePosition, averageHeading, -70, 70, 1000);
+		return isUnexplored(averagePosition, averageHeading);
 	}
 
-	boolean isUnexplored(Vector3D position, double heading, int from, int to, int maxDistance)
+	boolean isUnexplored(Vector3D position, double heading)
 	{
+		int from = LidarScanner.MIN_ANGLE;
+		int to = LidarScanner.MAX_ANGLE;
+		int maxDistance = 1000;
 		Particle particle = new Particle(position.getX(), position.getY(), heading, 0, 0);
 
 		int existInMap = 0;
 
-		for (double h = from; h < to; h += 5)
+		double angleStepSize = 5;
+
+		for (double h = from; h < to; h += angleStepSize)
 		{
 
-			if (particle.simulateObservation(world, h, maxDistance) < maxDistance)
+			if (particle.simulateObservation(world, h, maxDistance, 0.8) < maxDistance)
 			{
 				existInMap++;
 
 			}
 		}
 		// there is too much unexplored (unmapped) in sight
-		return existInMap < (Math.abs(to - from) / 5.0) * .5;
+		return existInMap < (Math.abs(to - from) / angleStepSize) * .9;
 	}
 
 	void clearPoints(Vector3D pos, Vector3D point)
@@ -203,7 +218,15 @@ public class MapBuilder implements ParticleFilterListener
 				double percent = i / dist;
 				double x = (percent * x2) + ((1.0 - percent) * x1);
 				double y = (percent * y2) + ((1.0 - percent) * y1);
-				world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, 0.05, 2);
+				double certainty = 0.05;
+				if (world.get(x, y) > 0.5)
+				{
+					certainty = certainty * (1.0 - world.get(x, y));
+				}
+				if (world.get(x, y) < 0.90)
+				{
+					world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
+				}
 			}
 		}
 	}

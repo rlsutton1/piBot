@@ -25,4 +25,8 @@ public interface NavigatorControl
 
 	boolean hasReachedDestination();
 
+	boolean isStuck();
+
+	boolean isStopped();
+
 }

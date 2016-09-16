@@ -16,13 +16,13 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
+import com.google.common.base.Stopwatch;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
-
-import com.google.common.base.Stopwatch;
 
 public class ParticleFilter implements ParticleFilterIfc
 {
@@ -59,9 +59,11 @@ public class ParticleFilter implements ParticleFilterIfc
 		particles.clear();
 		// generate initial random scattering of particles
 
+		Random r = new Random();
+
 		for (int i = 0; i < particleQty; i++)
 		{
-			double heading = 0;
+			double heading = r.nextInt(360);
 			particles.add(new Particle(x, y, heading, distanceNoise, headingNoise));
 		}
 	}
@@ -89,6 +91,7 @@ public class ParticleFilter implements ParticleFilterIfc
 		}
 	}
 
+	@Override
 	public void moveParticles(ParticleUpdate update)
 	{
 		for (Particle particle : particles)
@@ -99,14 +102,15 @@ public class ParticleFilter implements ParticleFilterIfc
 
 	volatile long lastResampe = 0L;
 
+	@Override
 	synchronized public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
 		lastObservation.set(observations);
 		boolean useCompass = getStdDev() > 30;
 
-		particles.parallelStream().forEach(
-				e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
+		particles.parallelStream()
+				.forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
 		// for (Particle particle : particles)
 		// {
 		// particle.addObservation(currentWorld,
@@ -143,8 +147,8 @@ public class ParticleFilter implements ParticleFilterIfc
 		{
 			for (Particle selectedParticle : particles)
 			{
-				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(),
-						selectedParticle.getHeading(), distanceNoise, headingNoise));
+				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading(),
+						distanceNoise, headingNoise));
 
 			}
 		} else
@@ -168,8 +172,8 @@ public class ParticleFilter implements ParticleFilterIfc
 
 				}
 				// System.out.println(selectedParticle.getRating());
-				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(),
-						selectedParticle.getHeading(), distanceNoise, headingNoise));
+				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading(),
+						distanceNoise, headingNoise));
 			}
 		}
 		bestRating = bestRatingSoFar;
@@ -227,6 +231,7 @@ public class ParticleFilter implements ParticleFilterIfc
 		map.dumpTextWorld();
 	}
 
+	@Override
 	public Vector3D dumpAveragePosition()
 	{
 		double x = 0;
@@ -425,11 +430,13 @@ public class ParticleFilter implements ParticleFilterIfc
 		return particles.get(0).getSampleCount();
 	}
 
+	@Override
 	public Double getBestRating()
 	{
 		return bestRating;
 	}
 
+	@Override
 	public void setParticleCount(int i)
 	{
 		newParticleCount = i;

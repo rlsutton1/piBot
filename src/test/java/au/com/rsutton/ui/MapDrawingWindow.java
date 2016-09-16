@@ -62,7 +62,7 @@ public class MapDrawingWindow extends JFrame implements Runnable
 	{
 		while (true)
 		{
-			graph.render(0, 0, 0.75);
+			graph.render(0, 0, 0.5);
 			this.repaint();
 
 			try

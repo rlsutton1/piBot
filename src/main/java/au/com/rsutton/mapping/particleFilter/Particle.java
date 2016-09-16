@@ -76,11 +76,9 @@ public class Particle
 		double hn = rand.nextGaussian();
 
 		double xNoise = Math.max(Math.abs(totalDistanceTravelled * xn * distanceNoise),
-				Math.abs(xn * distanceNoise * 2.0))
-				* Math.signum(xn);
+				Math.abs(xn * distanceNoise * 2.0)) * Math.signum(xn);
 		double yNoise = Math.max(Math.abs(totalDistanceTravelled * yn * distanceNoise),
-				Math.abs(yn * distanceNoise * 2.0))
-				* Math.signum(yn);
+				Math.abs(yn * distanceNoise * 2.0)) * Math.signum(yn);
 		double hNoise = hn * headingNoise;
 
 		totalDistanceTravelled = 0;
@@ -92,14 +90,14 @@ public class Particle
 
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data,
-			double compassAdjustment, boolean useCompass)
+	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data, double compassAdjustment,
+			boolean useCompass)
 	{
 		if (useCompass && data.getCompassHeading().getError() < 45)
 		{
 
-			double compassDiff = Math.abs(HeadingHelper.getChangeInHeading(data.getCompassHeading().getHeading()
-					+ compassAdjustment, heading));
+			double compassDiff = Math.abs(HeadingHelper
+					.getChangeInHeading(data.getCompassHeading().getHeading() + compassAdjustment, heading));
 			if (compassDiff > 45)
 			{
 				// System.out.println("eliminating on compass heading " +
@@ -125,8 +123,8 @@ public class Particle
 		{
 			double distance = obs.getDisctanceCm();
 			double angle = Math.toDegrees(obs.getAngleRadians());
-			double simDistance = simulateObservation(currentWorld, angle, distance + maxGoodError);// +
-																									// maxBadError);
+			double simDistance = simulateObservation(currentWorld, angle, distance + maxGoodError, 0.5);// +
+																										// maxBadError);
 
 			// subtract world block size as this is the error caused by the
 			// world block size, but stay > 0
@@ -158,7 +156,8 @@ public class Particle
 
 	}
 
-	public double simulateObservation(ProbabilityMap currentWorld, double angle, double maxDistance)
+	public double simulateObservation(ProbabilityMap currentWorld, double angle, double maxDistance,
+			double occupancyThreshold)
 	{
 		Vector3D unit = new Vector3D(0, 1, 0);
 		double hr = Math.toRadians(heading);
@@ -170,7 +169,7 @@ public class Particle
 		for (int i = 0; i < maxDistance; i += 1)
 		{
 			double d = currentWorld.get(location.getX(), location.getY());
-			if (d > 0.5)
+			if (d > occupancyThreshold)
 			{
 				return i;
 			}
