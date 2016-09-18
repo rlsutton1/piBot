@@ -5,23 +5,23 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BrokenBarrierException;
 
+import com.pi4j.gpio.extension.adafruit.ADS1115;
+import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
+
 import au.com.rsutton.calabrate.CalabrateCompass;
 import au.com.rsutton.calabrate.CalabrateHallEffect;
 import au.com.rsutton.calabrate.CalabrateLidar;
+import au.com.rsutton.calabrate.CalabrateLidarManual;
 import au.com.rsutton.calabrate.CalabrateTelemetry;
 import au.com.rsutton.calabrate.TestStepper;
 import au.com.rsutton.i2c.I2cSettings;
 import au.com.rsutton.robot.rover.Rover;
 
-import com.pi4j.gpio.extension.adafruit.ADS1115;
-import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
-
 public class Main
 {
 	boolean distanceOk = true;
 
-	public static void main(String[] args) throws InterruptedException,
-			IOException, BrokenBarrierException
+	public static void main(String[] args) throws InterruptedException, IOException, BrokenBarrierException
 	{
 		// I2CFactory.setFactory(new I2CFactoryProviderBanana());
 
@@ -34,6 +34,7 @@ public class Main
 		System.out.println("Press 4 to test stepper");
 
 		System.out.println("Press 5 to hall effect");
+		System.out.println("Press 6 to calabrate lidar manually");
 
 		int ch = br.read();
 		if (ch == '0')
@@ -52,14 +53,15 @@ public class Main
 		} else if (ch == '3')
 		{
 			new CalabrateTelemetry();
-		}
-		else if (ch == '4')
+		} else if (ch == '4')
 		{
 			new TestStepper();
-		}
-		else if (ch == '5')
+		} else if (ch == '5')
 		{
 			new CalabrateHallEffect();
+		} else if (ch == '6')
+		{
+			new CalabrateLidarManual();
 		}
 
 	}
@@ -76,11 +78,9 @@ public class Main
 	//
 	// }
 
-	private static Adafruit16PwmProvider setupPwm() throws IOException,
-			InterruptedException
+	private static Adafruit16PwmProvider setupPwm() throws IOException, InterruptedException
 	{
-		Adafruit16PwmProvider provider = new Adafruit16PwmProvider(
-				I2cSettings.busNumber, 0x40);
+		Adafruit16PwmProvider provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 		provider.setPWMFreq(30);
 		return provider;
 	}

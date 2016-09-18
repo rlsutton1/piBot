@@ -52,60 +52,45 @@ public class LidarScanningService implements Runnable
 			try
 			{
 				System.out.println("Start point scan");
-				int a = start + 1;
 				boolean isStart = true;
-				for (; a < end; a += scanStepSkip)
+				for (int a = 0; a < end && !stop; a += scanStepSkip)
 				{
-					try
-					{
-						Vector3D scan = scanner.scan(a);
-						if (scan != null)
-						{
-							publishPoint(scan, isStart);
-							isStart = false;
-						} else
-						{
-							System.out.println("Null scan result");
-						}
-
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (InterruptedException e)
-					{
-						stop = true;
-					}
-
+					isStart = scanPoint(a, isStart);
 				}
-				a -= scanStepSkip;
 				isStart = true;
-				for (; a > start; a -= scanStepSkip)
+				for (int a = 0; a > start && !stop; a -= scanStepSkip)
 				{
-					try
-					{
-
-						Vector3D scan = scanner.scan(a);
-						if (scan != null)
-						{
-							publishPoint(scan, isStart);
-							isStart = false;
-						} else
-						{
-							System.out.println("Null scan result with sleep");
-						}
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (InterruptedException e)
-					{
-						stop = true;
-					}
+					isStart = scanPoint(a, isStart);
 				}
 			} catch (Throwable e)
 			{
 				e.printStackTrace();
 			}
 		}
+	}
+
+	private boolean scanPoint(int a, boolean isStart)
+	{
+		try
+		{
+
+			Vector3D scan = scanner.scan(a);
+			if (scan != null)
+			{
+				publishPoint(scan, isStart);
+				isStart = false;
+			} else
+			{
+				System.out.println("Null scan result with sleep");
+			}
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		} catch (InterruptedException e)
+		{
+			stop = true;
+		}
+		return isStart;
 	}
 
 	private void publishPoint(Vector3D v, boolean isStart)

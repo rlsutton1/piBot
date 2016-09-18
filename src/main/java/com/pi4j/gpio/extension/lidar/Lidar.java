@@ -2,12 +2,12 @@ package com.pi4j.gpio.extension.lidar;
 
 import java.io.IOException;
 
-import au.com.rsutton.config.Config;
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+
+import au.com.rsutton.config.Config;
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
 public class Lidar
 {
@@ -83,10 +83,10 @@ public class Lidar
 		try
 		{
 			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
-			
+
 		} catch (IOException e)
 		{
-			Thread.sleep(200);
+			Thread.sleep(20);
 			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
 		}
 		int d1 = distance[0];

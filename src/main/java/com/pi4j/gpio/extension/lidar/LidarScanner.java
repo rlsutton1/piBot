@@ -19,8 +19,6 @@ import au.com.rsutton.robot.stepper.StepperMotor;
 public class LidarScanner
 {
 
-	private static final int LIDAR_POLL_RATE = 10;
-
 	public static final int MIN_ANGLE = -125;
 	public static final int MAX_ANGLE = 125;
 
@@ -29,10 +27,6 @@ public class LidarScanner
 	static final double microSteps = 8;
 
 	private static final double STEP_ANGLE = 360.0 / (stepsPerRotation * microSteps);
-
-	private volatile boolean stop = false;
-
-	// volatile int resolution = 1;
 
 	private Config config;
 
@@ -79,10 +73,10 @@ public class LidarScanner
 
 		}
 
-		stepper.moveTo((long) (maxPos + (100 * microSteps)));
+		stepper.moveTo((long) (maxPos + (111 * microSteps)));
 		stepper.setZero();
 		// stepper.moveTo((long) (75 * microSteps));
-		Thread.sleep(1000);
+		// Thread.sleep(1000);
 
 		// double cm = 0;
 		// int ctr = 0;
@@ -134,12 +128,7 @@ public class LidarScanner
 
 	}
 
-	int lastLidarReading = 0;
-
 	/**
-	 * returns null if the detected distance is the same as the last reading -
-	 * ensuring that the lidar has actually measured since the move
-	 * 
 	 * @param position
 	 * @return
 	 * @throws InterruptedException
@@ -157,11 +146,10 @@ public class LidarScanner
 		Thread.sleep(10);
 		int last = lidar.getLatestReading();
 
-		lastLidarReading = last;
 		Rotation rotation = positionRotationMap.get(position);
 		if (rotation == null)
 		{
-			System.out.println("position " + position);
+			System.out.println("position not in positionRotationMap " + position);
 		}
 		return rotation.applyInverseTo(new Vector3D(0, last, 0));
 	}
