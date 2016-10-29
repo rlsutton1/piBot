@@ -5,10 +5,12 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
-import au.com.rsutton.ui.DataSourcePoint;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.base.Preconditions;
+
+import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.ui.DataSourcePoint;
 
 public class ProbabilityMap implements DataSourcePoint
 {
@@ -122,6 +124,34 @@ public class ProbabilityMap implements DataSourcePoint
 		}
 	}
 
+	List<Vector3D> features = new LinkedList<>();
+
+	public List<Vector3D> getFeatures()
+	{
+		return features;
+	}
+
+	public void drawLine(double x1, double y1, double x2, double y2, Occupancy occupancy, double certainty, int radius)
+	{
+
+		// consider every vertex is a feature
+		Vector3D lineStart = new Vector3D(x2, y2, 0);
+		Vector3D lineEnd = new Vector3D(x1, y1, 0);
+		features.add(lineEnd);
+		features.add(lineStart);
+
+		double length = Vector3D.distance(lineStart, lineEnd);
+
+		for (double i = 0; i < length; i++)
+		{
+			double percent = i / length;
+			double x = (x1 * percent) + (x2 * (1.0 - percent));
+			double y = (y1 * percent) + (y2 * (1.0 - percent));
+
+			updatePoint((int) x, (int) y, occupancy, certainty, radius);
+		}
+	}
+
 	/**
 	 * 
 	 * @param occupancyProbability
@@ -178,8 +208,10 @@ public class ProbabilityMap implements DataSourcePoint
 
 		shift = new double[][] {
 				{
-						xl * yt, yt * xc, xr * yt }, {
-						xl * yc, yc * xc, xr * yc }, {
+						xl * yt, yt * xc, xr * yt },
+				{
+						xl * yc, yc * xc, xr * yc },
+				{
 						xl * yb, yb * xc, xr * yb } };
 
 		double total = 0.0;
@@ -239,7 +271,7 @@ public class ProbabilityMap implements DataSourcePoint
 			{
 				if (world.get(x, y) >= 0.51)
 				{
-					line[x + Math.abs(world.getMinX()) + 1] |= true;
+					line[(x - world.getMinX()) + 1] |= true;
 					// System.out.print("*");
 				} else
 				{
@@ -250,7 +282,7 @@ public class ProbabilityMap implements DataSourcePoint
 			{
 				for (int x = world.getMinX() - 1; x < world.getMaxX() + 1; x++)
 				{
-					if (line[x + Math.abs(world.getMinX()) + 1])
+					if (line[(x - world.getMinX()) + 1])
 					{
 						System.out.print("*");
 

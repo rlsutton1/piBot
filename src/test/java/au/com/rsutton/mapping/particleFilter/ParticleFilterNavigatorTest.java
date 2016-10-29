@@ -5,7 +5,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.Test;
 
+import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.Navigator;
+import au.com.rsutton.navigation.NavigatorControl;
+import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotSimulator;
 
 public class ParticleFilterNavigatorTest
 {
@@ -16,22 +21,22 @@ public class ParticleFilterNavigatorTest
 	public void test() throws InterruptedException
 	{
 
-		ProbabilityMap realWorld = KitchenMapBuilder.buildKitchenMap();
-		RobotInterface robot = getRobot(realWorld);
+		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
+		RobotInterface robot = getRobot(map);
 
-		ProbabilityMap map = new ProbabilityMap(10);
-		InitialWorldBuilder a = new InitialWorldBuilder(map, robot, 90);
+		// map = new ProbabilityMap(10);
+		// new InitialWorldBuilder(map, robot, 90);
 
 		final ParticleFilterIfc pf = new ParticleFilter(map, 2000, 0.75, 1.0, StartPosition.RANDOM);
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
 
-		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);
+		// MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);
 
-		// navigator.calculateRouteTo(120, -260, 0);
-		// navigator.go();
+		navigator.calculateRouteTo(120, -260, 0);
+		navigator.go();
 
-		while (!mapBuilder.isComplete())
+		while (!navigator.hasReachedDestination())// (!mapBuilder.isComplete())
 		{
 			Thread.sleep(100);
 		}

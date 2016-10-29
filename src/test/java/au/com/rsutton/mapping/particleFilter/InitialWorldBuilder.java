@@ -8,6 +8,8 @@ import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.robot.rover.Angle;
 
 public class InitialWorldBuilder implements RobotListener

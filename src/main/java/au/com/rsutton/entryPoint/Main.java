@@ -11,6 +11,7 @@ import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
 import au.com.rsutton.calabrate.CalabrateCompass;
 import au.com.rsutton.calabrate.CalabrateHallEffect;
 import au.com.rsutton.calabrate.CalabrateLidar;
+import au.com.rsutton.calabrate.CalabrateLidarAngles;
 import au.com.rsutton.calabrate.CalabrateLidarManual;
 import au.com.rsutton.calabrate.CalabrateTelemetry;
 import au.com.rsutton.calabrate.TestStepper;
@@ -35,6 +36,7 @@ public class Main
 
 		System.out.println("Press 5 to hall effect");
 		System.out.println("Press 6 to calabrate lidar manually");
+		System.out.println("Press 7 to calabrate lidar Angles");
 
 		int ch = br.read();
 		if (ch == '0')
@@ -62,6 +64,9 @@ public class Main
 		} else if (ch == '6')
 		{
 			new CalabrateLidarManual();
+		} else if (ch == '7')
+		{
+			new CalabrateLidarAngles();
 		}
 
 	}

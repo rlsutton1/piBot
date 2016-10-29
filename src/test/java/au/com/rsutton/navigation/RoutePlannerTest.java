@@ -2,7 +2,7 @@ package au.com.rsutton.navigation;
 
 import org.junit.Test;
 
-import au.com.rsutton.mapping.particleFilter.KitchenMapBuilder;
+import au.com.rsutton.mapping.KitchenMapBuilder;
 
 public class RoutePlannerTest
 {

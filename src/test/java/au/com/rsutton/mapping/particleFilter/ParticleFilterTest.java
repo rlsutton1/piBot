@@ -10,20 +10,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
+import com.pi4j.gpio.extension.lsm303.HeadingData;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.ExpansionPoint;
 import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
-import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
+import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
 import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
-
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class ParticleFilterTest
 {
@@ -311,7 +313,7 @@ public class ParticleFilterTest
 			}
 		};
 
-		pf.addObservation(map, nd, 0d);
+		pf.addObservation(map, nd, -90d);
 
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 		pf.dumpAveragePosition();
@@ -320,15 +322,15 @@ public class ParticleFilterTest
 
 	private void storeHeadingDeltas(final RobotLocation robotLocation)
 	{
-		double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading, robotLocation
-				.getCompassHeading().getHeading());
-		double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading, robotLocation
-				.getDeadReaconingHeading().getDegrees());
+		double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading,
+				robotLocation.getCompassHeading().getHeading());
+		double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading,
+				robotLocation.getDeadReaconingHeading().getDegrees());
 		deltaCompassHeading *= 4.0;
 
 		deltaDeadreconningHeading *= 4.0;
 
-		headingTuples.add(new Tuple<Double, Double>(deltaCompassHeading, deltaDeadreconningHeading));
+		headingTuples.add(new Tuple<>(deltaCompassHeading, deltaDeadreconningHeading));
 		if (headingTuples.size() > 240)
 		{
 			headingTuples.remove(0);

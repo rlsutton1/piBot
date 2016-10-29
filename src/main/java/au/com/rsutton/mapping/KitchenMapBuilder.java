@@ -1,74 +1,32 @@
-package au.com.rsutton.mapping.probability;
+package au.com.rsutton.mapping;
 
-import java.util.Random;
+import au.com.rsutton.mapping.probability.Occupancy;
+import au.com.rsutton.mapping.probability.ProbabilityMap;
 
-import org.junit.Test;
-
-public class ProbabilityMapTest
+public class KitchenMapBuilder
 {
 
-	@Test
-	public void testShiftMatrix()
-	{
-		ProbabilityMap pm = new ProbabilityMap(1);
-		System.out.println("pm 0,0");
-		pm.createShiftMatrix(0.0, 0.0);
-		System.out.println("pm 0.5,0");
-		pm.createShiftMatrix(0.5, 0.0);
-		System.out.println("pm -0.5,0");
-		pm.createShiftMatrix(-0.5, 0.0);
-		System.out.println("pm 0,-0.5");
-		pm.createShiftMatrix(0.0, -0.5);
-		System.out.println("pm 0,0.5");
-		pm.createShiftMatrix(0.0, 0.5);
-		System.out.println("pm 0.5,0.5");
-		pm.createShiftMatrix(0.5, 0.5);
-
-	}
-
-	@Test
-	public void test()
-	{
-		int worldSize = 50;
-		ProbabilityMap world = new ProbabilityMap(1);
-
-		Random r = new Random();
-
-		for (int z = 0; z < 20; z++)
-			for (int i = 0; i < worldSize; i++)
-			{
-
-				int noise = r.nextInt(8) - 4;
-
-				int x = i + noise;
-				if (x > 0 && x < worldSize)
-				{
-					world.updatePoint(x, x, Occupancy.OCCUPIED, 1.0, 2);
-				}
-			}
-
-		world.dumpWorld();
-
-		world.dumpTextWorld();
-
-	}
-
-	@Test
-	public void testUp()
-	{
-		ProbabilityMap world = new ProbabilityMap(1);
-
-		for (int i = 0; i < 20; i++)
-		{
-			world.updatePoint(1, 1, Occupancy.OCCUPIED, 1.0, 2);
-			System.out.println("Prob: " + world.get(1, 1));
-		}
-	}
-
-	@Test
-	public void drawWorld()
+	public static ProbabilityMap buildKitchenMap()
 	{
 		ProbabilityMap world = new ProbabilityMap(10);
+
+		buildKitchenMap(world);
+
+		return world;
+
+	}
+
+	public static void buildKitchenMap(ProbabilityMap world)
+	{
+		// table leg
+		world.drawLine(-120, 60, -120, 70, Occupancy.OCCUPIED, 1.0, 2);
+
+		// bin
+		// world.drawLine(-40,70,-10,70, Occupancy.OCCUPIED, 1.0, 2);
+		// world.drawLine(-40,70,-40,40, Occupancy.OCCUPIED, 1.0, 2);
+		// world.drawLine(-10,40,-10,70, Occupancy.OCCUPIED, 1.0, 2);
+		// world.drawLine(-40,40,-10,40, Occupancy.OCCUPIED, 1.0, 2);
+
 		world.drawLine(0, 0, 0, 89, Occupancy.OCCUPIED, 1.0, 2);// a
 		world.drawLine(0, 0, -141, 0, Occupancy.OCCUPIED, 1.0, 2);// b
 		world.drawLine(-141, 0, -141, 42, Occupancy.OCCUPIED, 1.0, 2);// c
@@ -95,7 +53,6 @@ public class ProbabilityMapTest
 		world.drawLine(165, -346, 0, -346, Occupancy.OCCUPIED, 1.0, 2);// m
 
 		world.dumpTextWorld();
-
 	}
 
 }

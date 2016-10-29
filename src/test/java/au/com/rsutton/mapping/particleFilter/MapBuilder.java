@@ -11,6 +11,7 @@ import com.pi4j.gpio.extension.lidar.LidarScanner;
 
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
@@ -50,6 +51,8 @@ public class MapBuilder implements ParticleFilterListener
 				Vector3D pos = averagePosition;
 
 				Particle particle = new Particle(pos.getX(), pos.getY(), averageHeading, 0, 0);
+
+				new ScanMatcher(world, particleFilterObservationSet, 0);
 
 				for (ScanObservation obs : particleFilterObservationSet.getObservations())
 				{
@@ -132,9 +135,22 @@ public class MapBuilder implements ParticleFilterListener
 			{
 				if (checkIsValidRouteTarget(x, y))
 				{
-					for (int heading = 0; heading < 360; heading += 45)
+
+					for (int h1 = 0; h1 < 360; h1 += 45)
 					{
+						int heading = lastHeading + h1;
 						Vector3D position = new Vector3D(x, y, 0);
+						if (isUnexplored(position, heading))
+						{
+							Vector3D target = new Vector3D(x, y, heading);
+							if (!previousTargets.contains(target))
+							{
+								previousTargets.add(target);
+								navigatorControl.calculateRouteTo(x, y, heading);
+								return true;
+							}
+						}
+						heading = lastHeading - h1;
 						if (isUnexplored(position, heading))
 						{
 							Vector3D target = new Vector3D(x, y, heading);

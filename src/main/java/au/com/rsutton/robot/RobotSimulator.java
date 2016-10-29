@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.robot;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
@@ -21,6 +22,7 @@ import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
@@ -40,9 +42,9 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	private volatile boolean freeze;
 	private double rspeed;
 	private double targetHeading;
-	private RobotListener listener;
+	private List<RobotListener> listeners = new CopyOnWriteArrayList<>();
 
-	RobotSimulator(ProbabilityMap map)
+	public RobotSimulator(ProbabilityMap map)
 	{
 		this.map = map;
 
@@ -213,7 +215,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 				turn(delta);
 			}
-			if (listener != null)
+			for (RobotListener listener : listeners)
 			{
 				listener.observed(getObservation());
 			}
@@ -231,7 +233,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	@Override
 	public void addMessageListener(RobotListener listener)
 	{
-		this.listener = listener;
+		this.listeners.add(listener);
 
 	}
 

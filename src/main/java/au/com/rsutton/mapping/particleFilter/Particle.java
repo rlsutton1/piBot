@@ -156,6 +156,15 @@ public class Particle
 
 	}
 
+	/**
+	 * scans upto maxDistance, returning the distance of the strongest match
+	 * 
+	 * @param currentWorld
+	 * @param angle
+	 * @param maxDistance
+	 * @param occupancyThreshold
+	 * @return
+	 */
 	public double simulateObservation(ProbabilityMap currentWorld, double angle, double maxDistance,
 			double occupancyThreshold)
 	{
@@ -166,16 +175,22 @@ public class Particle
 		Vector3D location = new Vector3D(x, y, 0);
 		// step size half the world block size
 		int inc = Math.max(1, currentWorld.getBlockSize() / 4);
+
+		double bestMatchDistance = maxDistance;
+		double bestMatchOccupancy = 0;
+
 		for (int i = 0; i < maxDistance; i += 1)
 		{
 			double d = currentWorld.get(location.getX(), location.getY());
-			if (d > occupancyThreshold)
+			if (d > occupancyThreshold && d > bestMatchOccupancy)
 			{
-				return i;
+				bestMatchDistance = i;
+				bestMatchOccupancy = d;
+
 			}
 			location = location.add(unit);
 		}
-		return maxDistance;
+		return bestMatchDistance;
 	}
 
 	public double getX()
@@ -207,6 +222,11 @@ public class Particle
 		}
 		return Math.max(0.01, rawRating);
 
+	}
+
+	public double getScanMatchRating()
+	{
+		return totalVotes / totalObservations;
 	}
 
 	public int getSampleCount()

@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.navigation;
 
 import java.awt.Color;
 import java.awt.Point;
@@ -12,16 +12,19 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
+import au.com.rsutton.deeplearning.feature.FeatureExtractionTestFullWold;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.mapping.particleFilter.ParticleUpdate;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.navigation.RouteOption;
-import au.com.rsutton.navigation.RoutePlanner;
-import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
+import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
@@ -38,13 +41,18 @@ public class Navigator implements Runnable, NavigatorControl
 	private ScheduledExecutorService pool;
 	private volatile boolean stopped = true;
 
-	Navigator(ProbabilityMap map, ParticleFilterIfc pf, RobotInterface robot)
+	public Navigator(ProbabilityMap map, ParticleFilterIfc pf, RobotInterface robot)
 	{
 		ui = new MapDrawingWindow();
 		this.map = map;
 		ui.addDataSource(map, new Color(255, 255, 255));
 		this.pf = pf;
 		setupDataSources(ui, pf);
+
+		FeatureExtractionTestFullWold dl4j = new FeatureExtractionTestFullWold();
+		dl4j.train();
+		ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
+
 		routePlanner = new RoutePlanner(map);
 		this.robot = robot;
 		setupRoutePlanner();
@@ -207,10 +215,6 @@ public class Navigator implements Runnable, NavigatorControl
 						@Override
 						public double getDeltaHeading()
 						{
-							// return -lastheading.difference(new
-							// Angle(HeadingHelper.normalizeHeading(robotLocation
-							// .getDeadReaconingHeading().getDegrees()),
-							// AngleUnits.DEGREES));
 
 							return HeadingHelper.getChangeInHeading(
 									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());

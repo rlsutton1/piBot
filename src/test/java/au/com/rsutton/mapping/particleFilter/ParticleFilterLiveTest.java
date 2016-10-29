@@ -14,6 +14,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
+import com.google.common.util.concurrent.AtomicDouble;
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -21,20 +25,17 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.ExpansionPoint;
 import au.com.rsutton.navigation.RouteOption;
 import au.com.rsutton.navigation.RoutePlanner;
-import au.com.rsutton.navigation.RoutePlanner.ExpansionPoint;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
-
-import com.google.common.util.concurrent.AtomicDouble;
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 public class ParticleFilterLiveTest
 {
@@ -253,8 +254,8 @@ public class ParticleFilterLiveTest
 							// .getDeadReaconingHeading().getDegrees()),
 							// AngleUnits.DEGREES));
 
-							return HeadingHelper.getChangeInHeading(robotLocation.getDeadReaconingHeading()
-									.getDegrees(), lastheading.getDegrees());
+							return HeadingHelper.getChangeInHeading(
+									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());
 						}
 
 						@Override
@@ -288,15 +289,15 @@ public class ParticleFilterLiveTest
 
 			private void storeHeadingDeltas(final RobotLocation robotLocation)
 			{
-				double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading, robotLocation
-						.getCompassHeading().getHeading());
+				double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading,
+						robotLocation.getCompassHeading().getHeading());
 				double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading,
 						robotLocation.getDeadReaconingHeading().getDegrees());
 
 				deltaCompassHeading *= 4.0;
 
 				deltaDeadreconningHeading *= 4.0;
-				headingTuples.add(new Tuple<Double, Double>(deltaCompassHeading, deltaDeadreconningHeading));
+				headingTuples.add(new Tuple<>(deltaCompassHeading, deltaDeadreconningHeading));
 				if (headingTuples.size() > 240)
 				{
 					headingTuples.remove(0);
