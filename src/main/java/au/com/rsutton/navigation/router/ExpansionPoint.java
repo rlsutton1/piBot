@@ -1,4 +1,4 @@
-package au.com.rsutton.navigation;
+package au.com.rsutton.navigation.router;
 
 public final class ExpansionPoint
 {

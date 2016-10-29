@@ -13,9 +13,9 @@ import com.pi4j.gpio.extension.lsm303.HeadingData;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.navigation.ExpansionPoint;
-import au.com.rsutton.navigation.RouteOption;
-import au.com.rsutton.navigation.RoutePlanner;
+import au.com.rsutton.navigation.router.ExpansionPoint;
+import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.rover.LidarObservation;
 
 public class ParticleTest

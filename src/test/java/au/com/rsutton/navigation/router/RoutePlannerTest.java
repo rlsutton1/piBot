@@ -1,8 +1,10 @@
-package au.com.rsutton.navigation;
+package au.com.rsutton.navigation.router;
 
 import org.junit.Test;
 
 import au.com.rsutton.mapping.KitchenMapBuilder;
+import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlanner;
 
 public class RoutePlannerTest
 {
