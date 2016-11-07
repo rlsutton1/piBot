@@ -12,7 +12,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
-import au.com.rsutton.deeplearning.feature.FeatureExtractionTestFullWold;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -21,7 +20,6 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleUpdate;
-import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
@@ -43,6 +41,7 @@ public class Navigator implements Runnable, NavigatorControl
 	private MapDrawingWindow ui;
 	private ScheduledExecutorService pool;
 	private volatile boolean stopped = true;
+	private ObsticleAvoidance obsticleAvoidance;
 
 	public Navigator(ProbabilityMap map, ParticleFilterIfc pf, RobotInterface robot)
 	{
@@ -52,12 +51,17 @@ public class Navigator implements Runnable, NavigatorControl
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
-		FeatureExtractionTestFullWold dl4j = new FeatureExtractionTestFullWold();
-		dl4j.train();
-		ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
+		// FeatureExtractionTestFullWold dl4j = new
+		// FeatureExtractionTestFullWold();
+		// dl4j.train();
+		// ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
 
 		routePlanner = new RoutePlanner(map);
 		this.robot = robot;
+
+		obsticleAvoidance = new ObsticleAvoidance(robot);
+		ui.addDataSource(obsticleAvoidance.getHeadingMapDataSource(pf, robot));
+
 		setupRoutePlanner();
 
 		setupRobotListener();
@@ -84,18 +88,14 @@ public class Navigator implements Runnable, NavigatorControl
 		try
 		{
 			robot.freeze(false);
-			if (proximityStop)
-			{
-				robot.setSpeed(new Speed(new Distance(-5, DistanceUnit.CM), Time.perSecond()));
-				return;
-			}
+
 			if (stopped)
 			{
 				robot.freeze(true);
 				return;
 			}
 			double std = pf.getStdDev();
-			speed = Math.max(22 - std, 0);
+			speed = 15;
 			pf.setParticleCount(Math.max(500, (int) (7 * std)));
 			if (std < 30)
 			{
@@ -144,7 +144,7 @@ public class Navigator implements Runnable, NavigatorControl
 						System.out.println("Setting speed to 0");
 						speed *= 0.0;
 					}
-					robot.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + da));
+					setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da));
 					robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 
 				} else
@@ -153,7 +153,7 @@ public class Navigator implements Runnable, NavigatorControl
 					{
 						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
 						robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
-						robot.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + da));
+						setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da));
 					} else
 					{
 						stopped = true;
@@ -172,8 +172,8 @@ public class Navigator implements Runnable, NavigatorControl
 
 			} else
 			{
-				robot.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + 15));
-				robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+				setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0));
+				robot.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 
 			}
 		} finally
@@ -183,7 +183,15 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
-	private boolean proximityStop;
+	void setHeadingWithObsticleAvoidance(double desiredHeading)
+	{
+
+		double corrected = obsticleAvoidance.getCorrectedHeading(desiredHeading);
+
+		robot.setHeading(HeadingHelper.normalizeHeading(corrected + currentDeadReconingHeading.get()));
+
+	}
+
 	private float compassHeading;
 	private double targetHeading;
 
@@ -235,19 +243,6 @@ public class Navigator implements Runnable, NavigatorControl
 				lasty = robotLocation.getY().convert(DistanceUnit.CM);
 				lastx = robotLocation.getX().convert(DistanceUnit.CM);
 				lastheading = robotLocation.getDeadReaconingHeading();
-
-				boolean stop = false;
-				for (ScanObservation obs : robotLocation.getObservations())
-				{
-
-					if (Vector3D.distance(Vector3D.ZERO, obs.getVector()) < 20)
-					{
-						// stop for 2 seconds
-						stop = true;
-					}
-
-				}
-				proximityStop = stop;
 
 				// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
@@ -382,26 +377,6 @@ public class Navigator implements Runnable, NavigatorControl
 			}
 		});
 
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				String value = "True";
-				if (!proximityStop)
-				{
-					value = "False";
-				}
-				return "" + value;
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "Proximity Stop";
-			}
-		});
 	}
 
 	@Override
@@ -436,7 +411,7 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public boolean isStuck()
 	{
-		return proximityStop;
+		return false;
 	}
 
 	@Override
