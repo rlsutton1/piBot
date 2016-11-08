@@ -27,9 +27,6 @@ public class ObsticleAvoidance
 
 	private Double awayFromObsticle;
 
-	private double paralleToObsticleAntiClockwise;
-	private double paralleToObsticleClockWise;
-
 	protected Double correctionAngle;
 
 	protected Angle currentHeading;
@@ -55,7 +52,7 @@ public class ObsticleAvoidance
 
 				List<LidarObservation> observations = scanBuffer.getObservations(observation);
 
-				double requiredObsticalClearance = 30;
+				double requiredObsticalClearance = 50;
 
 				List<LidarObservation> closest = getClosest(observations, requiredObsticalClearance + 10);
 				if (closest.size() == 2)
@@ -82,14 +79,11 @@ public class ObsticleAvoidance
 					double x = p1.getX() - p2.getX();
 					double y = p1.getY() - p2.getY();
 
-					paralleToObsticleClockWise = Math.toDegrees(Math.atan2(y, x)) + 90;
-
-					paralleToObsticleAntiClockwise = paralleToObsticleClockWise + 180;
+					awayFromObsticle = Math.toDegrees(Math.atan2(y, x));
 
 					double distanceToObsticle = p1.getDisctanceCm();
 					if (distanceToObsticle < requiredObsticalClearance)
 					{
-						awayFromObsticle = paralleToObsticleClockWise - 90;
 
 						double distanceForCorrection = 80;
 
@@ -173,8 +167,6 @@ public class ObsticleAvoidance
 	double getCorrectedHeading(double relativeHeading)
 	{
 		Double correctedRelativeHeading = relativeHeading;
-		Double antiClock = paralleToObsticleAntiClockwise;
-		Double clock = paralleToObsticleClockWise;
 		Double away = awayFromObsticle;
 		Double ca = correctionAngle;
 		correction = null;
@@ -191,12 +183,14 @@ public class ObsticleAvoidance
 				// goal heading is towards the obsticle!
 				if (delta < 0)
 				{
-					// go antiClockWise
-					correctedRelativeHeading = antiClock + Math.abs(ca);
+					// avoid obsticle clock wise
+					double clockWise = away - 90;
+					correctedRelativeHeading = clockWise + Math.abs(ca);
 				} else
 				{
-					// go ClockWise
-					correctedRelativeHeading = clock - Math.abs(ca);
+					// avoid obsitcle anti clock wise
+					double antiClockWise = away + 90;
+					correctedRelativeHeading = antiClockWise - Math.abs(ca);
 				}
 				if (Math.abs(HeadingHelper.getChangeInHeading(correctedRelativeHeading, away)) > 90)
 				{
@@ -242,22 +236,10 @@ public class ObsticleAvoidance
 							(int) (pointOriginX + (vector.getX() * scale)),
 							(int) (pointOriginY + (vector.getY() * scale)));
 
-					double correctedHeading = paralleToObsticleAntiClockwise + pfh;// -
-
-					// graphics.setColor(new Color(255, 0, 255));
-					// // correctionAngle;
-					// vector = new Rotation(RotationOrder.XYZ, 0, 0,
-					// Math.toRadians(correctedHeading))
-					// .applyTo(new Vector3D(0, 40, 0));
-					//
-					// graphics.drawLine((int) pointOriginX, (int) pointOriginY,
-					// (int) (pointOriginX + (vector.getX() * scale)),
-					// (int) (pointOriginY + (vector.getY() * scale)));
-
 					if (correction != null)
 					{
 						graphics.setColor(new Color(0, 255, 0));
-						// correctionAngle;
+						// correctionAngle
 						vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(correction + pfh))
 								.applyTo(new Vector3D(0, 40, 0));
 
@@ -267,7 +249,7 @@ public class ObsticleAvoidance
 					}
 
 					graphics.setColor(new Color(0, 255, 0));
-					// correctionAngle;
+					// correctionAngle
 
 					Vector3D p1 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh)).applyTo(sp1);
 					Vector3D p2 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh)).applyTo(sp2);
