@@ -55,9 +55,9 @@ public class ObsticleAvoidance
 
 				List<LidarObservation> observations = scanBuffer.getObservations(observation);
 
-				double desiredDistance = 40;
+				double requiredObsticalClearance = 30;
 
-				List<LidarObservation> closest = getClosest(observations, desiredDistance + 10);
+				List<LidarObservation> closest = getClosest(observations, requiredObsticalClearance + 10);
 				if (closest.size() == 2)
 				{
 
@@ -87,14 +87,14 @@ public class ObsticleAvoidance
 					paralleToObsticleAntiClockwise = paralleToObsticleClockWise + 180;
 
 					double distanceToObsticle = p1.getDisctanceCm();
-					if (distanceToObsticle < desiredDistance)
+					if (distanceToObsticle < requiredObsticalClearance)
 					{
 						awayFromObsticle = paralleToObsticleClockWise - 90;
 
-						double distanceForCorrection = 30;
+						double distanceForCorrection = 80;
 
-						correctionAngle = Math
-								.toDegrees(Math.atan2(distanceForCorrection, desiredDistance - distanceToObsticle));
+						correctionAngle = Math.toDegrees(
+								Math.atan2(requiredObsticalClearance - distanceToObsticle, distanceForCorrection));
 
 					} else
 					{
