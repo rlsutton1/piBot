@@ -6,14 +6,15 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-
 import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioProvider;
 import com.pi4j.io.gpio.GpioProviderBase;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
-import com.pi4j.io.i2c.impl.I2CBusImplBanana;
+import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
 /*
  * #%L
@@ -87,7 +88,7 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 	int driftCnt;
 	private long calabrationStart;
 	boolean calabrated = false;
-	private Set<GyroListener> gyroListeners = new HashSet<GyroListener>();
+	private Set<GyroListener> gyroListeners = new HashSet<>();
 
 	@Override
 	public void run()
@@ -177,11 +178,12 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 		return outz;
 	}
 
-	public GyroProvider(int busNumber, int address) throws IOException, InterruptedException
+	public GyroProvider(int busNumber, int address)
+			throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		// create I2C communications bus instance
 		// default = 0x40
-		bus = I2CBusImplBanana.getBus(busNumber);
+		bus = I2CFactory.getInstance(busNumber);
 
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(address));

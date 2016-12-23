@@ -2,6 +2,9 @@ package com.pi4j.gpio.extension.grovePi;
 
 import java.io.IOException;
 
+import com.pi4j.gpio.extension.lsm303.CompassLSM303;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -10,23 +13,20 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.robot.rover.WheelController;
 import au.com.rsutton.robot.rover.WheelFactory;
 
-import com.pi4j.gpio.extension.lsm303.CompassLSM303;
-
 public class GrovePiTest
 {
 
-	public static void main(String[] args) throws IOException,
-			InterruptedException
+	public static void main(String[] args) throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 
 		compassTest();
-			
-//		singleTest();
-//		singleWheelTest();
+
+		// singleTest();
+		// singleWheelTest();
 
 	}
 
-	private static void compassTest() throws IOException, InterruptedException
+	private static void compassTest() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		Config config = new Config();
 
@@ -40,33 +40,30 @@ public class GrovePiTest
 
 	}
 
-	private static void singleWheelTest() throws IOException,
-			InterruptedException
+	private static void singleWheelTest() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		Config config = new Config();
 
 		GrovePiProvider grovePiProvider = new GrovePiProvider(1, 04);
 
 		// WheelController left = setupLeftWheel(grovePiProvider);
-		WheelController right = WheelFactory.setupRightWheel(grovePiProvider,config);
+		WheelController right = WheelFactory.setupRightWheel(grovePiProvider, config);
 
 		for (int i = -100; i < 100; i += 1)
 		{
 			// left.setSpeed(new Speed(new Distance(i, DistanceUnit.MM), Time
 			// .perSecond()));
-			right.setSpeed(new Speed(new Distance(i, DistanceUnit.MM), Time
-					.perSecond()));
+			right.setSpeed(new Speed(new Distance(i, DistanceUnit.MM), Time.perSecond()));
 			Thread.sleep(1000);
 			System.out.println("Setting speed -> " + i);
 		}
 		// left.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
 		// .perSecond()));
 
-		right.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
-				.perSecond()));
+		right.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
 	}
 
-	public static void singleTest() throws IOException, InterruptedException
+	public static void singleTest() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 
 		GrovePiProvider grovePiProvider = new GrovePiProvider(1, 04);

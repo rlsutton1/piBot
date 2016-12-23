@@ -3,13 +3,13 @@ package com.pi4j.gpio.extension.adafruit;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-
 import com.google.common.base.Preconditions;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import com.pi4j.io.i2c.impl.I2CBusImplBanana;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
 public class ADS1115 implements Runnable
 {
@@ -155,19 +155,21 @@ public class ADS1115 implements Runnable
 																// ALERT/RDY in
 																// high state
 																// (default)
-	/* ========================================================================= */
+	/*
+	 * =========================================================================
+	 */
 
 	// Instance-specific properties
 	int m_i2cAddress;
 	private I2CBus bus;
 	private I2CDevice device;
 
-	public ADS1115(int busNumber, int i2cAddress) throws IOException
+	public ADS1115(int busNumber, int i2cAddress) throws IOException, UnsupportedBusNumberException
 	{
 		m_i2cAddress = i2cAddress;
 
 		// create I2C communications bus instance
-		bus = I2CBusImplBanana.getBus(busNumber);
+		bus = I2CFactory.getInstance(busNumber);
 
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(i2cAddress));
@@ -194,8 +196,7 @@ public class ADS1115 implements Runnable
 
 	public void getValue(int port, AnalogueValueCallback callback)
 	{
-		Preconditions.checkArgument(port >= 0 && port <= 3,
-				"valid ports are 0 - 4");
+		Preconditions.checkArgument(port >= 0 && port <= 3, "valid ports are 0 - 4");
 		if (queue.size() < 10)
 		{
 			queue.add(new Request(port, callback));
@@ -239,8 +240,7 @@ public class ADS1115 implements Runnable
 
 				write16Bits(ADS1015_REG_POINTER_CONFIG, config);
 				Thread.sleep(10);
-				request.callback
-						.analogValue(read16Bits(ADS1015_REG_POINTER_CONVERT));
+				request.callback.analogValue(read16Bits(ADS1015_REG_POINTER_CONVERT));
 			} catch (IOException e)
 			{
 				e.printStackTrace();

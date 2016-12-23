@@ -1,14 +1,17 @@
 package au.com.rsutton.calabrate;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+
+import com.google.common.base.Stopwatch;
+import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
+import com.pi4j.gpio.extension.lidar.LidarScanner;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -22,49 +25,43 @@ import au.com.rsutton.mapping.v3.linearEquasion.LinearEquasionFactory;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
-import au.com.rsutton.robot.stepper.StepperMotor;
-
-import com.google.common.base.Stopwatch;
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.adafruit.AdafruitPCA9685;
-import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
-import com.pi4j.gpio.extension.lidar.LidarScanner;
-import com.pi4j.gpio.extension.lidar.LidarScanningService;
+import au.com.rsutton.robot.spinner.Spinner;
 
 public class TestStepper
 {
 
-	public TestStepper() throws IOException, InterruptedException,
-			BrokenBarrierException
+	public TestStepper() throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 		Config config = new Config();
 
 		GrovePiProvider grove = new GrovePiProvider(I2cSettings.busNumber, 4);
 
-//		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
-//
-//		pwm.setPWMFreq(1000);
-		StepperMotor driver = new StepperMotor(8);
+		// AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
+		//
+		// pwm.setPWMFreq(1000);
+		int offset = 200 * 8;
 
-		new LidarScanningService(grove, driver, config);
+		Spinner driver = new Spinner((long) (offset * 1.00), grove, config);
 
-		new LidarObservation()
-				.addMessageListener(new MessageListener<LidarObservation>()
-				{
+		// danger between 6ms and 25 ms stall
 
-					@Override
-					public void onMessage(Message<LidarObservation> message)
-					{
-						LidarObservation observation = message
-								.getMessageObject();
-						publishScan(observation);
-					}
-				});
+		Thread.sleep(60000);
 
-	
-
-		scanForAndfindLines();
+		// new LidarScanningService(grove, driver, config);
+		//
+		// new LidarObservation().addMessageListener(new
+		// MessageListener<LidarObservation>()
+		// {
+		//
+		// @Override
+		// public void onMessage(Message<LidarObservation> message)
+		// {
+		// LidarObservation observation = message.getMessageObject();
+		// publishScan(observation);
+		// }
+		// });
+		//
+		// scanForAndfindLines();
 
 		// int lock = findLock(-38, 38, lidar);
 		// while (true)
@@ -94,11 +91,9 @@ public class TestStepper
 			{
 				int av1 = (values.get(0) + values.get(1) + values.get(2)) / 3;
 				int av2 = (values.get(3) + values.get(4) + values.get(5)) / 3;
-				if (Math.abs(av1 - values.get(0)) < av1 * 0.1
-						&& av2 > av1 + edgeStepSize)
+				if (Math.abs(av1 - values.get(0)) < av1 * 0.1 && av2 > av1 + edgeStepSize)
 				{
-					System.out.println("Edge at " + i + " dist "
-							+ values.get(2));
+					System.out.println("Edge at " + i + " dist " + values.get(2));
 					edges.add(i - 3);
 				}
 
@@ -116,8 +111,7 @@ public class TestStepper
 		List<Integer> values = new LinkedList<>();
 		for (int i = min; i < max; i++)
 		{
-			int value = (int) Vector3D.distance(new Vector3D(0, 0, 0),
-					lidar.scan(i));
+			int value = (int) Vector3D.distance(new Vector3D(0, 0, 0), lidar.scan(i));
 			values.add(value);
 			if (values.size() > 6)
 			{
@@ -125,8 +119,7 @@ public class TestStepper
 				int av2 = (values.get(3) + values.get(4) + values.get(5)) / 3;
 				if (Math.abs(av1 - values.get(0)) < av1 * 0.1 && av2 > av1 + 30)
 				{
-					System.out.println("Lock at " + i + " dist "
-							+ values.get(2));
+					System.out.println("Lock at " + i + " dist " + values.get(2));
 					return i - 3;
 				}
 
@@ -146,16 +139,14 @@ public class TestStepper
 	static final int MIN_POINTS = 4;
 	static final int ACCURACY_MULTIPIER = 5;
 
-	private void scanForAndfindLines()
-			throws InterruptedException, BrokenBarrierException, IOException
+	private void scanForAndfindLines() throws InterruptedException, BrokenBarrierException, IOException
 	{
 		List<Vector3D> points = new LinkedList<>();
-//		for (int i = min; i < max; i++)
-//		{
-//			points.add(lidar.scan(i));
-//
-//		}
-
+		// for (int i = min; i < max; i++)
+		// {
+		// points.add(lidar.scan(i));
+		//
+		// }
 
 		// find crisp edges in the point scan
 		List<Integer> edges = findEdges(points, 30);
@@ -193,13 +184,10 @@ public class TestStepper
 				regression.addData(point.getX(), point.getY());
 
 			}
-			System.out.println("Slope " + regression.getSlope() + " intercept "
-					+ regression.getIntercept() + " s/std "
-					+ regression.getSlopeStdErr() + " conf "
-					+ regression.getSlopeConfidenceInterval() + " "
+			System.out.println("Slope " + regression.getSlope() + " intercept " + regression.getIntercept() + " s/std "
+					+ regression.getSlopeStdErr() + " conf " + regression.getSlopeConfidenceInterval() + " "
 					+ regression.getInterceptStdErr());
 
-			
 		}
 	}
 
@@ -211,8 +199,7 @@ public class TestStepper
 		currentLocation.setDeadReaconingHeading(new Angle(0, AngleUnits.DEGREES));
 		currentLocation.setX(new Distance(0, DistanceUnit.CM));
 		currentLocation.setY(new Distance(0, DistanceUnit.CM));
-		currentLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
-				Time.perSecond()));
+		currentLocation.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 		currentLocation.setClearSpaceAhead(new Distance(0, DistanceUnit.CM));
 
 		List<LidarObservation> observations = new LinkedList<>();
@@ -248,8 +235,7 @@ public class TestStepper
 
 			// ignore TOO_FEW_POINTS and TO_SHORT, as we have increased the end
 			// already
-			if (analysis == LinePointAnalysis.NOT_A_LINE
-					|| analysis == LinePointAnalysis.IS_A_LINE)
+			if (analysis == LinePointAnalysis.NOT_A_LINE || analysis == LinePointAnalysis.IS_A_LINE)
 			{
 				if (analysis == LinePointAnalysis.NOT_A_LINE)
 				{
@@ -298,14 +284,12 @@ public class TestStepper
 		{
 			return LinePointAnalysis.TOO_FEW_POINTS;
 		}
-		double length = Vector3D.distance(points.get(0),
-				points.get(points.size() - 1));
+		double length = Vector3D.distance(points.get(0), points.get(points.size() - 1));
 		if (length < accuracy * ACCURACY_MULTIPIER)
 		{
 			return LinePointAnalysis.TO_SHORT;
 		}
-		LinearEquasion line = LinearEquasionFactory.getEquasion(points.get(0),
-				points.get(points.size() - 1));
+		LinearEquasion line = LinearEquasionFactory.getEquasion(points.get(0), points.get(points.size() - 1));
 		for (Vector3D point : points)
 		{
 			if (!line.isPointOnLine(point, accuracy))

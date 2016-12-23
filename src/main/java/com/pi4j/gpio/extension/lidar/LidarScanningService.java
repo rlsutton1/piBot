@@ -6,6 +6,7 @@ import java.util.concurrent.BrokenBarrierException;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.robot.rover.LidarObservation;
@@ -25,7 +26,7 @@ public class LidarScanningService implements Runnable
 	int scanStepSkip = 8;
 
 	public LidarScanningService(GrovePiProvider grove, StepperMotor stepper, Config config)
-			throws InterruptedException, IOException, BrokenBarrierException
+			throws InterruptedException, IOException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 		synchronized (sync)
 		{

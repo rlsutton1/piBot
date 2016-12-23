@@ -38,16 +38,18 @@ public class MovingLidarObservationBuffer
 				if (obs.getVector().equals(resolvedObservation))
 				{
 					notDup = false;
+					break;
 				}
 			}
 			if (notDup)
 			{
 				observations.add(new LidarObservation(resolvedObservation, observation.isStartOfScan()));
 
-			}else
+			} else
 			{
-//				System.out.println("Error Error, duplicate observation in buffer " + resolvedObservation
-//						+ " buffer size " + observations.size());
+				// System.out.println("Error Error, duplicate observation in
+				// buffer " + resolvedObservation
+				// + " buffer size " + observations.size());
 
 			}
 
@@ -76,8 +78,8 @@ public class MovingLidarObservationBuffer
 		{
 			Vector3D worldFrame = observation.getVector();
 
-			translatedObservations.add(new LidarObservation(frameRotation.applyInverseTo(worldFrame
-					.subtract(frameTranslation)), false));
+			translatedObservations.add(
+					new LidarObservation(frameRotation.applyInverseTo(worldFrame.subtract(frameTranslation)), false));
 		}
 		return translatedObservations;
 	}

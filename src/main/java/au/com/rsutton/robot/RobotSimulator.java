@@ -237,4 +237,11 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
+	@Override
+	public void removeMessageListener(RobotListener listener)
+	{
+		this.listeners.remove(listener);
+
+	}
+
 }

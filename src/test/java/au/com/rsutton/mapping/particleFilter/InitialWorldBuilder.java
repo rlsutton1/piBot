@@ -32,6 +32,10 @@ public class InitialWorldBuilder implements RobotListener
 
 		try
 		{
+			robot.setHeading(0);
+			robot.freeze(false);
+			robot.publishUpdate();
+			Thread.sleep(10000);
 			robot.freeze(true);
 			robot.publishUpdate();
 			Thread.sleep(3000);
@@ -39,8 +43,21 @@ public class InitialWorldBuilder implements RobotListener
 			robot.addMessageListener(this);
 
 			Thread.sleep(20000);
+
 			robot.freeze(false);
+			robot.setHeading(120);
 			robot.publishUpdate();
+			Thread.sleep(10000);
+
+			robot.freeze(true);
+			robot.publishUpdate();
+			Thread.sleep(20000);
+
+			robot.freeze(false);
+
+			robot.publishUpdate();
+
+			robot.removeMessageListener(this);
 
 		} catch (InterruptedException e)
 		{

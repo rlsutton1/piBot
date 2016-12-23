@@ -2,8 +2,6 @@ package com.pi4j.gpio.extension.adafruit;
 
 import java.io.IOException;
 
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-
 import com.pi4j.io.gpio.GpioProvider;
 import com.pi4j.io.gpio.GpioProviderBase;
 import com.pi4j.io.gpio.Pin;
@@ -14,7 +12,9 @@ import com.pi4j.io.gpio.exception.UnsupportedPinModeException;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import com.pi4j.io.i2c.impl.I2CBusImplBanana;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
 /*
  * #%L
@@ -87,11 +87,12 @@ public class Adafruit16PwmProvider extends GpioProviderBase implements GpioProvi
 	private I2CBus bus;
 	private I2CDevice device;
 
-	public Adafruit16PwmProvider(int busNumber, int address) throws IOException, InterruptedException
+	public Adafruit16PwmProvider(int busNumber, int address)
+			throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		// create I2C communications bus instance
 		// default = 0x40
-		bus = I2CBusImplBanana.getBus(busNumber);
+		bus = I2CFactory.getInstance(busNumber);
 
 		// create I2C device instance
 		device = new SynchronizedDeviceWrapper(bus.getDevice(address));
@@ -105,7 +106,6 @@ public class Adafruit16PwmProvider extends GpioProviderBase implements GpioProvi
 		// safe default for analogue servos
 		setPWMFreq(25);
 
-
 	}
 
 	public void setPWMFreq(double freq) throws InterruptedException, IOException
@@ -118,7 +118,7 @@ public class Adafruit16PwmProvider extends GpioProviderBase implements GpioProvi
 
 		System.out.println("Setting PWM frequency to " + freq + " Hz");
 		System.out.println("Estimated pre-scale: " + prescaleval);
-		int prescale =(int) (prescaleval + 0.5);
+		int prescale = (int) (prescaleval + 0.5);
 
 		System.out.println("Final pre-scale: " + prescale);
 

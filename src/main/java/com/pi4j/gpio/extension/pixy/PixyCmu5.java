@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-import au.com.rsutton.i2c.I2cSettings;
-
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import com.pi4j.io.i2c.impl.I2CBusImplBanana;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+import au.com.rsutton.i2c.I2cSettings;
 
 public class PixyCmu5
 {
@@ -19,17 +19,16 @@ public class PixyCmu5
 	private I2CBus bus;
 	private I2CDevice pixyDevice;
 
-	public void setup() throws IOException
+	public void setup() throws IOException, UnsupportedBusNumberException
 	{
 
 		// create I2C communications bus instance
-		bus = I2CBusImplBanana.getBus(I2cSettings.busNumber);
+		bus = I2CFactory.getInstance(I2cSettings.busNumber);
 
 		// create I2C device instance
 		pixyDevice = new SynchronizedDeviceWrapper(bus.getDevice(0x54));
 
 	}
-
 
 	public Frame getFrame(byte[] bytes)
 	{
@@ -56,7 +55,7 @@ public class PixyCmu5
 	public List<Frame> getFrames() throws IOException
 	{
 
-		List<Frame> frames = new LinkedList<Frame>();
+		List<Frame> frames = new LinkedList<>();
 		byte[] bytes = new byte[FRAME_SIZE * MAX_FRAMES];
 
 		// read data from pixy
@@ -87,8 +86,7 @@ public class PixyCmu5
 				byte[] tempBytes = new byte[FRAME_SIZE];
 				for (int tempByteOffset = 0; tempByteOffset < FRAME_SIZE; tempByteOffset++)
 				{
-					tempBytes[tempByteOffset] = bytes[byteOffset
-							+ tempByteOffset];
+					tempBytes[tempByteOffset] = bytes[byteOffset + tempByteOffset];
 				}
 				Frame frame = getFrame(tempBytes);
 				if (frame != null)
@@ -109,8 +107,7 @@ public class PixyCmu5
 		}
 		if (frames.size() == 0)
 		{
-			System.out
-					.println("No frames from pixy, did you remove the lense cover?");
+			System.out.println("No frames from pixy, did you remove the lense cover?");
 		}
 
 		return frames;
@@ -118,7 +115,8 @@ public class PixyCmu5
 
 	public int convertBytesToInt(int msb, int lsb)
 	{
-		// System.out.println(Integer.toHexString(msb)+" "+Integer.toHexString(lsb));
+		// System.out.println(Integer.toHexString(msb)+"
+		// "+Integer.toHexString(lsb));
 		if (msb < 0)
 			msb += 256;
 		int value = msb * 256;

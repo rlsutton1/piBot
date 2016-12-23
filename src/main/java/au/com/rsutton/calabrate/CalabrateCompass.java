@@ -2,6 +2,12 @@ package au.com.rsutton.calabrate;
 
 import java.io.IOException;
 
+import com.pi4j.gpio.extension.grovePi.GrovePiPin;
+import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
+import com.pi4j.gpio.extension.lsm303.CompassLSM303;
+import com.pi4j.io.gpio.PinMode;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -11,11 +17,6 @@ import au.com.rsutton.i2c.I2cSettings;
 import au.com.rsutton.robot.rover.WheelController;
 import au.com.rsutton.robot.rover.WheelFactory;
 
-import com.pi4j.gpio.extension.grovePi.GrovePiPin;
-import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
-import com.pi4j.gpio.extension.lsm303.CompassLSM303;
-import com.pi4j.io.gpio.PinMode;
-
 public class CalabrateCompass
 {
 
@@ -24,40 +25,34 @@ public class CalabrateCompass
 	private WheelController rightWheel;
 	private WheelController leftWheel;
 
-	public CalabrateCompass() throws IOException, InterruptedException
+	public CalabrateCompass() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		Config config = new Config();
-		
+
 		grove = new GrovePiProvider(I2cSettings.busNumber, 4);
 
 		grove.setMode(GrovePiPin.GPIO_A1, PinMode.ANALOG_INPUT);
 
 		compass = new CompassLSM303(config);
 
-		rightWheel = WheelFactory.setupRightWheel(grove,config);
+		rightWheel = WheelFactory.setupRightWheel(grove, config);
 
-		leftWheel = WheelFactory.setupLeftWheel(grove,config);
+		leftWheel = WheelFactory.setupLeftWheel(grove, config);
 
 		compass.startCalabration();
-		rightWheel.setSpeed(new Speed(new Distance(100, DistanceUnit.CM), Time
-				.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(-100, DistanceUnit.CM), Time
-				.perSecond()));
+		rightWheel.setSpeed(new Speed(new Distance(100, DistanceUnit.CM), Time.perSecond()));
+		leftWheel.setSpeed(new Speed(new Distance(-100, DistanceUnit.CM), Time.perSecond()));
 		Thread.sleep(15000);
 
 		compass.finishcalabration();
-		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
-		
-		compass.saveConfig();
-		
-		config.save();
-		
-		System.exit(0);
+		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
-		
+		compass.saveConfig();
+
+		config.save();
+
+		System.exit(0);
 
 	}
 }

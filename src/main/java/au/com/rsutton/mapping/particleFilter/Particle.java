@@ -1,5 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -22,6 +23,7 @@ public class Particle
 	private double headingNoise;
 	private double totalDistanceTravelled = 0;
 	private double totalHeadingChange = 0;
+	List<ScanReference> scanReferences = new LinkedList<>();
 
 	public Particle(double x, double y, double heading, double distanceNoise, double headingNoise)
 	{
@@ -31,6 +33,24 @@ public class Particle
 		this.heading = heading;
 		this.distanceNoise = distanceNoise;
 		this.headingNoise = headingNoise;
+	}
+
+	public Particle(Particle selectedParticle)
+	{
+		this.x = selectedParticle.x;
+		this.y = selectedParticle.y;
+		this.heading = selectedParticle.heading;
+		this.distanceNoise = selectedParticle.distanceNoise;
+		this.headingNoise = selectedParticle.headingNoise;
+
+		// inherit scanReferences from the selectedParticle
+		scanReferences.addAll(selectedParticle.scanReferences);
+
+	}
+
+	public List<ScanReference> getScanReferences()
+	{
+		return scanReferences;
 	}
 
 	public void move(ParticleUpdate update)
@@ -232,6 +252,27 @@ public class Particle
 	public int getSampleCount()
 	{
 		return (int) totalObservations;
+
+	}
+
+	public void addScanReference(final ParticleFilterObservationSet observations)
+	{
+		Pose pose = new Pose(x, y, heading);
+		scanReferences.add(new ScanReference()
+		{
+
+			@Override
+			public Pose getScanOrigin()
+			{
+				return pose;
+			}
+
+			@Override
+			public ParticleFilterObservationSet getScan()
+			{
+				return observations;
+			}
+		});
 
 	}
 

@@ -7,6 +7,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.gpio.extension.lidar.LidarScanner;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.i2c.I2cSettings;
@@ -17,7 +18,8 @@ public class CalabrateLidarManual
 	private LidarScanner lidar;
 	volatile private double currentReading;
 
-	public CalabrateLidarManual() throws IOException, InterruptedException, BrokenBarrierException
+	public CalabrateLidarManual()
+			throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 		Config config = new Config();
 

@@ -5,6 +5,7 @@ import java.util.concurrent.BrokenBarrierException;
 
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.gpio.extension.lidar.LidarScanner;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.i2c.I2cSettings;
@@ -15,7 +16,8 @@ public class CalabrateLidarAngles
 	private LidarScanner lidar;
 	volatile private double currentReading;
 
-	public CalabrateLidarAngles() throws IOException, InterruptedException, BrokenBarrierException
+	public CalabrateLidarAngles()
+			throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 		Config config = new Config();
 

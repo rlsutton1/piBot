@@ -3,8 +3,6 @@ package com.pi4j.gpio.extension.grovePi;
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
 
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-
 import com.pi4j.io.gpio.GpioProvider;
 import com.pi4j.io.gpio.GpioProviderBase;
 import com.pi4j.io.gpio.Pin;
@@ -14,7 +12,10 @@ import com.pi4j.io.gpio.exception.InvalidPinException;
 import com.pi4j.io.gpio.exception.UnsupportedPinModeException;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
-import com.pi4j.io.i2c.impl.I2CBusImplBanana;
+import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
 public class GrovePiProvider extends GpioProviderBase implements GpioProvider
 {
@@ -38,8 +39,8 @@ public class GrovePiProvider extends GpioProviderBase implements GpioProvider
 
 	Semaphore lock = new Semaphore(1, true);
 
-	public GrovePiProvider(int busNumber, int address) throws IOException,
-			InterruptedException
+	public GrovePiProvider(int busNumber, int address)
+			throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		// TODO: reset GrovePi
 
@@ -47,7 +48,7 @@ public class GrovePiProvider extends GpioProviderBase implements GpioProvider
 
 		// create I2C communications bus instance
 		// default = 0x04
-		bus = I2CBusImplBanana.getBus(busNumber);
+		bus = I2CFactory.getInstance(busNumber);
 
 		// create I2C device instance
 		device = bus.getDevice(address);
@@ -98,8 +99,7 @@ public class GrovePiProvider extends GpioProviderBase implements GpioProvider
 	private void sendPinModeCommand(Pin pin, PinMode mode)
 	{
 		int value = PIN_MODE_INPUT;
-		if (mode == PinMode.ANALOG_OUTPUT || mode == PinMode.PWM_OUTPUT
-				|| mode == PinMode.DIGITAL_OUTPUT)
+		if (mode == PinMode.ANALOG_OUTPUT || mode == PinMode.PWM_OUTPUT || mode == PinMode.DIGITAL_OUTPUT)
 		{
 			value = PIN_MODE_OUTPUT;
 		}
@@ -143,8 +143,7 @@ public class GrovePiProvider extends GpioProviderBase implements GpioProvider
 			throw new InvalidPinException(pin);
 
 		byte[] write = new byte[] {
-				DIGITAL_WRITE_COMMAND, (byte) pin.getAddress(), (byte) value,
-				UNUSED };
+				DIGITAL_WRITE_COMMAND, (byte) pin.getAddress(), (byte) value, UNUSED };
 		managedIO(write, null);
 		getPinCache(pin).setAnalogValue(value);
 
@@ -206,8 +205,7 @@ public class GrovePiProvider extends GpioProviderBase implements GpioProvider
 			throw new InvalidPinException(pin);
 
 		byte[] write = new byte[] {
-				ANALOGUE_WRITE_COMMAND, (byte) pin.getAddress(), (byte) value,
-				UNUSED };
+				ANALOGUE_WRITE_COMMAND, (byte) pin.getAddress(), (byte) value, UNUSED };
 		managedIO(write, null);
 
 		getPinCache(pin).setAnalogValue(value);

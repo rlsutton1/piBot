@@ -1,6 +1,10 @@
-package com.pi4j.gpio.extension.lidar;
+package au.com.rsutton.robot.spinner;
 
 import java.io.IOException;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
@@ -9,8 +13,9 @@ import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
+import au.com.rsutton.robot.rover.LidarObservation;
 
-public class Lidar
+public class Lidar implements Runnable
 {
 
 	private static final int LIDAR_ADDR = 0x62;
@@ -26,9 +31,11 @@ public class Lidar
 	// think y =mx+c
 	private Integer calabrationC;
 	private Double calabrationM;
+	private Spinner spinner;
 
-	public Lidar(Config config) throws InterruptedException, IOException, UnsupportedBusNumberException
+	public Lidar(Spinner spinner, Config config) throws InterruptedException, IOException, UnsupportedBusNumberException
 	{
+		this.spinner = spinner;
 		calabrationC = config.loadSetting("lidar.c", 30);
 
 		calabrationM = config.loadSetting("lidar.m", 1.0);
@@ -41,6 +48,8 @@ public class Lidar
 		lidarDevice = new SynchronizedDeviceWrapper(bus.getDevice(LIDAR_ADDR));
 
 		setupContinuous(false);
+
+		new Thread(this, "ranger").start();
 
 	}
 
@@ -87,8 +96,7 @@ public class Lidar
 
 		} catch (IOException e)
 		{
-			Thread.sleep(20);
-			lidarDevice.read(LIDAR_DISTANCE_REGISTER, distance, 0, 2);
+			// ignore this
 		}
 		int d1 = distance[0];
 		if (d1 < 0)
@@ -105,6 +113,47 @@ public class Lidar
 
 		value = (int) ((value * calabrationM) + calabrationC);
 		return value;
+	}
+
+	@Override
+	public void run()
+	{
+		int lastReading = 0;
+		boolean stop = false;
+		while (!stop)
+		{
+			try
+			{
+				int reading = getLatestReading();
+				if (reading != lastReading)
+				{
+					if (spinner.isValidPosition())
+					{
+						publishPoint(spinner.getCurrentPosition(), reading);
+					}
+				}
+				lastReading = reading;
+				Thread.sleep(5);
+			} catch (IOException | InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	private void publishPoint(long position, long range)
+	{
+		double angle = (position / (200.0 * 8)) * 360;
+		angle += 180;
+
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0.0, 0.0, Math.toRadians(angle));
+
+		Vector3D temp = rotation.applyInverseTo(new Vector3D(0, range, 0));
+		LidarObservation lo = new LidarObservation(temp, false);
+
+		lo.publish();
+
 	}
 
 }

@@ -7,15 +7,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.pi4j.io.i2c.I2CBus;
+import com.pi4j.io.i2c.I2CDevice;
+import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.i2c.I2cSettings;
-
-import com.pi4j.io.i2c.I2CBus;
-import com.pi4j.io.i2c.I2CDevice;
-import com.pi4j.io.i2c.impl.I2CBusImplBanana;
 
 public class CompassLSM303 implements Runnable
 {
@@ -85,7 +86,7 @@ public class CompassLSM303 implements Runnable
 
 	private Config config;
 
-	public CompassLSM303(Config config)
+	public CompassLSM303(Config config) throws UnsupportedBusNumberException
 	{
 		try
 		{
@@ -114,7 +115,7 @@ public class CompassLSM303 implements Runnable
 
 	}
 
-	private void setup() throws IOException, InterruptedException
+	private void setup() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		minY = config.loadSetting("Compass.min.y", -251);
 		maxY = config.loadSetting("Compass.max.y", 108);
@@ -125,7 +126,7 @@ public class CompassLSM303 implements Runnable
 		xAxisCorrection = new CompassAxisCalibractionCorrection(minX, maxX);
 
 		// create I2C communications bus instance
-		bus = I2CBusImplBanana.getBus(I2cSettings.busNumber);
+		bus = I2CFactory.getInstance(I2cSettings.busNumber);
 
 		// create I2C device instance
 		magDevice = new SynchronizedDeviceWrapper(bus.getDevice(LSM303_MAG));
@@ -190,6 +191,7 @@ public class CompassLSM303 implements Runnable
 		return currentCompassData.get();
 	}
 
+	@Override
 	public void run()
 	{
 		try
@@ -311,10 +313,10 @@ public class CompassLSM303 implements Runnable
 		float roll = (float) Math.asin(accelValue[Y] / Math.cos(pitch));
 
 		float xh = (float) (magValue[X] * Math.cos(pitch) + magValue[Z] * Math.sin(pitch));
-		float yh = (float) (magValue[X] * Math.sin(roll) * Math.sin(pitch) + magValue[Y] * Math.cos(roll) - magValue[Z]
-				* Math.sin(roll) * Math.cos(pitch));
-		float zh = (float) (-magValue[X] * Math.cos(roll) * Math.sin(pitch) + magValue[Y] * Math.sin(roll) + magValue[Z]
-				* Math.cos(roll) * Math.cos(pitch));
+		float yh = (float) (magValue[X] * Math.sin(roll) * Math.sin(pitch) + magValue[Y] * Math.cos(roll)
+				- magValue[Z] * Math.sin(roll) * Math.cos(pitch));
+		float zh = (float) (-magValue[X] * Math.cos(roll) * Math.sin(pitch) + magValue[Y] * Math.sin(roll)
+				+ magValue[Z] * Math.cos(roll) * Math.cos(pitch));
 
 		float heading = (float) (180 * Math.atan2(yh, xh) / Math.PI);
 		if (yh >= 0)
@@ -325,7 +327,7 @@ public class CompassLSM303 implements Runnable
 
 	private void getLSM303_mag(int[] rawValues) throws IOException
 	{
-		magDevice.write((byte) OUT_X_H_M);
+		magDevice.write(OUT_X_H_M);
 		byte[] bytes = new byte[6];
 		magDevice.read(bytes, 0, 6);
 

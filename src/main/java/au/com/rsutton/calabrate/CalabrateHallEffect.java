@@ -3,18 +3,20 @@ package au.com.rsutton.calabrate;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 
-import au.com.rsutton.entryPoint.controllers.Pid;
-
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.io.gpio.PinMode;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.controllers.Pid;
 
 public class CalabrateHallEffect
 {
 
 	private static final int HALL_EFFECT_ZERO = 500;
 
-	public CalabrateHallEffect() throws IOException, InterruptedException, BrokenBarrierException
+	public CalabrateHallEffect()
+			throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 		GrovePiProvider grove = new GrovePiProvider(2, 4);// I2cSettings.busNumber,
 															// 4);
@@ -50,8 +52,8 @@ public class CalabrateHallEffect
 
 			if (i % 30 == 0)
 			{
-				System.out.println(((System.currentTimeMillis() - previous) / 30) + " " + target + " " + actual + " "
-						+ pwm);
+				System.out.println(
+						((System.currentTimeMillis() - previous) / 30) + " " + target + " " + actual + " " + pwm);
 				previous = System.currentTimeMillis();
 			}
 

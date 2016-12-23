@@ -1,5 +1,7 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.util.List;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.probability.ProbabilityMap;
@@ -29,4 +31,8 @@ public interface ParticleFilterIfc
 			double compassAdjustment);
 
 	public abstract void setParticleCount(int max);
+
+	public abstract void addPendingScan(ParticleFilterObservationSet par);
+
+	public abstract List<Particle> getParticles();
 }

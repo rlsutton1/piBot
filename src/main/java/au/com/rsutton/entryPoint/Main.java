@@ -7,6 +7,7 @@ import java.util.concurrent.BrokenBarrierException;
 
 import com.pi4j.gpio.extension.adafruit.ADS1115;
 import com.pi4j.gpio.extension.adafruit.Adafruit16PwmProvider;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.calabrate.CalabrateCompass;
 import au.com.rsutton.calabrate.CalabrateHallEffect;
@@ -22,7 +23,8 @@ public class Main
 {
 	boolean distanceOk = true;
 
-	public static void main(String[] args) throws InterruptedException, IOException, BrokenBarrierException
+	public static void main(String[] args)
+			throws InterruptedException, IOException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 		// I2CFactory.setFactory(new I2CFactoryProviderBanana());
 
@@ -83,14 +85,15 @@ public class Main
 	//
 	// }
 
-	private static Adafruit16PwmProvider setupPwm() throws IOException, InterruptedException
+	private static Adafruit16PwmProvider setupPwm()
+			throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		Adafruit16PwmProvider provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 		provider.setPWMFreq(30);
 		return provider;
 	}
 
-	private static void sonarTest() throws IOException, InterruptedException
+	private static void sonarTest() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
 		ADS1115 ads = new ADS1115(I2cSettings.busNumber, 0x48);
 

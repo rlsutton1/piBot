@@ -15,4 +15,6 @@ public interface RobotInterface
 
 	void addMessageListener(RobotListener listener);
 
+	void removeMessageListener(RobotListener listener);
+
 }

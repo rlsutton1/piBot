@@ -8,6 +8,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
 public class PixyLaserRangeService implements Runnable
 {
 
@@ -19,15 +21,14 @@ public class PixyLaserRangeService implements Runnable
 
 	private final static Object sync = new Object();
 
-	public PixyLaserRangeService(int[] allowedAngles) throws IOException
+	public PixyLaserRangeService(int[] allowedAngles) throws IOException, UnsupportedBusNumberException
 	{
 		this.allowedAngles = allowedAngles;
 		availableData.set(new LinkedList<Coordinate>());
 		pixy = new PixyCmu5();
 		pixy.setup();
 
-		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this,
-				10000, 250, TimeUnit.MILLISECONDS);
+		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 10000, 250, TimeUnit.MILLISECONDS);
 
 	}
 
@@ -49,20 +50,18 @@ public class PixyLaserRangeService implements Runnable
 		{
 			List<Frame> frames = pixy.getFrames();
 			System.out.println("Got " + frames.size());
-			List<Coordinate> coords = new LinkedList<Coordinate>();
+			List<Coordinate> coords = new LinkedList<>();
 
 			// System.out.println("pixy frames = " + frames.size());
 			for (Frame frame : frames)
 			{
 				if (frame.yCenter > PixyLaserRange.Y_CENTER && frame.height > 0)
 				{
-					Coordinate coord = new Coordinate(frame.xCenter,
-							frame.yCenter);
+					Coordinate coord = new Coordinate(frame.xCenter, frame.yCenter);
 					boolean found = false;
 					for (Coordinate knownCoord : coords)
 					{
-						if (coord.x > knownCoord.getAverageX() - 10
-								&& coord.x < knownCoord.getAverageX() + 10)
+						if (coord.x > knownCoord.getAverageX() - 10 && coord.x < knownCoord.getAverageX() + 10)
 						{
 							knownCoord.y += coord.y;
 							knownCoord.x += coord.x;
@@ -79,7 +78,7 @@ public class PixyLaserRangeService implements Runnable
 				}
 			}
 
-			List<Coordinate> result = new LinkedList<Coordinate>();
+			List<Coordinate> result = new LinkedList<>();
 
 			for (Coordinate coord : coords)
 			{

@@ -24,6 +24,10 @@ public class MapBuilder implements ParticleFilterListener
 
 	private NavigatorControl navigatorControl;
 
+	private ParticleFilterIfc particleFilter;
+
+	private ScanReferenceChecker scanReferenceChecker;
+
 	MapBuilder(ProbabilityMap map, ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
 	{
 		world = map;
@@ -31,6 +35,10 @@ public class MapBuilder implements ParticleFilterListener
 		this.navigatorControl = navigatorControl;
 
 		panel.addDataSource(new WrapperForObservedMapInMapUI(world));
+
+		this.particleFilter = particleFilter;
+
+		scanReferenceChecker = new ScanReferenceChecker();
 
 		particleFilter.addListener(this);
 	}
@@ -44,20 +52,20 @@ public class MapBuilder implements ParticleFilterListener
 			ParticleFilterObservationSet particleFilterObservationSet)
 	{
 
-		if (stdDev < 30 && Math.abs(lastHeading - averageHeading) < 3)
+		scanReferenceChecker.check(particleFilter.getParticles(), new ObservationListener()
 		{
-			if (navigatorControl.isStopped())
+
+			@Override
+			public void useScan(ParticleFilterObservationSet observation, Pose pose)
 			{
-				Vector3D pos = averagePosition;
-
-				Particle particle = new Particle(pos.getX(), pos.getY(), averageHeading, 0, 0);
-
-				new ScanMatcher(world, particleFilterObservationSet, 0);
+				Vector3D pos = new Vector3D(pose.getX(), pose.getY(), 0);
 
 				for (ScanObservation obs : particleFilterObservationSet.getObservations())
 				{
 
-					Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
+					Particle particle = new Particle(pose.getX(), pose.getY(), pose.getHeading(), 0, 0);
+
+					Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pose.getHeading()))
 							.applyTo(obs.getVector());
 					point = pos.add(point);
 
@@ -67,17 +75,28 @@ public class MapBuilder implements ParticleFilterListener
 						world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5, 5);
 					}
 				}
+
 			}
+		});
+		if (navigatorControl.isStopped())
+		{
+
+			particleFilter.addPendingScan(particleFilterObservationSet);
+
 		}
+
 		lastHeading = (int) averageHeading;
 
-		if (doWeNeedToStopWhileScanningCatchesUp(averagePosition, averageHeading))
-		{
-			navigatorControl.stop();
-		} else
-		{
-			navigatorControl.go();
-		}
+		// if (doWeNeedToStopWhileScanningCatchesUp(averagePosition,
+		// averageHeading))
+		// {
+		// navigatorControl.stop();
+		// } else
+		// {
+		// navigatorControl.go();
+		// }
+
+		navigatorControl.go();
 
 		if (navigatorControl.hasReachedDestination() || navigatorControl.isStuck())
 		{

@@ -12,6 +12,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.io.gpio.PinMode;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.robot.stepper.StepperMotor;
@@ -36,7 +37,7 @@ public class LidarScanner
 	private GrovePiProvider grove;
 
 	public LidarScanner(StepperMotor stepper, Config config, GrovePiProvider grove)
-			throws InterruptedException, IOException, BrokenBarrierException
+			throws InterruptedException, IOException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 
 		this.grove = grove;

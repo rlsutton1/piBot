@@ -1,18 +1,17 @@
 package au.com.rsutton.hazelcast;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.mapping.particleFilter.ScanObservation;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
-import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.LidarObservation;
-
 import com.google.common.base.Objects;
 import com.pi4j.gpio.extension.lsm303.HeadingData;
+
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.LidarObservation;
 
 public class RobotLocation extends MessageBase<RobotLocation> implements ParticleFilterObservationSet
 {
@@ -48,7 +47,8 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(RobotLocation.class).add("x", x).add("y", y).add("heading", deadReaconingHeading).toString();
+		return Objects.toStringHelper(RobotLocation.class).add("x", x).add("y", y).add("heading", deadReaconingHeading)
+				.toString();
 	}
 
 	public void setX(Distance distance)
@@ -73,6 +73,7 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 		return y;
 	}
 
+	@Override
 	public Angle getDeadReaconingHeading()
 	{
 		return deadReaconingHeading;
@@ -106,11 +107,12 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 
 	}
 
+	@Override
 	public List<ScanObservation> getObservations()
 	{
-	List<ScanObservation>	obs = new LinkedList<>();
-	obs.addAll((Collection<? extends ScanObservation>) observations);
-		
+		List<ScanObservation> obs = new LinkedList<>();
+		obs.addAll(observations);
+
 		return obs;
 	}
 
@@ -125,6 +127,7 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 
 	}
 
+	@Override
 	public HeadingData getCompassHeading()
 	{
 		return compassHeading;

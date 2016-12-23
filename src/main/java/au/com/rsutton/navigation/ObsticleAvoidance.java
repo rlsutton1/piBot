@@ -6,6 +6,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -36,9 +37,14 @@ public class ObsticleAvoidance
 	private Vector3D sp1;
 	private Vector3D sp2;
 
+	final List<LidarObservation> currentObservations = new CopyOnWriteArrayList<>();
+
+	double distanceForCorrection = 40;
+	double requiredObsticalClearance = 30;
+
 	ObsticleAvoidance(RobotInterface robot)
 	{
-		scanBuffer = new MovingLidarObservationMultiBuffer(2);
+		scanBuffer = new MovingLidarObservationMultiBuffer(120);
 
 		robot.addMessageListener(new RobotListener()
 		{
@@ -50,11 +56,10 @@ public class ObsticleAvoidance
 
 				currentHeading = observation.getDeadReaconingHeading();
 
-				List<LidarObservation> observations = scanBuffer.getObservations(observation);
+				currentObservations.clear();
+				currentObservations.addAll(scanBuffer.getObservations(observation));
 
-				double requiredObsticalClearance = 50;
-
-				List<LidarObservation> closest = getClosest(observations, requiredObsticalClearance + 10);
+				List<LidarObservation> closest = getClosest(currentObservations, requiredObsticalClearance + 10);
 				if (closest.size() == 2)
 				{
 
@@ -84,8 +89,6 @@ public class ObsticleAvoidance
 					double distanceToObsticle = p1.getDisctanceCm();
 					if (distanceToObsticle < requiredObsticalClearance)
 					{
-
-						double distanceForCorrection = 80;
 
 						correctionAngle = Math.toDegrees(
 								Math.atan2(requiredObsticalClearance - distanceToObsticle, distanceForCorrection));
@@ -164,7 +167,7 @@ public class ObsticleAvoidance
 		});
 	}
 
-	double getCorrectedHeading(double relativeHeading)
+	CourseCorrection getCorrectedHeading(double relativeHeading, double desiredSpeed)
 	{
 		Double correctedRelativeHeading = relativeHeading;
 		Double away = awayFromObsticle;
@@ -199,8 +202,24 @@ public class ObsticleAvoidance
 			}
 			correction = correctedRelativeHeading;
 		}
+		double speed = desiredSpeed;
+		if (sp1 != null)
+		{
+			if (sp1.getNorm() < requiredObsticalClearance * 0.9)
+			{
+				speed = desiredSpeed * 0.5;
+			}
+			if (sp1.getNorm() < requiredObsticalClearance * 0.65)
+			{
+				speed = 0;
+			}
+			if (sp1.getNorm() < requiredObsticalClearance * .35)
+			{
+				speed = desiredSpeed * -0.5;
+			}
+		}
+		return new CourseCorrection(correctedRelativeHeading, speed);
 
-		return correctedRelativeHeading;
 	}
 
 	public DataSourceMap getHeadingMapDataSource(final ParticleFilterIfc pf, RobotInterface robot)
@@ -226,6 +245,7 @@ public class ObsticleAvoidance
 				// draw lidar observation lines
 
 				double pfh = pf.getAverageHeading();
+				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh));
 
 				if (awayFromObsticle != null)
 				{
@@ -251,12 +271,23 @@ public class ObsticleAvoidance
 					graphics.setColor(new Color(0, 255, 0));
 					// correctionAngle
 
-					Vector3D p1 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh)).applyTo(sp1);
-					Vector3D p2 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh)).applyTo(sp2);
+					Vector3D p1 = rotation.applyTo(sp1);
+					Vector3D p2 = rotation.applyTo(sp2);
 
 					graphics.drawLine((int) ((pointOriginX + (p1.getX() * scale))),
 							(int) ((pointOriginY + (p1.getY() * scale))), (int) ((pointOriginX + (p2.getX() * scale))),
 							(int) ((pointOriginY + (p2.getY() * scale))));
+				}
+
+				// draw scan buffer points
+				graphics.setColor(Color.GREEN);
+
+				for (LidarObservation point : currentObservations)
+				{
+					Vector3D p1 = rotation.applyTo(point.getVector());
+					int x = (int) ((pointOriginX + (p1.getX() * scale)));
+					int y = (int) ((pointOriginY + (p1.getY() * scale)));
+					graphics.drawLine(x, y, x + 3, y + 3);
 				}
 			}
 

@@ -5,6 +5,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 
@@ -19,6 +21,10 @@ public class RoutePlanner
 
 	private Dynamic2dSparseArray route;
 
+	private int targetX;
+
+	private int targetY;
+
 	public RoutePlanner(ProbabilityMap world)
 	{
 		this.world = world;
@@ -26,6 +32,9 @@ public class RoutePlanner
 
 	public void createRoute(int toX, int toY, RouteOption routeOption)
 	{
+		this.targetX = toX;
+		this.targetY = toY;
+
 		List<ExpansionPoint> immediatePoints = new LinkedList<>();
 		List<ExpansionPoint> deferredPoints = new LinkedList<>();
 		int wall = 10000;
@@ -217,5 +226,10 @@ public class RoutePlanner
 	public boolean hasPlannedRoute()
 	{
 		return route != null;
+	}
+
+	public double getDistanceToTarget(int pfX, int pfY)
+	{
+		return new Vector3D(pfX - targetX, pfY - targetY, 0).getNorm();
 	}
 }

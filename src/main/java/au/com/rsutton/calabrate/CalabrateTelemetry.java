@@ -7,6 +7,12 @@ import java.util.concurrent.BrokenBarrierException;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.pi4j.gpio.extension.grovePi.GrovePiPin;
+import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
+import com.pi4j.gpio.extension.lidar.LidarScanner;
+import com.pi4j.io.gpio.PinMode;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -17,12 +23,6 @@ import au.com.rsutton.robot.rover.WheelController;
 import au.com.rsutton.robot.rover.WheelFactory;
 import au.com.rsutton.robot.stepper.StepperMotor;
 
-import com.pi4j.gpio.extension.adafruit.AdafruitPCA9685;
-import com.pi4j.gpio.extension.grovePi.GrovePiPin;
-import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
-import com.pi4j.gpio.extension.lidar.LidarScanner;
-import com.pi4j.io.gpio.PinMode;
-
 public class CalabrateTelemetry
 {
 	private GrovePiProvider grove;
@@ -32,7 +32,8 @@ public class CalabrateTelemetry
 
 	// private SpeedHeadingController speedHeadingController;
 
-	public CalabrateTelemetry() throws IOException, InterruptedException, BrokenBarrierException
+	public CalabrateTelemetry()
+			throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -53,9 +54,9 @@ public class CalabrateTelemetry
 
 		leftWheel = WheelFactory.setupLeftWheel(grove, config);
 
-//		AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
-//		// address
-//		pwm.setPWMFreq(60); // Set frequency to 60 Hz
+		// AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
+		// // address
+		// pwm.setPWMFreq(60); // Set frequency to 60 Hz
 
 		StepperMotor driver = new StepperMotor(8);
 
@@ -65,8 +66,8 @@ public class CalabrateTelemetry
 
 		Thread.sleep(1000);
 
-		double reading1 = (Vector3D.distance(Vector3D.ZERO, lidar.scan(0)) + Vector3D
-				.distance(Vector3D.ZERO, lidar.scan(0))) / 2.0;
+		double reading1 = (Vector3D.distance(Vector3D.ZERO, lidar.scan(0))
+				+ Vector3D.distance(Vector3D.ZERO, lidar.scan(0))) / 2.0;
 
 		// float heading = compass.getHeading();
 
@@ -78,11 +79,9 @@ public class CalabrateTelemetry
 		Distance initialRight = rightWheel.getDistance();
 		Distance initialLeft = leftWheel.getDistance();
 
-		rightWheel.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time
-				.perSecond()));
+		rightWheel.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 
-		leftWheel.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time
-				.perSecond()));
+		leftWheel.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 
 		System.out.println("driving");
 
@@ -99,11 +98,9 @@ public class CalabrateTelemetry
 
 		System.out.println("Stopped");
 
-		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
+		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
-		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time
-				.perSecond()));
+		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
 		// speedHeadingController.setDesiredMotion(motion);
 
@@ -112,19 +109,15 @@ public class CalabrateTelemetry
 
 		Thread.sleep(1000);
 
-		double reading2 = (Vector3D.distance(Vector3D.ZERO, lidar.scan(0)) + Vector3D
-				.distance(Vector3D.ZERO, lidar.scan(0))) / 2.0;
+		double reading2 = (Vector3D.distance(Vector3D.ZERO, lidar.scan(0))
+				+ Vector3D.distance(Vector3D.ZERO, lidar.scan(0))) / 2.0;
 
 		double leftRatio = (reading1 - reading2)
-				/ (leftWheel.getDistance().convert(DistanceUnit.CM) - initialLeft
-						.convert(DistanceUnit.CM));
-		config.storeSetting("Quadrature.left",
-				leftRatio * config.loadSetting("Quadrature.left", 1.0));
+				/ (leftWheel.getDistance().convert(DistanceUnit.CM) - initialLeft.convert(DistanceUnit.CM));
+		config.storeSetting("Quadrature.left", leftRatio * config.loadSetting("Quadrature.left", 1.0));
 		double rightRatio = (reading1 - reading2)
-				/ (rightWheel.getDistance().convert(DistanceUnit.CM) - initialRight
-						.convert(DistanceUnit.CM));
-		config.storeSetting("Quadrature.right",
-				rightRatio * config.loadSetting("Quadrature.right", 1.0));
+				/ (rightWheel.getDistance().convert(DistanceUnit.CM) - initialRight.convert(DistanceUnit.CM));
+		config.storeSetting("Quadrature.right", rightRatio * config.loadSetting("Quadrature.right", 1.0));
 
 		config.save();
 

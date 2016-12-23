@@ -12,6 +12,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+import com.pi4j.gpio.extension.adafruit.GyroProvider;
+import com.pi4j.gpio.extension.grovePi.GrovePiPin;
+import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
+import com.pi4j.gpio.extension.lsm303.CompassLSM303;
+import com.pi4j.gpio.extension.lsm303.HeadingData;
+import com.pi4j.io.gpio.PinMode;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.sonar.Sonar;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -21,17 +31,7 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.i2c.I2cSettings;
-import au.com.rsutton.robot.stepper.StepperMotor;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.adafruit.GyroProvider;
-import com.pi4j.gpio.extension.grovePi.GrovePiPin;
-import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
-import com.pi4j.gpio.extension.lidar.LidarScanningService;
-import com.pi4j.gpio.extension.lsm303.CompassLSM303;
-import com.pi4j.gpio.extension.lsm303.HeadingData;
-import com.pi4j.io.gpio.PinMode;
+import au.com.rsutton.robot.spinner.Spinner;
 
 public class Rover implements Runnable, RobotLocationReporter
 {
@@ -57,7 +57,7 @@ public class Rover implements Runnable, RobotLocationReporter
 
 	Vector3D lidarTransposeOnRobotChasis = new Vector3D(0, 10, 0);
 
-	public Rover() throws IOException, InterruptedException, BrokenBarrierException
+	public Rover() throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
 
 		Config config = new Config();
@@ -107,9 +107,9 @@ public class Rover implements Runnable, RobotLocationReporter
 		// // address
 		// pwm.setPWMFreq(1000); // Set frequency to 60 Hz
 
-		StepperMotor stepper = new StepperMotor(8);
+		// StepperMotor stepper = new StepperMotor(8);
 
-		new LidarScanningService(grove, stepper, config);
+		new Spinner(200 * 8, grove, config);
 
 		new LidarObservation().addMessageListener(new MessageListener<LidarObservation>()
 		{
@@ -134,8 +134,8 @@ public class Rover implements Runnable, RobotLocationReporter
 		getSpaceAhead();
 		// pixy.getCurrentData();
 
-		speedHeadingController = new SpeedHeadingController(rightWheel, leftWheel, compass.getHeadingData()
-				.getHeading());
+		speedHeadingController = new SpeedHeadingController(rightWheel, leftWheel,
+				compass.getHeadingData().getHeading());
 
 		// listen for motion commands thru Hazelcast
 		SetMotion message = new SetMotion();
@@ -161,7 +161,7 @@ public class Rover implements Runnable, RobotLocationReporter
 
 	}
 
-	Map<Integer, Integer> distVal = new HashMap<Integer, Integer>();
+	Map<Integer, Integer> distVal = new HashMap<>();
 	int lc = 0;
 
 	void getSpaceAhead() throws IOException
@@ -234,9 +234,9 @@ public class Rover implements Runnable, RobotLocationReporter
 
 		// use pythag to calculate distance between current location and
 		// previous location
-		double distance = Math.sqrt(Math.pow(
-				reconing.getX().convert(distUnit) - previousLocation.getX().convert(distUnit), 2)
-				+ (Math.pow(reconing.getY().convert(distUnit) - previousLocation.getY().convert(distUnit), 2)));
+		double distance = Math
+				.sqrt(Math.pow(reconing.getX().convert(distUnit) - previousLocation.getX().convert(distUnit), 2)
+						+ (Math.pow(reconing.getY().convert(distUnit) - previousLocation.getY().convert(distUnit), 2)));
 
 		// scale up distance to a per second rate
 		distance = distance * (1000.0d / (now - lastTime));

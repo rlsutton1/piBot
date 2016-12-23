@@ -70,8 +70,7 @@ public class SynchronizedDeviceWrapper implements I2CDevice
 	}
 
 	@Override
-	public void write(int address, byte[] buffer, int offset, int size)
-			throws IOException
+	public void write(int address, byte[] buffer, int offset, int size) throws IOException
 	{
 		try
 		{
@@ -129,8 +128,7 @@ public class SynchronizedDeviceWrapper implements I2CDevice
 	}
 
 	@Override
-	public int read(int address, byte[] buffer, int offset, int size)
-			throws IOException
+	public int read(int address, byte[] buffer, int offset, int size) throws IOException
 	{
 		try
 		{
@@ -145,15 +143,47 @@ public class SynchronizedDeviceWrapper implements I2CDevice
 	}
 
 	@Override
-	public int read(byte[] writeBuffer, int writeOffset, int writeSize,
-			byte[] readBuffer, int readOffset, int readSize) throws IOException
+	public int read(byte[] writeBuffer, int writeOffset, int writeSize, byte[] readBuffer, int readOffset, int readSize)
+			throws IOException
 	{
 		try
 		{
 			lock.lock();
-			int ret = device.read(writeBuffer,writeOffset,writeSize,readBuffer,readOffset,readSize);
+			int ret = device.read(writeBuffer, writeOffset, writeSize, readBuffer, readOffset, readSize);
 
 			return ret;
+		} finally
+		{
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public int getAddress()
+	{
+		return device.getAddress();
+	}
+
+	@Override
+	public void write(byte[] buffer) throws IOException
+	{
+		try
+		{
+			lock.lock();
+			device.write(buffer);
+		} finally
+		{
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public void write(int address, byte[] buffer) throws IOException
+	{
+		try
+		{
+			lock.lock();
+			device.write(address, buffer);
 		} finally
 		{
 			lock.unlock();

@@ -35,8 +35,8 @@ public class ParticleFilter implements ParticleFilterIfc
 	volatile double bestRating = 0;
 
 	AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
-	final private double headingNoise;
-	final private double distanceNoise;
+	private final double headingNoise;
+	private final double distanceNoise;
 
 	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition)
@@ -107,15 +107,10 @@ public class ParticleFilter implements ParticleFilterIfc
 			double compassAdjustment)
 	{
 		lastObservation.set(observations);
-		boolean useCompass = getStdDev() > 30;
+		boolean useCompass = false;// getStdDev() > 30;
 
 		particles.parallelStream()
 				.forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
-		// for (Particle particle : particles)
-		// {
-		// particle.addObservation(currentWorld,
-		// observations,compassAdjustment);
-		// }
 
 		long now = System.currentTimeMillis();
 		if (now - lastResampe > 400)
@@ -125,7 +120,7 @@ public class ParticleFilter implements ParticleFilterIfc
 		}
 	}
 
-	synchronized private void resample(ProbabilityMap map)
+	private synchronized void resample(ProbabilityMap map)
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -147,8 +142,7 @@ public class ParticleFilter implements ParticleFilterIfc
 		{
 			for (Particle selectedParticle : particles)
 			{
-				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading(),
-						distanceNoise, headingNoise));
+				newSet.add(new Particle(selectedParticle));
 
 			}
 		} else
@@ -172,8 +166,7 @@ public class ParticleFilter implements ParticleFilterIfc
 
 				}
 				// System.out.println(selectedParticle.getRating());
-				newSet.add(new Particle(selectedParticle.getX(), selectedParticle.getY(), selectedParticle.getHeading(),
-						distanceNoise, headingNoise));
+				newSet.add(new Particle(selectedParticle));
 			}
 		}
 		bestRating = bestRatingSoFar;
@@ -455,6 +448,23 @@ public class ParticleFilter implements ParticleFilterIfc
 	{
 		this.listener = listener;
 
+	}
+
+	@Override
+	public void addPendingScan(ParticleFilterObservationSet par)
+	{
+		for (Particle particle : particles)
+		{
+			particle.addScanReference(par);
+		}
+
+	}
+
+	@Override
+	public List<Particle> getParticles()
+	{
+
+		return new LinkedList<>(particles);
 	}
 
 }

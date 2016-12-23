@@ -2,11 +2,12 @@ package com.pi4j.gpio.extension.groveMotorDriver;
 
 import java.io.IOException;
 
-import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
+
+import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
 public class GroveMotorDriver
 {
@@ -26,7 +27,7 @@ public class GroveMotorDriver
 	// I2CMotorDriver
 	private I2CDevice device;
 
-	public GroveMotorDriver() throws InterruptedException, IOException
+	public GroveMotorDriver() throws InterruptedException, IOException, UnsupportedBusNumberException
 	{
 
 		// Get I2C bus
@@ -68,8 +69,7 @@ public class GroveMotorDriver
 	// is 10, the interval time
 	// would be 40 ms
 	// ////////////////////////////////////////////////////////////////////////////////
-	public void stepperMotorEnable(int direction, int motorspeed)
-			throws IOException
+	public void stepperMotorEnable(int direction, int motorspeed) throws IOException
 	{
 		byte buffer[] = new byte[] {
 				EnableStepper, (byte) direction, (byte) motorspeed };
@@ -94,8 +94,7 @@ public class GroveMotorDriver
 	// motorSpeedA : the DC motor A speed; should be 0~100;
 	// motorSpeedB: the DC motor B speed; should be 0~100;
 
-	public void MotorSpeedSetAB(int MotorSpeedA, int MotorSpeedB)
-			throws IOException
+	public void MotorSpeedSetAB(int MotorSpeedA, int MotorSpeedB) throws IOException
 	{
 		MotorSpeedA = (MotorSpeedA);
 		MotorSpeedB = (MotorSpeedB);
@@ -128,8 +127,7 @@ public class GroveMotorDriver
 
 	}
 
-	void MotorDriectionAndSpeedSet(byte Direction, byte MotorSpeedA,
-			byte MotorSpeedB) throws IOException
+	void MotorDriectionAndSpeedSet(byte Direction, byte MotorSpeedA, byte MotorSpeedB) throws IOException
 	{ // you can adjust the driection and speed together
 		MotorDirectionSet(Direction);
 		MotorSpeedSetAB(MotorSpeedA, MotorSpeedB);
@@ -140,7 +138,7 @@ public class GroveMotorDriver
 
 		for (int i = 0; i < write.length; i++)
 		{
-			System.out.print(" "+write[i]);
+			System.out.print(" " + write[i]);
 		}
 		System.out.println();
 		device.write(write, 0, write.length);

@@ -92,19 +92,27 @@ public class Navigator implements Runnable, NavigatorControl
 			if (stopped)
 			{
 				robot.freeze(true);
+				robot.publishUpdate();
 				return;
 			}
-			double std = pf.getStdDev();
 			speed = 15;
+
+			double std = pf.getStdDev();
+			// adjust the number of particles in the particle filter based on
+			// how well localised it is
 			pf.setParticleCount(Math.max(500, (int) (7 * std)));
-			if (std < 30)
+
+			if (std < 25)
 			{
+				// the partical filter is sufficently localized
 				Vector3D ap = pf.dumpAveragePosition();
 				pfX = (int) ap.getX();
 				pfY = (int) ap.getY();
 
 				if (initialX == null)
 				{
+					// record our starting position, once the particle filter is
+					// localized the first time
 					initialX = pfX;
 					initialY = pfY;
 				}
@@ -113,11 +121,20 @@ public class Navigator implements Runnable, NavigatorControl
 				ExpansionPoint next = new ExpansionPoint(pfX, pfY);
 				if (routePlanner.hasPlannedRoute())
 				{
+					// get a point on the route 25 steps from where we are, we
+					// look ahead (25 steps) so our heading remains reasonably
+					// stable
 					next = routePlanner.getRouteForLocation(pfX, pfY);
 
 					for (int i = 0; i < 25; i++)
 						next = routePlanner.getRouteForLocation(next.getX(), next.getY());
 				}
+				if (routePlanner.getDistanceToTarget(pfX, pfY) < 20)
+				{
+					// slow down we've almost reached our goal
+					speed = 5;
+				}
+
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;
 				System.out.println(next + " " + dx + " " + dy);
@@ -125,37 +142,35 @@ public class Navigator implements Runnable, NavigatorControl
 				double da = 5;
 				if (Math.abs(dx) > 5 || Math.abs(dy) > 5)
 				{
-					dx *= speed;
-					dy *= speed;
+					// follow the route to the target
 
 					Vector3D delta = new Vector3D(dx, dy, 0);
 					double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
-					if (angle < 0)
-					{
-						angle += 360;
-					}
-					if (angle > 360)
-					{
-						angle -= 360;
-					}
+
 					da = HeadingHelper.getChangeInHeading(angle, lastAngle);
 					if (Math.abs(da) > 90)
 					{
+						// turning more than 90 degrees, stop while we do it.
 						System.out.println("Setting speed to 0");
 						speed *= 0.0;
 					}
-					setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da));
+					speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da), speed);
 					robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 
 				} else
 				{
-					if (Math.abs(lastAngle - targetHeading) > 5)
+					// we have arrived at our target location
+					speed = 0;
+					if (Math.abs(HeadingHelper.getChangeInHeading(lastAngle, targetHeading)) > 5)
 					{
+						// turn on the spot to set our heading
 						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
 						robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
-						setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da));
+						robot.setHeading(da + currentDeadReconingHeading.get());
+
 					} else
 					{
+						// were done, stop and shutdown
 						stopped = true;
 						reachedDestination = true;
 						robot.freeze(true);
@@ -172,23 +187,29 @@ public class Navigator implements Runnable, NavigatorControl
 
 			} else
 			{
-				setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0));
-				robot.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
+				// particle filter isn't localised, just wander trusting our
+				// obsticalAvoidance to keep us from crashing
+				speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0), 10);
+				robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 
 			}
 		} finally
 		{
+			// robot.freeze(true);
 			robot.publishUpdate();
 		}
 
 	}
 
-	void setHeadingWithObsticleAvoidance(double desiredHeading)
+	double setHeadingWithObsticleAvoidance(double desiredHeading, double desiredSpeed)
 	{
 
-		double corrected = obsticleAvoidance.getCorrectedHeading(desiredHeading);
+		CourseCorrection corrected = obsticleAvoidance.getCorrectedHeading(desiredHeading, desiredSpeed);
 
-		robot.setHeading(HeadingHelper.normalizeHeading(corrected + currentDeadReconingHeading.get()));
+		robot.setHeading(HeadingHelper
+				.normalizeHeading(corrected.getCorrectedRelativeHeading() + currentDeadReconingHeading.get()));
+
+		return corrected.getSpeed();
 
 	}
 
@@ -210,7 +231,6 @@ public class Navigator implements Runnable, NavigatorControl
 			@Override
 			public void observed(RobotLocation robotLocation)
 			{
-
 				compassHeading = robotLocation.getCompassHeading().getHeading();
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
 
