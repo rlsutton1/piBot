@@ -5,8 +5,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.pi4j.gpio.extension.adafruit.DigitalOutPin;
+import com.pi4j.gpio.extension.adafruit.PwmPin;
+import com.pi4j.io.gpio.Pin;
+
 import au.com.rsutton.config.Config;
-import au.com.rsutton.entryPoint.controllers.DeadZoneRescaler;
 import au.com.rsutton.entryPoint.controllers.HBridgeController;
 import au.com.rsutton.entryPoint.controllers.Pid;
 import au.com.rsutton.entryPoint.quadrature.QuadratureEncodingCBridge;
@@ -16,10 +19,6 @@ import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.robot.QuadratureToDistance;
-
-import com.pi4j.gpio.extension.adafruit.DigitalOutPin;
-import com.pi4j.gpio.extension.adafruit.PwmPin;
-import com.pi4j.io.gpio.Pin;
 
 public class WheelController implements Runnable
 {

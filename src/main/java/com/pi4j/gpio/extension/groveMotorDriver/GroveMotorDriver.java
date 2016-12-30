@@ -96,13 +96,10 @@ public class GroveMotorDriver
 
 	public void MotorSpeedSetAB(int MotorSpeedA, int MotorSpeedB) throws IOException
 	{
-		MotorSpeedA = (MotorSpeedA);
-		MotorSpeedB = (MotorSpeedB);
 
 		byte buffer[] = new byte[] {
 				MotorSpeedSet, (byte) MotorSpeedA, (byte) MotorSpeedB };
 
-		// device.write(MotorSpeedSet, buffer, 0, buffer.length);
 		managedIO(buffer, null);
 	}
 

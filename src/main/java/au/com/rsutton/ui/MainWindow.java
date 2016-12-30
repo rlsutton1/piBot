@@ -14,6 +14,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+
 import au.com.rsutton.entryPoint.DataLogReader;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -22,9 +25,6 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.Graph;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 public class MainWindow extends JFrame implements
 		MessageListener<RobotLocation>

@@ -1,17 +1,20 @@
 package au.com.rsutton.mapping.particleFilter;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.pi4j.gpio.extension.lidar.LidarScanner;
+import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.NavigatorControl;
+import au.com.rsutton.robot.lidar.Spinner;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
@@ -27,6 +30,8 @@ public class MapBuilder implements ParticleFilterListener
 	private ParticleFilterIfc particleFilter;
 
 	private ScanReferenceChecker scanReferenceChecker;
+
+	Stopwatch targetAge = Stopwatch.createStarted();
 
 	MapBuilder(ProbabilityMap map, ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
 	{
@@ -47,42 +52,38 @@ public class MapBuilder implements ParticleFilterListener
 
 	private boolean complete = false;
 
+	private boolean returningHome = true;
+
 	@Override
 	public void update(Vector3D averagePosition, double averageHeading, double stdDev,
 			ParticleFilterObservationSet particleFilterObservationSet)
 	{
 
-		scanReferenceChecker.check(particleFilter.getParticles(), new ObservationListener()
+		// TODO: add a somewhat kalman fiter on the heading here!!!
+
+		for (ScanObservation obs : particleFilterObservationSet.getObservations())
 		{
 
-			@Override
-			public void useScan(ParticleFilterObservationSet observation, Pose pose)
+			Particle particle = new Particle(averagePosition.getX(), averagePosition.getY(), averageHeading, 0, 0);
+
+			Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
+					.applyTo(obs.getVector());
+			point = averagePosition.add(point);
+
+			// calculate distance of the point observed
+			double distance = Vector3D.distance(averagePosition, point);
+
+			double maxCertaintyDistance = 2000;
+
+			// certainty of the observation is at max 0.5, and dimishes
+			// to 0 at 10 meters(1000 cm)
+			double certainty = (Math.max(0, (maxCertaintyDistance - distance)) / maxCertaintyDistance) * 0.75;
+
+			clearPoints(averagePosition, point);
+			if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000, 0.90) >= 1000)
 			{
-				Vector3D pos = new Vector3D(pose.getX(), pose.getY(), 0);
-
-				for (ScanObservation obs : particleFilterObservationSet.getObservations())
-				{
-
-					Particle particle = new Particle(pose.getX(), pose.getY(), pose.getHeading(), 0, 0);
-
-					Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pose.getHeading()))
-							.applyTo(obs.getVector());
-					point = pos.add(point);
-
-					clearPoints(pos, point);
-					if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000, 0.90) >= 1000)
-					{
-						world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5, 5);
-					}
-				}
-
+				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, certainty, 5);
 			}
-		});
-		if (navigatorControl.isStopped())
-		{
-
-			particleFilter.addPendingScan(particleFilterObservationSet);
-
 		}
 
 		lastHeading = (int) averageHeading;
@@ -98,9 +99,24 @@ public class MapBuilder implements ParticleFilterListener
 
 		navigatorControl.go();
 
-		if (navigatorControl.hasReachedDestination() || navigatorControl.isStuck())
+		if (navigatorControl.hasReachedDestination()
+				|| (navigatorControl.isStuck() && targetAge.elapsed(TimeUnit.SECONDS) > 30)
+				|| targetAge.elapsed(TimeUnit.MINUTES) > 1)
 		{
-			setNewTarget((int) averagePosition.getX(), (int) averagePosition.getY());
+			if (returningHome)
+			{
+				setNewTarget((int) averagePosition.getX(), (int) averagePosition.getY());
+				targetAge.reset();
+				targetAge.start();
+				returningHome = false;
+			} else
+			{
+				// return home ever second move, to make sure we don't get lost
+				navigatorControl.calculateRouteTo(0, 0, 0);
+				targetAge.reset();
+				targetAge.start();
+				returningHome = true;
+			}
 		}
 	}
 
@@ -110,36 +126,44 @@ public class MapBuilder implements ParticleFilterListener
 		int xspread = Math.abs(world.getMinX() - world.getMaxX());
 		int yspread = Math.abs(world.getMinY() - world.getMaxY());
 
-		for (int xo = 0; xo < xspread; xo += 10)
+		Random r = new Random();
+
+		int ctr = 0;
+		while (ctr < 200)
 		{
-			for (int yo = 0; yo < yspread; yo += 10)
+			ctr++;
+			int xo = r.nextInt(xspread) + world.getMinX();
+			int yo = r.nextInt(yspread) + world.getMinY();
+			// for (int xo = 0; xo < xspread; xo += 10)
+			// {
+			// for (int yo = 0; yo < yspread; yo += 10)
+			// {
+			int x = currentX + xo;
+			int y = currentY + yo;
+			if (isTarget(x, y))
 			{
-				int x = currentX + xo;
-				int y = currentY + yo;
-				if (isTarget(x, y))
-				{
-					return;
-				}
-				x = currentX - xo;
-				y = currentY + yo;
-				if (isTarget(x, y))
-				{
-					return;
-				}
-				x = currentX + xo;
-				y = currentY - yo;
-				if (isTarget(x, y))
-				{
-					return;
-				}
-				x = currentX - xo;
-				y = currentY - yo;
-				if (isTarget(x, y))
-				{
-					return;
-				}
+				return;
+			}
+			x = currentX - xo;
+			y = currentY + yo;
+			if (isTarget(x, y))
+			{
+				return;
+			}
+			x = currentX + xo;
+			y = currentY - yo;
+			if (isTarget(x, y))
+			{
+				return;
+			}
+			x = currentX - xo;
+			y = currentY - yo;
+			if (isTarget(x, y))
+			{
+				return;
 			}
 		}
+		// }
 
 		complete = true;
 	}
@@ -205,16 +229,17 @@ public class MapBuilder implements ParticleFilterListener
 
 	}
 
-	boolean doWeNeedToStopWhileScanningCatchesUp(Vector3D averagePosition, double averageHeading)
-	{
-
-		return isUnexplored(averagePosition, averageHeading);
-	}
+	// boolean doWeNeedToStopWhileScanningCatchesUp(Vector3D averagePosition,
+	// double averageHeading)
+	// {
+	//
+	// return isUnexplored(averagePosition, averageHeading);
+	// }
 
 	boolean isUnexplored(Vector3D position, double heading)
 	{
-		int from = LidarScanner.MIN_ANGLE;
-		int to = LidarScanner.MAX_ANGLE;
+		int from = (int) Spinner.getMinAngle();
+		int to = (int) Spinner.getMaxAngle();
 		int maxDistance = 1000;
 		Particle particle = new Particle(position.getX(), position.getY(), heading, 0, 0);
 

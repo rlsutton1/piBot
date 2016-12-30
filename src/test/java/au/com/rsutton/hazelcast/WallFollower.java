@@ -5,6 +5,9 @@ import java.util.Collection;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
@@ -12,9 +15,6 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 public class WallFollower implements Runnable, MessageListener<RobotLocation>
 {

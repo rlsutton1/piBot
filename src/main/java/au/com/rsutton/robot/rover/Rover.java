@@ -31,7 +31,7 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.i2c.I2cSettings;
-import au.com.rsutton.robot.spinner.Spinner;
+import au.com.rsutton.robot.lidar.Spinner;
 
 public class Rover implements Runnable, RobotLocationReporter
 {

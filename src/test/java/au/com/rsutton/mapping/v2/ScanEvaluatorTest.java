@@ -1,14 +1,11 @@
 package au.com.rsutton.mapping.v2;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.util.LinkedList;
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.junit.Test;
-import org.omg.PortableInterceptor.SUCCESSFUL;
 
 import au.com.rsutton.mapping.XY;
 

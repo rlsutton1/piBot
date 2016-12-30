@@ -4,10 +4,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import com.hazelcast.core.Message;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
-
-import com.hazelcast.core.Message;
 
 public class DataLogReader
 {

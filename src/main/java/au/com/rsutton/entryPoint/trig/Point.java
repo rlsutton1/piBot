@@ -1,8 +1,8 @@
 package au.com.rsutton.entryPoint.trig;
 
-import au.com.rsutton.entryPoint.units.Distance;
-
 import com.google.common.base.Objects;
+
+import au.com.rsutton.entryPoint.units.Distance;
 
 public class Point
 {

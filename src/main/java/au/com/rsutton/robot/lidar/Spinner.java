@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.spinner;
+package au.com.rsutton.robot.lidar;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +20,13 @@ public class Spinner implements Runnable
 {
 
 	private static final long ONE_SECOND_IN_NANOS = TimeUnit.SECONDS.toNanos(1);
-	GpioPinDigitalOutput stepPin;
-	GpioPinDigitalOutput dirPin;
+	private GpioPinDigitalOutput stepPin;
+	private GpioPinDigitalOutput dirPin;
 
-	Stopwatch lastStep = Stopwatch.createStarted();
+	private long currentPosition;
+	private long requiredPosition;
+
+	private Stopwatch lastStep = Stopwatch.createStarted();
 
 	private int lastDirection = 0;
 	private long timeBetweenSteps;
@@ -173,15 +176,18 @@ public class Spinner implements Runnable
 
 	}
 
-	long currentPosition;
-	long requiredPosition;
-
 	public void setZero()
 	{
 		currentPosition = 0;
 
 	}
 
+	/**
+	 * returns the current position of the spinner the value is between 0 and
+	 * (microSteps*stepsPerRotation)
+	 * 
+	 * @return
+	 */
 	public long getCurrentPosition()
 	{
 		return (long) (currentPosition % (microSteps * stepsPerRotation));
@@ -203,6 +209,9 @@ public class Spinner implements Runnable
 			try
 			{
 				moveTo(pos);
+				// sleep 50ms at the end of each full roatation so that it is
+				// easy to visually tell if the stepper motor as missed some
+				// steps
 				Thread.sleep(50);
 			} catch (InterruptedException e)
 			{
@@ -212,12 +221,29 @@ public class Spinner implements Runnable
 
 	}
 
+	/**
+	 * there is a blind spot behind the scanner, caused by the support pillar,
+	 * this method returns true if the scanner is not currently facing the
+	 * pillar
+	 * 
+	 * @return
+	 */
 	public boolean isValidPosition()
 	{
 		long totalSteps = (long) (microSteps * stepsPerRotation);
 		long pos = currentPosition % totalSteps;
-		return pos > (totalSteps * 0.15) && pos < (totalSteps * 0.85);
+		return pos > (totalSteps * 0.10) && pos < (totalSteps * 0.90);
 
+	}
+
+	public static double getMinAngle()
+	{
+		return 360.0 * 0.10;
+	}
+
+	public static double getMaxAngle()
+	{
+		return 360.0 * 0.90;
 	}
 
 }

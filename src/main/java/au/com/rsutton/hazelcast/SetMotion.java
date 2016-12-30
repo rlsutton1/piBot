@@ -1,8 +1,8 @@
 package au.com.rsutton.hazelcast;
 
-import au.com.rsutton.entryPoint.units.Speed;
-
 import com.google.common.base.Objects;
+
+import au.com.rsutton.entryPoint.units.Speed;
 
 public class SetMotion extends MessageBase<SetMotion>
 {

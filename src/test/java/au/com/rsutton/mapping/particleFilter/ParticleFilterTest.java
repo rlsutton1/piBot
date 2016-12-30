@@ -284,7 +284,7 @@ public class ParticleFilterTest
 		});
 
 		MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer(2);
-		final RobotLocation data = robot.getObservation();
+		final RobotLocation data = robot.getObservation(0, 100);
 
 		storeHeadingDeltas(data);
 		buffer.addObservation(data);

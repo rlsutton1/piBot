@@ -1,7 +1,5 @@
 package au.com.rsutton.mapping.array;
 
-import javax.xml.bind.helpers.DefaultValidationEventHandler;
-
 public class Sparse2dSegment implements Segment
 {
 

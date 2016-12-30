@@ -24,7 +24,6 @@ import au.com.rsutton.mapping.v3.impl.Feature;
 import au.com.rsutton.mapping.v3.impl.ObservationOrigin;
 import au.com.rsutton.mapping.v3.impl.ObservedPoint;
 import au.com.rsutton.mapping.v3.linearEquasion.LinearEquasion;
-import au.com.rsutton.mapping.v3.linearEquasion.LinearEquasionFactory;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 

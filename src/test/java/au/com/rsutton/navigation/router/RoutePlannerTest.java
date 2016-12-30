@@ -3,8 +3,6 @@ package au.com.rsutton.navigation.router;
 import org.junit.Test;
 
 import au.com.rsutton.mapping.KitchenMapBuilder;
-import au.com.rsutton.navigation.router.RouteOption;
-import au.com.rsutton.navigation.router.RoutePlanner;
 
 public class RoutePlannerTest
 {
@@ -17,7 +15,22 @@ public class RoutePlannerTest
 		planner.createRoute(30, -140, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 		planner.dumpRoute();
 
-		System.out.println(planner.getRouteForLocation(-40, 70));
+		ExpansionPoint lastTarget = null;
+		ExpansionPoint target = new ExpansionPoint(-40, 70);
+		do
+		{
+			target = planner.getRouteForLocation(target.getX(), target.getY());
+			if (target != null)
+			{
+				System.out.println(target);
+			}
+			if (target.equals(lastTarget))
+			{
+				break;
+			}
+			lastTarget = target;
+		} while (target != null);
+
 	}
 
 }

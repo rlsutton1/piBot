@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import au.com.rsutton.entryPoint.trig.Point;
-import au.com.rsutton.entryPoint.trig.TrigMath;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.XY;

@@ -1,7 +1,5 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 
 public class TopNListTest

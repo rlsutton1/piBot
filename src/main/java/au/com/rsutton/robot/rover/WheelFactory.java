@@ -2,14 +2,14 @@ package au.com.rsutton.robot.rover;
 
 import java.io.IOException;
 
-import au.com.rsutton.config.Config;
-
 import com.pi4j.gpio.extension.adafruit.DigitalOutPin;
 import com.pi4j.gpio.extension.adafruit.PwmPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiPin;
 import com.pi4j.gpio.extension.grovePi.GrovePiProvider;
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.RaspiPin;
+
+import au.com.rsutton.config.Config;
 
 public class WheelFactory
 {

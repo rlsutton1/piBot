@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.spinner;
+package au.com.rsutton.robot.lidar;
 
 import java.io.IOException;
 

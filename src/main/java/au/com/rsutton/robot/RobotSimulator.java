@@ -14,7 +14,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.pi4j.gpio.extension.lidar.LidarScanner;
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
@@ -24,6 +23,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.robot.lidar.Spinner;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
@@ -88,7 +88,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
-	public RobotLocation getObservation()
+	/**
+	 * simulates a full scan per second
+	 * 
+	 * @param msSinceLastScan
+	 * @return
+	 */
+	public RobotLocation getObservation(double fromPercentage, double toPercentage)
 	{
 
 		// System.out.println("Robot x,y,angle " + x + " " + y + " " + heading);
@@ -98,14 +104,20 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
-		for (double h = LidarScanner.MIN_ANGLE; h < LidarScanner.MAX_ANGLE; h += 5)
+		Random rand = new Random();
+		double stepSize = 3.6;
+		double stepNoise = 1.2;
+
+		for (double h = (int) (Spinner.getMinAngle() * (fromPercentage / 100.0)); h < (int) (Spinner.getMaxAngle()
+				* (toPercentage / 100.0)); h += stepSize + (rand.nextGaussian() * stepNoise))
 		{
-			double distance = particle.simulateObservation(map, h, 1000, 0.5);
+			double adjustedHeading = h - 180 + 45;
+			double distance = particle.simulateObservation(map, adjustedHeading, 1000, 0.5);
 
 			if (Math.abs(distance) > 1)
 			{
 				Vector3D unit = new Vector3D(0, 1, 0).scalarMultiply(distance);
-				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(h));
+				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(adjustedHeading));
 				Vector3D distanceVector = rotation.applyTo(unit);
 				observations.add(new LidarObservation(distanceVector, true));
 			}
@@ -195,11 +207,12 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
-	double hz = 2.0;
+	double hz = 10.0;
 
 	@Override
 	public void run()
 	{
+		long lastScan = 0;
 
 		while (true)
 		{
@@ -215,9 +228,18 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 				turn(delta);
 			}
+			long to = (long) ((lastScan + (100.0 / hz)) % 100);
+			if (to < lastScan)
+			{
+				lastScan = 0;
+			}
+
+			RobotLocation observation = getObservation(lastScan, to);
+			lastScan = to;
+
 			for (RobotListener listener : listeners)
 			{
-				listener.observed(getObservation());
+				listener.observed(observation);
 			}
 			try
 			{

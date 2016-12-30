@@ -102,7 +102,7 @@ public class Navigator implements Runnable, NavigatorControl
 			// how well localised it is
 			pf.setParticleCount(Math.max(500, (int) (7 * std)));
 
-			if (std < 25)
+			if (std < 30)
 			{
 				// the partical filter is sufficently localized
 				Vector3D ap = pf.dumpAveragePosition();
@@ -148,6 +148,7 @@ public class Navigator implements Runnable, NavigatorControl
 					double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
 
 					da = HeadingHelper.getChangeInHeading(angle, lastAngle);
+					speed *= ((180 - Math.abs(da)) / 180.0);
 					if (Math.abs(da) > 90)
 					{
 						// turning more than 90 degrees, stop while we do it.
@@ -172,12 +173,13 @@ public class Navigator implements Runnable, NavigatorControl
 					{
 						// were done, stop and shutdown
 						stopped = true;
+						speed = 0;
 						reachedDestination = true;
 						robot.freeze(true);
 						robot.publishUpdate();
 						try
 						{
-							Thread.sleep(10000);
+							Thread.sleep(500);
 						} catch (InterruptedException e)
 						{
 							e.printStackTrace();
@@ -193,6 +195,9 @@ public class Navigator implements Runnable, NavigatorControl
 				robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 
 			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
 		} finally
 		{
 			// robot.freeze(true);
@@ -416,7 +421,7 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public void calculateRouteTo(int x, int y, double heading)
 	{
-		routePlanner.createRoute(x, y, RouteOption.ROUTE_THROUGH_UNEXPLORED);
+		routePlanner.createRoute(x, y, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 		targetHeading = heading;
 		reachedDestination = false;
 

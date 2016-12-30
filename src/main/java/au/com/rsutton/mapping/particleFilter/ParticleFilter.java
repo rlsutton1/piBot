@@ -28,15 +28,18 @@ public class ParticleFilter implements ParticleFilterIfc
 {
 
 	private static final double MINIMUM_MEANINGFUL_RATING = 0.02;
-	final List<Particle> particles = new CopyOnWriteArrayList<>();
-	volatile int particleQty;
-	volatile private double averageHeading;
+	private final List<Particle> particles = new CopyOnWriteArrayList<>();
+	private volatile int particleQty;
+	private volatile double averageHeading;
+	private volatile long lastResampe = 0L;
 
-	volatile double bestRating = 0;
+	private volatile double bestRating = 0;
 
-	AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
+	private AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
 	private final double headingNoise;
 	private final double distanceNoise;
+	private double stablisedHeading = 0;
+	private ParticleFilterListener listener;
 
 	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition)
@@ -100,10 +103,8 @@ public class ParticleFilter implements ParticleFilterIfc
 		}
 	}
 
-	volatile long lastResampe = 0L;
-
 	@Override
-	synchronized public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
+	public synchronized void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
 		lastObservation.set(observations);
@@ -113,7 +114,7 @@ public class ParticleFilter implements ParticleFilterIfc
 				.forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
 
 		long now = System.currentTimeMillis();
-		if (now - lastResampe > 400)
+		if (now - lastResampe > 500)
 		{
 			lastResampe = now;
 			resample(currentWorld);
@@ -153,7 +154,7 @@ public class ParticleFilter implements ParticleFilterIfc
 			{
 				next += rand.nextDouble() * 2.0;// 50/50 chance of the same or
 												// next
-												// being picked if there are
+												// being picked if they are
 												// both
 												// rated 1.0
 				while (next > 0.0)
@@ -330,7 +331,6 @@ public class ParticleFilter implements ParticleFilterIfc
 		{
 			xdev.increment(particle.x);
 			ydev.increment(particle.y);
-			// xdev.increment(particle.x);
 		}
 		double dev = xdev.getResult() + ydev.getResult();
 		// System.out.println("Deviation " + dev);
@@ -357,9 +357,6 @@ public class ParticleFilter implements ParticleFilterIfc
 			}
 		};
 	}
-
-	double stablisedHeading = 0;
-	private ParticleFilterListener listener;
 
 	/**
 	 * draw recent observations

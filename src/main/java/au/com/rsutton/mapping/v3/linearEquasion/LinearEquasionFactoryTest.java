@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.v3.linearEquasion;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 

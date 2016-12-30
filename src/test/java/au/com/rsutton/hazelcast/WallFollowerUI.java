@@ -3,11 +3,8 @@ package au.com.rsutton.hazelcast;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.util.Collection;
-import java.util.List;
 
 import javax.swing.JFrame;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.robot.rover.LidarObservation;
 

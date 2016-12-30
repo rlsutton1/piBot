@@ -1,11 +1,11 @@
 package au.com.rsutton.robot.rover;
 
+import com.pi4j.gpio.extension.adafruit.GyroProvider;
+import com.pi4j.gpio.extension.lsm303.HeadingData;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
-
-import com.pi4j.gpio.extension.adafruit.GyroProvider;
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class DeadReconing
 {

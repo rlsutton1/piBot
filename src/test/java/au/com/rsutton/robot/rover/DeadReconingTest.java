@@ -4,11 +4,11 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.pi4j.gpio.extension.lsm303.HeadingData;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
-
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 public class DeadReconingTest
 {

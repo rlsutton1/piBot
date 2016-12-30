@@ -1,4 +1,4 @@
-package com.pi4j.gpio.extension.lidar;
+package au.com.rsutton.robot.lidar;
 
 import java.io.IOException;
 
@@ -10,7 +10,7 @@ import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
 
-public class Lidar
+public class LidarLite
 {
 
 	private static final int LIDAR_ADDR = 0x62;
@@ -27,7 +27,7 @@ public class Lidar
 	private Integer calabrationC;
 	private Double calabrationM;
 
-	public Lidar(Config config) throws InterruptedException, IOException, UnsupportedBusNumberException
+	public LidarLite(Config config) throws InterruptedException, IOException, UnsupportedBusNumberException
 	{
 		calabrationC = config.loadSetting("lidar.c", 30);
 

@@ -13,14 +13,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.v2.Line;
-import au.com.rsutton.robot.rover.LidarObservation;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 public class Graph extends JPanel implements MessageListener<RobotLocation>
 {

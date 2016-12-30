@@ -1,6 +1,5 @@
 package au.com.rsutton.calabrate;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 

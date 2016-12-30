@@ -15,7 +15,7 @@ public class RoutePlanner
 
 	private ProbabilityMap world;
 
-	final static int WALL = 100000;
+	static final int WALL = 1000000;
 
 	int blockSize = 5;
 
@@ -36,11 +36,10 @@ public class RoutePlanner
 		this.targetY = toY;
 
 		List<ExpansionPoint> immediatePoints = new LinkedList<>();
-		List<ExpansionPoint> deferredPoints = new LinkedList<>();
-		int wall = 10000;
+		PrioritizedQueueGroup<ExpansionPoint> deferredPoints = new PrioritizedQueueGroup<>(6);
 		AtomicInteger moveCounter = new AtomicInteger();
 
-		route = new Dynamic2dSparseArray(wall);
+		route = new Dynamic2dSparseArray(WALL);
 
 		int x = toX / blockSize;
 		int y = toY / blockSize;
@@ -50,7 +49,7 @@ public class RoutePlanner
 
 		while (!immediatePoints.isEmpty() || !deferredPoints.isEmpty())
 		{
-			deferredPoints.addAll(expandPoints(immediatePoints, wall, moveCounter, routeOption));
+			deferredPoints.addAll(expandPoints(immediatePoints, WALL, moveCounter, routeOption));
 			immediatePoints.addAll(expandDeferredPoints(deferredPoints, moveCounter));
 		}
 	}
@@ -60,13 +59,13 @@ public class RoutePlanner
 	 * @param deferredPoints
 	 * @return a list of immediatePoints
 	 */
-	private Collection<ExpansionPoint> expandDeferredPoints(List<ExpansionPoint> deferredPoints,
+	private Collection<ExpansionPoint> expandDeferredPoints(PrioritizedQueueGroup<ExpansionPoint> deferredPoints,
 			AtomicInteger moveCounter)
 	{
 		List<ExpansionPoint> immediatePoints = new LinkedList<>();
 		if (!deferredPoints.isEmpty())
 		{
-			ExpansionPoint temp = deferredPoints.remove(0);
+			ExpansionPoint temp = deferredPoints.take();
 			route.set(temp.x, temp.y, moveCounter.getAndIncrement());
 			immediatePoints.add(temp);
 		}
@@ -80,10 +79,10 @@ public class RoutePlanner
 	 *            diatePoints
 	 * @return a list of deferred points
 	 */
-	private Collection<ExpansionPoint> expandPoints(List<ExpansionPoint> immediatePoints, int wall,
+	private PrioritizedQueueGroup<ExpansionPoint> expandPoints(List<ExpansionPoint> immediatePoints, int wall,
 			AtomicInteger moveCounter, RouteOption routeOption)
 	{
-		List<ExpansionPoint> deferredPoints = new LinkedList<>();
+		PrioritizedQueueGroup<ExpansionPoint> deferredPoints = new PrioritizedQueueGroup<>(6);
 
 		while (!immediatePoints.isEmpty())
 		{
@@ -105,15 +104,14 @@ public class RoutePlanner
 							&& route.get(temp.x, temp.y) > moveCounter.get() && !isPointRoutedAlready(wall, temp))
 					{
 
-						if (doWallCheck(temp, 6))
+						int distanceToWall = doWallCheck(temp, 6);
+						if (distanceToWall == -1)
 						{
-							deferredPoints.add(temp);
-						} else
-						{
-
 							route.set(temp.x, temp.y, moveCounter.getAndIncrement());
 							immediatePoints.add(temp);
-
+						} else
+						{
+							deferredPoints.add(distanceToWall, temp);
 						}
 					}
 			}
@@ -133,18 +131,38 @@ public class RoutePlanner
 				&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize;
 	}
 
-	boolean doWallCheck(ExpansionPoint point, int size)
+	/**
+	 * 
+	 * @param point
+	 * @param size
+	 *            - distance to look for walls
+	 * @return the distance to the nearest wall, or -1 if the wall is further
+	 *         than size away
+	 */
+	int doWallCheck(ExpansionPoint epoint, int size)
 	{
 
-		for (int i = -size; i <= size; i++)
+		for (int radius = 1; radius <= size; radius++)
 		{
+			List<ExpansionPoint> points = new LinkedList<>();
+			points.add(new ExpansionPoint(radius, 0));
+			points.add(new ExpansionPoint(radius, radius));
+			points.add(new ExpansionPoint(radius, -radius));
+			points.add(new ExpansionPoint(0, radius));
+			points.add(new ExpansionPoint(0, -radius));
+			points.add(new ExpansionPoint(-radius, 0));
+			points.add(new ExpansionPoint(-radius, radius));
+			points.add(new ExpansionPoint(-radius, -radius));
 
-			if (world.get((point.x + i) * blockSize, (point.y + i) * blockSize) > 0.5)
+			for (ExpansionPoint radiusPoint : points)
 			{
-				return true;
+				if (world.get((epoint.x + radiusPoint.x) * blockSize, (epoint.y + radiusPoint.y) * blockSize) > 0.5)
+				{
+					return size;
+				}
 			}
 		}
-		return false;
+		return -1;
 	}
 
 	private ExpansionPoint getRouteForLocation(int x, int y, int radius)

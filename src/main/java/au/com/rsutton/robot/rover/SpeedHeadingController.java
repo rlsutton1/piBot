@@ -36,7 +36,7 @@ public class SpeedHeadingController implements Runnable
 		desiredHeading = (int) intialHeading;
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
 	}
-	
+
 	public void setActualHeading(HeadingData heading)
 	{
 		actualHeading = heading;
@@ -125,11 +125,6 @@ public class SpeedHeadingController implements Runnable
 					+ " current Error is " + actualHeading.getError());
 		}
 		return ret;
-	}
-
-	private double rangeLimit(double value, int lowerLimit, int upperLimit)
-	{
-		return Math.max(lowerLimit, Math.min(value, upperLimit));
 	}
 
 }

@@ -1,13 +1,13 @@
 package au.com.rsutton.hazelcast;
 
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 public class TargetLocation implements MessageListener<RobotLocation>
 {

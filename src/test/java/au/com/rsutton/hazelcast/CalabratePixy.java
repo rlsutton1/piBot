@@ -8,19 +8,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
+
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
+import com.pi4j.gpio.extension.pixy.Coordinate;
 
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
-import com.pi4j.gpio.extension.pixy.Coordinate;
 
 public class CalabratePixy implements MessageListener<RobotLocation>
 {

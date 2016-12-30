@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -26,7 +27,7 @@ public class ObsticleAvoidance
 {
 	MovingLidarObservationMultiBuffer scanBuffer;
 
-	private Double awayFromObsticle;
+	private final AtomicReference<Double> awayFromObsticle = new AtomicReference<>();
 
 	protected Double correctionAngle;
 
@@ -84,7 +85,7 @@ public class ObsticleAvoidance
 					double x = p1.getX() - p2.getX();
 					double y = p1.getY() - p2.getY();
 
-					awayFromObsticle = Math.toDegrees(Math.atan2(y, x));
+					awayFromObsticle.set(Math.toDegrees(Math.atan2(y, x)));
 
 					double distanceToObsticle = p1.getDisctanceCm();
 					if (distanceToObsticle < requiredObsticalClearance)
@@ -95,11 +96,12 @@ public class ObsticleAvoidance
 
 					} else
 					{
-						awayFromObsticle = null;
+						awayFromObsticle.set(null);
 					}
 				} else
 				{
-					awayFromObsticle = null;
+
+					awayFromObsticle.set(null);
 				}
 			}
 
@@ -170,7 +172,7 @@ public class ObsticleAvoidance
 	CourseCorrection getCorrectedHeading(double relativeHeading, double desiredSpeed)
 	{
 		Double correctedRelativeHeading = relativeHeading;
-		Double away = awayFromObsticle;
+		Double away = awayFromObsticle.get();
 		Double ca = correctionAngle;
 		correction = null;
 		if (away != null)
@@ -209,13 +211,9 @@ public class ObsticleAvoidance
 			{
 				speed = desiredSpeed * 0.5;
 			}
-			if (sp1.getNorm() < requiredObsticalClearance * 0.65)
+			if (correction != null && Math.abs(HeadingHelper.getChangeInHeading(relativeHeading, correction)) > 30)
 			{
-				speed = 0;
-			}
-			if (sp1.getNorm() < requiredObsticalClearance * .35)
-			{
-				speed = desiredSpeed * -0.5;
+				speed = desiredSpeed * 0.25;
 			}
 		}
 		return new CourseCorrection(correctedRelativeHeading, speed);
@@ -247,10 +245,10 @@ public class ObsticleAvoidance
 				double pfh = pf.getAverageHeading();
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh));
 
-				if (awayFromObsticle != null)
+				if (awayFromObsticle.get() != null)
 				{
-					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(awayFromObsticle + pfh))
-							.applyTo(new Vector3D(0, 40, 0));
+					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0,
+							Math.toRadians(awayFromObsticle.get() + pfh)).applyTo(new Vector3D(0, 40, 0));
 
 					graphics.drawLine((int) pointOriginX, (int) pointOriginY,
 							(int) (pointOriginX + (vector.getX() * scale)),

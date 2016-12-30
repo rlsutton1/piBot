@@ -26,40 +26,64 @@ public class ParticleFilterNavigatorLiveTest
 {
 
 	List<Tuple<Double, Double>> headingTuples = new CopyOnWriteArrayList<>();
+	ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
+	RobotInterface robot = getRobot();
 
 	@Test
 	public void test() throws InterruptedException
 	{
+		boolean buildMap = true;
 
-		ProbabilityMap map;
-
-		map = KitchenMapBuilder.buildKitchenMap();
-		// map = new ProbabilityMap(10);
-
-		RobotInterface robot = getRobot();
-
-		// new InitialWorldBuilder(map, robot, 0);
-
+		if (buildMap)
+		{
+			createInitalMapForMapBuilder();
+		}
 		final ParticleFilter pf = new ParticleFilter(map, 2000, 1.25, 1.50, StartPosition.RANDOM);
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
 
-		navigator.calculateRouteTo(120, -260, 0);
+		if (buildMap)
+		{
+			buildMap(navigator, pf, map);
+		} else
+		{
+			navigateTo(navigator, 120, -260);
+		}
+
+		navigator.stop();
+
+		Thread.sleep(1000);
+
+	}
+
+	private void createInitalMapForMapBuilder()
+	{
+		map = new ProbabilityMap(10);
+
+		new InitialWorldBuilder(map, robot, 0);
+
+	}
+
+	private void buildMap(NavigatorControl navigator, ParticleFilterIfc pf, ProbabilityMap map)
+			throws InterruptedException
+	{
+		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);
+		while (!mapBuilder.isComplete())
+		{
+			Thread.sleep(100);
+		}
+
+	}
+
+	private void navigateTo(NavigatorControl navigator, int x, int y) throws InterruptedException
+	{
+		navigator.calculateRouteTo(x, y, 0);
 		navigator.go();
 
 		while (!navigator.hasReachedDestination())//
 		{
 			Thread.sleep(100);
 		}
-
-		// MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);
-		// while (!mapBuilder.isComplete())
-		// {
-		// Thread.sleep(100);
-		// }
-
-		navigator.stop();
-
 	}
 
 	class RobotImple implements RobotInterface
