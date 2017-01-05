@@ -58,7 +58,7 @@ public class ParticleFilterTest
 		map.dumpTextWorld();
 		ui.addDataSource(map, new Color(255, 255, 255));
 
-		final ParticleFilter pf = new ParticleFilter(map, 2000, 2, 4, StartPosition.RANDOM);
+		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 2000, 2, 4, StartPosition.RANDOM);
 		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		setupDataSources(ui, pf);
@@ -182,7 +182,7 @@ public class ParticleFilterTest
 
 	}
 
-	private void setupDataSources(MapDrawingWindow ui, final ParticleFilter pf)
+	private void setupDataSources(MapDrawingWindow ui, final ParticleFilterImpl pf)
 	{
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
@@ -209,7 +209,7 @@ public class ParticleFilterTest
 			@Override
 			public String getValue()
 			{
-				return "" + pf.getBestRating();
+				return "" + pf.getBestScanMatchScore();
 			}
 
 			@Override
@@ -220,7 +220,7 @@ public class ParticleFilterTest
 		});
 	}
 
-	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilter pf, final RoutePlanner routePlanner)
+	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilterImpl pf, final RoutePlanner routePlanner)
 	{
 		routePlanner.createRoute(120, -260, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 
@@ -263,7 +263,7 @@ public class ParticleFilterTest
 
 	double lastDeadreconningHeading = 0;
 
-	private void update(ProbabilityMap map, ParticleFilter pf, final double distance, final double dh,
+	private void update(ProbabilityMap map, ParticleFilterImpl pf, final double distance, final double dh,
 			RobotSimulator robot)
 	{
 

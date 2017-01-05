@@ -21,7 +21,7 @@ public interface ParticleFilterIfc
 
 	public abstract DataSourceMap getHeadingMapDataSource();
 
-	public abstract Double getBestRating();
+	public abstract Double getBestScanMatchScore();
 
 	public abstract Vector3D dumpAveragePosition();
 

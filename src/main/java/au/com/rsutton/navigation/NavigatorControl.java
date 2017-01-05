@@ -1,5 +1,7 @@
 package au.com.rsutton.navigation;
 
+import au.com.rsutton.navigation.router.RouteOption;
+
 public interface NavigatorControl
 {
 
@@ -21,7 +23,7 @@ public interface NavigatorControl
 	 * @param y
 	 * @param heading
 	 */
-	void calculateRouteTo(int x, int y, double heading);
+	void calculateRouteTo(int x, int y, double heading, RouteOption routeOption);
 
 	boolean hasReachedDestination();
 

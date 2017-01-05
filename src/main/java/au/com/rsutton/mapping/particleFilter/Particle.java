@@ -21,8 +21,8 @@ public class Particle
 	private double totalObservations;
 	private double distanceNoise;
 	private double headingNoise;
-	private double totalDistanceTravelled = 0;
-	private double totalHeadingChange = 0;
+	Random rand = new Random();
+
 	List<ScanReference> scanReferences = new LinkedList<>();
 
 	public Particle(double x, double y, double heading, double distanceNoise, double headingNoise)
@@ -57,9 +57,6 @@ public class Particle
 	{
 		double distance = update.getMoveDistance();
 
-		totalDistanceTravelled += Math.abs(distance);
-		totalHeadingChange += Math.abs(update.getDeltaHeading());
-
 		Vector3D unit = new Vector3D(0, 1, 0);
 		Vector3D move = unit.scalarMultiply(distance);
 
@@ -80,13 +77,12 @@ public class Particle
 		Vector3D newPosition = rotation.applyTo(move).add(position);
 		x = newPosition.getX();
 		y = newPosition.getY();
-		addNoise();
+		addNoise(Math.abs(distance));
 
 	}
 
-	private void addNoise()
+	private void addNoise(double distanceTravelled)
 	{
-		Random rand = new Random();
 
 		// the amount of noise will affect the size of the point cloud
 		// too little noise and it will fail to track
@@ -95,14 +91,11 @@ public class Particle
 		double yn = rand.nextGaussian();
 		double hn = rand.nextGaussian();
 
-		double xNoise = Math.max(Math.abs(totalDistanceTravelled * xn * distanceNoise),
-				Math.abs(xn * distanceNoise * 2.0)) * Math.signum(xn);
-		double yNoise = Math.max(Math.abs(totalDistanceTravelled * yn * distanceNoise),
-				Math.abs(yn * distanceNoise * 2.0)) * Math.signum(yn);
+		double xNoise = Math.max(Math.abs(distanceTravelled * xn * distanceNoise), Math.abs(xn * distanceNoise * 2.0))
+				* Math.signum(xn);
+		double yNoise = Math.max(Math.abs(distanceTravelled * yn * distanceNoise), Math.abs(yn * distanceNoise * 2.0))
+				* Math.signum(yn);
 		double hNoise = hn * headingNoise;
-
-		totalDistanceTravelled = 0;
-		totalHeadingChange = 0;
 
 		x += xNoise;
 		y += yNoise;
@@ -143,8 +136,9 @@ public class Particle
 		{
 			double distance = obs.getDisctanceCm();
 			double angle = Math.toDegrees(obs.getAngleRadians());
-			double simDistance = simulateObservation(currentWorld, angle, distance + maxGoodError, 0.5);// +
-																										// maxBadError);
+			double simDistance = simulateObservation(currentWorld, angle, distance + maxGoodError,
+					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY);// +
+			// maxBadError);
 
 			// subtract world block size as this is the error caused by the
 			// world block size, but stay > 0
@@ -202,7 +196,7 @@ public class Particle
 		for (int i = 0; i < maxDistance; i += 1)
 		{
 			double d = currentWorld.get(location.getX(), location.getY());
-			if (d > occupancyThreshold && d > bestMatchOccupancy)
+			if (d >= occupancyThreshold && d > bestMatchOccupancy)
 			{
 				bestMatchDistance = i;
 				bestMatchOccupancy = d;

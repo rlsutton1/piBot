@@ -24,24 +24,27 @@ import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 
-public class ParticleFilter implements ParticleFilterIfc
+public class ParticleFilterImpl implements ParticleFilterIfc
 {
 
 	private static final double MINIMUM_MEANINGFUL_RATING = 0.02;
 	private final List<Particle> particles = new CopyOnWriteArrayList<>();
 	private volatile int particleQty;
 	private volatile double averageHeading;
-	private volatile long lastResampe = 0L;
 
-	private volatile double bestRating = 0;
+	private volatile double bestScanMatchScore = 0;
 
 	private AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
 	private final double headingNoise;
 	private final double distanceNoise;
 	private double stablisedHeading = 0;
 	private ParticleFilterListener listener;
+	private int lastSignum;
+	private double lastObservationAngle;
 
-	ParticleFilter(ProbabilityMap map, int particles, double distanceNoise, double headingNoise,
+	Stopwatch lastResample = Stopwatch.createStarted();
+
+	ParticleFilterImpl(ProbabilityMap map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition)
 	{
 		this.headingNoise = headingNoise;
@@ -95,15 +98,6 @@ public class ParticleFilter implements ParticleFilterIfc
 	}
 
 	@Override
-	public void moveParticles(ParticleUpdate update)
-	{
-		for (Particle particle : particles)
-		{
-			particle.move(update);
-		}
-	}
-
-	@Override
 	public synchronized void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
@@ -113,15 +107,37 @@ public class ParticleFilter implements ParticleFilterIfc
 		particles.parallelStream()
 				.forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
 
-		long now = System.currentTimeMillis();
-		if (now - lastResampe > 500)
+		if (!observations.getObservations().isEmpty())
 		{
-			lastResampe = now;
-			resample(currentWorld);
+			double currentObservationAngle = observations.getObservations().iterator().next().getAngleRadians();
+
+			int signum = (int) Math.signum(currentObservationAngle - lastObservationAngle);
+
+			lastObservationAngle = currentObservationAngle;
+
+			if (signum != lastSignum || lastResample.elapsed(TimeUnit.MILLISECONDS) > 1500)
+			{
+				lastResample.reset();
+				lastResample.start();
+				resample(currentWorld);
+			}
+			lastSignum = signum;
 		}
 	}
 
-	private synchronized void resample(ProbabilityMap map)
+	@Override
+	public void moveParticles(ParticleUpdate update)
+	{
+		System.out.println("Delta move " + update.getDeltaHeading() + " " + update.getMoveDistance());
+		for (Particle particle : particles)
+		{
+			particle.move(update);
+		}
+
+		stablisedHeading += update.getDeltaHeading();
+	}
+
+	protected synchronized void resample(ProbabilityMap map)
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -170,9 +186,9 @@ public class ParticleFilter implements ParticleFilterIfc
 				newSet.add(new Particle(selectedParticle));
 			}
 		}
-		bestRating = bestRatingSoFar;
-		System.out.println("Best rating " + bestRating);
-		if (bestRating < MINIMUM_MEANINGFUL_RATING && getStdDev() > 30)
+		bestScanMatchScore = bestRatingSoFar;
+		System.out.println("Best rating " + bestScanMatchScore);
+		if (bestScanMatchScore < MINIMUM_MEANINGFUL_RATING && getStdDev() > 60)
 		{
 			// there is no useful data, re-seed the particle filter
 			createRandomStart(map);
@@ -219,7 +235,7 @@ public class ParticleFilter implements ParticleFilterIfc
 	{
 		for (Particle particle : particles)
 		{
-			map.updatePoint((int) particle.getX(), (int) particle.getY(), Occupancy.OCCUPIED, 1.0, 10);
+			map.updatePoint((int) particle.getX(), (int) particle.getY(), Occupancy.OCCUPIED, 1.0, map.getBlockSize());
 		}
 
 		map.dumpTextWorld();
@@ -292,7 +308,7 @@ public class ParticleFilter implements ParticleFilterIfc
 		averageHeading = h;
 
 		stablisedHeading = stablisedHeading
-				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.6);
+				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.5);
 
 		return new Vector3D((x / particles.size()), (y / particles.size()), 0);
 
@@ -421,9 +437,9 @@ public class ParticleFilter implements ParticleFilterIfc
 	}
 
 	@Override
-	public Double getBestRating()
+	public Double getBestScanMatchScore()
 	{
-		return bestRating;
+		return bestScanMatchScore;
 	}
 
 	@Override

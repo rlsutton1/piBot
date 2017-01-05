@@ -1,8 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
@@ -14,12 +12,15 @@ import com.google.common.base.Stopwatch;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.NavigatorControl;
-import au.com.rsutton.robot.lidar.Spinner;
+import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
 public class MapBuilder implements ParticleFilterListener
 {
+
+	double maxUsableDistance = 1000;
+	double maxCertaintyDistance = 2000;
 
 	private MapDrawingWindow panel;
 
@@ -61,6 +62,33 @@ public class MapBuilder implements ParticleFilterListener
 
 		// TODO: add a somewhat kalman fiter on the heading here!!!
 
+		if (particleFilter.getStdDev() > 40)
+		{
+			// we're lost, the scan data is useless
+			return;
+		}
+
+		if (particleFilter.getBestScanMatchScore() < 0.3)
+		{
+			return;
+		}
+
+		for (ScanObservation obs : particleFilterObservationSet.getObservations())
+		{
+			if (obs.getDisctanceCm() < 20)
+			{
+
+				// can't use observations closer that 30cm, the pariticle filter
+				// gets confused and the data becomes bad
+
+				// also we get some lidar artifacts at close range
+
+				chooseTarget();
+
+				return;
+			}
+		}
+
 		for (ScanObservation obs : particleFilterObservationSet.getObservations())
 		{
 
@@ -73,16 +101,20 @@ public class MapBuilder implements ParticleFilterListener
 			// calculate distance of the point observed
 			double distance = Vector3D.distance(averagePosition, point);
 
-			double maxCertaintyDistance = 2000;
-
-			// certainty of the observation is at max 0.5, and dimishes
-			// to 0 at 10 meters(1000 cm)
-			double certainty = (Math.max(0, (maxCertaintyDistance - distance)) / maxCertaintyDistance) * 0.75;
-
-			clearPoints(averagePosition, point);
-			if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000, 0.90) >= 1000)
+			if (distance < maxUsableDistance)
 			{
-				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, certainty, 5);
+				// certainty of the observation is at max 0.5, and dimishes
+				// to 0 at 10 meters(1000 cm)
+				double certainty = ((maxCertaintyDistance - Math.min(maxCertaintyDistance, Math.max(0, distance)))
+						/ maxCertaintyDistance) * 0.75;
+
+				clearPoints(averagePosition, point);
+				if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000,
+						InitialWorldBuilder.REQUIRED_POINT_CERTAINTY) >= 1000)
+				{
+					world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75,
+							(int) particleFilter.getStdDev());
+				}
 			}
 		}
 
@@ -99,76 +131,59 @@ public class MapBuilder implements ParticleFilterListener
 
 		navigatorControl.go();
 
-		if (navigatorControl.hasReachedDestination()
+		if (navigatorControl.hasReachedDestination() || particleFilter.getBestScanMatchScore() < 0.3
 				|| (navigatorControl.isStuck() && targetAge.elapsed(TimeUnit.SECONDS) > 30)
 				|| targetAge.elapsed(TimeUnit.MINUTES) > 1)
 		{
-			if (returningHome)
-			{
-				setNewTarget((int) averagePosition.getX(), (int) averagePosition.getY());
-				targetAge.reset();
-				targetAge.start();
-				returningHome = false;
-			} else
-			{
-				// return home ever second move, to make sure we don't get lost
-				navigatorControl.calculateRouteTo(0, 0, 0);
-				targetAge.reset();
-				targetAge.start();
-				returningHome = true;
-			}
+			chooseTarget();
 		}
 	}
 
-	void setNewTarget(int currentX, int currentY)
+	private void chooseTarget()
 	{
+		if (targetAge.elapsed(TimeUnit.SECONDS) > 15)
+		{
+			if (returningHome)
+			{
+				if (setNewTarget())
+				{
+					returningHome = false;
+				}
+			} else
+			{
+				// return home every second move, to make sure we don't get lost
+				navigatorControl.calculateRouteTo(0, 0, 0, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				returningHome = true;
+			}
+			targetAge.reset();
+			targetAge.start();
+		}
+	}
 
-		int xspread = Math.abs(world.getMinX() - world.getMaxX());
-		int yspread = Math.abs(world.getMinY() - world.getMaxY());
+	boolean setNewTarget()
+	{
+		int xspread = Math.abs(world.getMaxX() - world.getMinX());
+		int yspread = Math.abs(world.getMaxY() - world.getMinY());
 
 		Random r = new Random();
 
 		int ctr = 0;
-		while (ctr < 200)
+		while (ctr < 300)
 		{
 			ctr++;
-			int xo = r.nextInt(xspread) + world.getMinX();
-			int yo = r.nextInt(yspread) + world.getMinY();
-			// for (int xo = 0; xo < xspread; xo += 10)
-			// {
-			// for (int yo = 0; yo < yspread; yo += 10)
-			// {
-			int x = currentX + xo;
-			int y = currentY + yo;
+			int x = r.nextInt(xspread) + world.getMinX();
+			int y = r.nextInt(yspread) + world.getMinY();
 			if (isTarget(x, y))
 			{
-				return;
-			}
-			x = currentX - xo;
-			y = currentY + yo;
-			if (isTarget(x, y))
-			{
-				return;
-			}
-			x = currentX + xo;
-			y = currentY - yo;
-			if (isTarget(x, y))
-			{
-				return;
-			}
-			x = currentX - xo;
-			y = currentY - yo;
-			if (isTarget(x, y))
-			{
-				return;
+
+				return true;
 			}
 		}
 		// }
 
 		complete = true;
+		return false;
 	}
-
-	Set<Vector3D> previousTargets = new HashSet<>();
 
 	private boolean isTarget(int x, int y)
 	{
@@ -179,32 +194,20 @@ public class MapBuilder implements ParticleFilterListener
 				if (checkIsValidRouteTarget(x, y))
 				{
 
-					for (int h1 = 0; h1 < 360; h1 += 45)
+					int heading = lastHeading + 90;
+					Vector3D position = new Vector3D(x, y, 0);
+					if (isUnexplored(position, heading))
 					{
-						int heading = lastHeading + h1;
-						Vector3D position = new Vector3D(x, y, 0);
-						if (isUnexplored(position, heading))
-						{
-							Vector3D target = new Vector3D(x, y, heading);
-							if (!previousTargets.contains(target))
-							{
-								previousTargets.add(target);
-								navigatorControl.calculateRouteTo(x, y, heading);
-								return true;
-							}
-						}
-						heading = lastHeading - h1;
-						if (isUnexplored(position, heading))
-						{
-							Vector3D target = new Vector3D(x, y, heading);
-							if (!previousTargets.contains(target))
-							{
-								previousTargets.add(target);
-								navigatorControl.calculateRouteTo(x, y, heading);
-								return true;
-							}
-						}
+						navigatorControl.calculateRouteTo(x, y, heading, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						return true;
 					}
+					heading = lastHeading - 90;
+					if (isUnexplored(position, heading))
+					{
+						navigatorControl.calculateRouteTo(x, y, heading, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						return true;
+					}
+
 				}
 			}
 		}
@@ -238,26 +241,28 @@ public class MapBuilder implements ParticleFilterListener
 
 	boolean isUnexplored(Vector3D position, double heading)
 	{
-		int from = (int) Spinner.getMinAngle();
-		int to = (int) Spinner.getMaxAngle();
+		int from = 0;
+		int to = 360;
 		int maxDistance = 1000;
 		Particle particle = new Particle(position.getX(), position.getY(), heading, 0, 0);
 
 		int existInMap = 0;
 
-		double angleStepSize = 5;
+		double angleStepSize = 3.6;
 
 		for (double h = from; h < to; h += angleStepSize)
 		{
 
-			if (particle.simulateObservation(world, h, maxDistance, 0.8) < maxDistance)
+			if (particle.simulateObservation(world, h, maxDistance,
+					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY) < maxDistance)
 			{
 				existInMap++;
 
 			}
 		}
 		// there is too much unexplored (unmapped) in sight
-		return existInMap < (Math.abs(to - from) / angleStepSize) * .9;
+		return existInMap < (Math.abs(to - from) / angleStepSize) * .9
+				&& existInMap > (Math.abs(to - from) / angleStepSize) * .5;
 	}
 
 	void clearPoints(Vector3D pos, Vector3D point)
@@ -270,22 +275,29 @@ public class MapBuilder implements ParticleFilterListener
 		double x2 = point.getX();
 		double y2 = point.getY();
 
-		double dist = pos.distance(point) - 10;
-		if (dist > 0)
+		double dist = pos.distance(point) - world.getBlockSize();
+
+		if (dist > 0 && dist < maxUsableDistance)
 		{
-			for (int i = 0; i < dist; i++)
+			// TODO: should inc i by the block size
+			for (int i = 0; i < dist; i += world.getBlockSize())
 			{
+
+				// certainty of the observation is at max 0.5, and dimishes
+				// to 0 at 10 meters(1000 cm)
+				double certainty = ((maxCertaintyDistance - Math.min(maxCertaintyDistance, Math.max(0, i)))
+						/ maxCertaintyDistance) * 0.75;
+
 				double percent = i / dist;
 				double x = (percent * x2) + ((1.0 - percent) * x1);
 				double y = (percent * y2) + ((1.0 - percent) * y1);
-				double certainty = 0.05;
-				if (world.get(x, y) > 0.5)
-				{
-					certainty = certainty * (1.0 - world.get(x, y));
-				}
-				if (world.get(x, y) < 0.90)
+				if (world.get(x, y) < InitialWorldBuilder.REQUIRED_POINT_CERTAINTY)
 				{
 					world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
+				} else
+				{
+					// don't clear beyond a definite point
+					break;
 				}
 			}
 		}

@@ -42,6 +42,15 @@ public class Navigator implements Runnable, NavigatorControl
 	private ScheduledExecutorService pool;
 	private volatile boolean stopped = true;
 	private ObsticleAvoidance obsticleAvoidance;
+	int pfX = 0;
+	int pfY = 0;
+	Integer initialX;
+	Integer initialY;
+	double lastAngle;
+	private boolean reachedDestination = false;
+	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
+
+	double speed = 0;
 
 	public Navigator(ProbabilityMap map, ParticleFilterIfc pf, RobotInterface robot)
 	{
@@ -71,16 +80,6 @@ public class Navigator implements Runnable, NavigatorControl
 		pool.scheduleWithFixedDelay(this, 500, 500, TimeUnit.MILLISECONDS);
 
 	}
-
-	int pfX = 0;
-	int pfY = 0;
-	Integer initialX;
-	Integer initialY;
-	double lastAngle;
-	private boolean reachedDestination = false;
-	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
-
-	double speed = 0;
 
 	@Override
 	public void run()
@@ -149,9 +148,9 @@ public class Navigator implements Runnable, NavigatorControl
 
 					da = HeadingHelper.getChangeInHeading(angle, lastAngle);
 					speed *= ((180 - Math.abs(da)) / 180.0);
-					if (Math.abs(da) > 90)
+					if (Math.abs(da) > 35)
 					{
-						// turning more than 90 degrees, stop while we do it.
+						// turning more than 35 degrees, stop while we do it.
 						System.out.println("Setting speed to 0");
 						speed *= 0.0;
 					}
@@ -177,13 +176,7 @@ public class Navigator implements Runnable, NavigatorControl
 						reachedDestination = true;
 						robot.freeze(true);
 						robot.publishUpdate();
-						try
-						{
-							Thread.sleep(500);
-						} catch (InterruptedException e)
-						{
-							e.printStackTrace();
-						}
+						Thread.sleep(500);
 					}
 				}
 
@@ -200,7 +193,6 @@ public class Navigator implements Runnable, NavigatorControl
 			e.printStackTrace();
 		} finally
 		{
-			// robot.freeze(true);
 			robot.publishUpdate();
 		}
 
@@ -376,7 +368,7 @@ public class Navigator implements Runnable, NavigatorControl
 			@Override
 			public String getValue()
 			{
-				return "" + pf.getBestRating();
+				return "" + pf.getBestScanMatchScore();
 			}
 
 			@Override
@@ -419,9 +411,9 @@ public class Navigator implements Runnable, NavigatorControl
 	}
 
 	@Override
-	public void calculateRouteTo(int x, int y, double heading)
+	public void calculateRouteTo(int x, int y, double heading, RouteOption routeOption)
 	{
-		routePlanner.createRoute(x, y, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+		routePlanner.createRoute(x, y, routeOption);
 		targetHeading = heading;
 		reachedDestination = false;
 

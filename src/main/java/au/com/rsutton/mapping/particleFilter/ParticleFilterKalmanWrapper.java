@@ -20,7 +20,7 @@ import au.com.rsutton.ui.DataSourcePoint;
 
 public class ParticleFilterKalmanWrapper
 {
-	private final ParticleFilter particleFilter;
+	private final ParticleFilterImpl particleFilter;
 	KalmanFilterForCompass headingFilter = new KalmanFilterForCompass(new KalmanValue(0, 360));
 
 	// Vector3D lastKnownPosition;
@@ -30,7 +30,7 @@ public class ParticleFilterKalmanWrapper
 
 	ParticleFilterKalmanWrapper(ProbabilityMap map, int particles, double distanceNoise, double headingNoise)
 	{
-		particleFilter = new ParticleFilter(map, particles, distanceNoise, headingNoise, StartPosition.RANDOM);
+		particleFilter = new ParticleFilterImpl(map, particles, distanceNoise, headingNoise, StartPosition.RANDOM);
 
 		// lastKnownPosition = particleFilter.dumpAveragePosition();
 
@@ -106,7 +106,7 @@ public class ParticleFilterKalmanWrapper
 
 	public Double getBestRating()
 	{
-		return particleFilter.getBestRating();
+		return particleFilter.getBestScanMatchScore();
 	}
 
 	public void setParticleCount(int i)

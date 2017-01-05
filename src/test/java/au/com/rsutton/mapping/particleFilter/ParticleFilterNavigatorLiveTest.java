@@ -19,6 +19,7 @@ import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
+import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotListener;
 
@@ -33,12 +34,14 @@ public class ParticleFilterNavigatorLiveTest
 	public void test() throws InterruptedException
 	{
 		boolean buildMap = true;
+		StartPosition startPosition = StartPosition.RANDOM;
 
 		if (buildMap)
 		{
+			startPosition = StartPosition.ZERO;
 			createInitalMapForMapBuilder();
 		}
-		final ParticleFilter pf = new ParticleFilter(map, 2000, 1.25, 1.50, StartPosition.RANDOM);
+		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 2000, 1.25, 1.50, startPosition);
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
 
@@ -58,7 +61,7 @@ public class ParticleFilterNavigatorLiveTest
 
 	private void createInitalMapForMapBuilder()
 	{
-		map = new ProbabilityMap(10);
+		map = new ProbabilityMap(5);
 
 		new InitialWorldBuilder(map, robot, 0);
 
@@ -77,7 +80,7 @@ public class ParticleFilterNavigatorLiveTest
 
 	private void navigateTo(NavigatorControl navigator, int x, int y) throws InterruptedException
 	{
-		navigator.calculateRouteTo(x, y, 0);
+		navigator.calculateRouteTo(x, y, 0, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 		navigator.go();
 
 		while (!navigator.hasReachedDestination())//

@@ -1,13 +1,16 @@
 package au.com.rsutton.navigation.router;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.mapping.particleFilter.Despecaler;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 
 public class RoutePlanner
@@ -32,6 +35,10 @@ public class RoutePlanner
 
 	public void createRoute(int toX, int toY, RouteOption routeOption)
 	{
+		wallChecks.clear();
+
+		Despecaler.despecal(world);
+
 		this.targetX = toX;
 		this.targetY = toY;
 
@@ -131,6 +138,8 @@ public class RoutePlanner
 				&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize;
 	}
 
+	Map<ExpansionPoint, Integer> wallChecks = new HashMap<>();
+
 	/**
 	 * 
 	 * @param point
@@ -141,6 +150,10 @@ public class RoutePlanner
 	 */
 	int doWallCheck(ExpansionPoint epoint, int size)
 	{
+		if (wallChecks.get(epoint) != null)
+		{
+			return wallChecks.get(epoint);
+		}
 
 		for (int radius = 1; radius <= size; radius++)
 		{
@@ -158,10 +171,12 @@ public class RoutePlanner
 			{
 				if (world.get((epoint.x + radiusPoint.x) * blockSize, (epoint.y + radiusPoint.y) * blockSize) > 0.5)
 				{
+					wallChecks.put(epoint, size);
 					return size;
 				}
 			}
 		}
+		wallChecks.put(epoint, -1);
 		return -1;
 	}
 
@@ -203,7 +218,8 @@ public class RoutePlanner
 	public ExpansionPoint getRouteForLocation(int x, int y)
 	{
 		ExpansionPoint result = null;
-		for (int i = 1; i < 10; i++)
+
+		for (int i = 1; i < blockSize * 2; i++)
 		{
 			result = getRouteForLocation(x, y, i);
 			if (result != null)

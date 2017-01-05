@@ -21,6 +21,7 @@ import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.robot.lidar.Spinner;
@@ -112,7 +113,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 				* (toPercentage / 100.0)); h += stepSize + (rand.nextGaussian() * stepNoise))
 		{
 			double adjustedHeading = h - 180 + 45;
-			double distance = particle.simulateObservation(map, adjustedHeading, 1000, 0.5);
+			double distance = particle.simulateObservation(map, adjustedHeading, 1000,
+					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY);
 
 			if (Math.abs(distance) > 1)
 			{

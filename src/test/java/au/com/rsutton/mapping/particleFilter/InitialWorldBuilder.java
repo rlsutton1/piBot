@@ -15,6 +15,8 @@ import au.com.rsutton.robot.rover.Angle;
 public class InitialWorldBuilder implements RobotListener
 {
 
+	public static final double REQUIRED_POINT_CERTAINTY = 0.90;
+
 	private ProbabilityMap world;
 
 	volatile boolean done = false;
@@ -24,6 +26,8 @@ public class InitialWorldBuilder implements RobotListener
 	Double heading = null;
 
 	private Double headingOffsetAdjustment;
+
+	private volatile boolean suspended = false;
 
 	public InitialWorldBuilder(ProbabilityMap map, RobotInterface robot, double headingOffsetAdjustment)
 	{
@@ -44,14 +48,17 @@ public class InitialWorldBuilder implements RobotListener
 
 			Thread.sleep(20000);
 
+			suspended = true;
 			robot.freeze(false);
 			robot.setHeading(120);
 			robot.publishUpdate();
 			Thread.sleep(10000);
 
 			robot.freeze(true);
+			suspended = false;
 			robot.publishUpdate();
 			Thread.sleep(20000);
+			suspended = true;
 
 			robot.freeze(false);
 
@@ -70,6 +77,10 @@ public class InitialWorldBuilder implements RobotListener
 	@Override
 	public void observed(RobotLocation observation)
 	{
+		if (suspended)
+		{
+			return;
+		}
 		Angle heading = observation.getDeadReaconingHeading();
 
 		if (offset == null)
@@ -93,12 +104,13 @@ public class InitialWorldBuilder implements RobotListener
 
 			clearPoints(pos, point);
 			double simulateObservation = particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()),
-					1000, 0.90);
+					1000, REQUIRED_POINT_CERTAINTY);
 			if (simulateObservation >= 1000 && simulateObservation > 0.1)
 			{
 				hasFoundPoints = true;
 				hasNewPoints = true;
-				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5, 5);
+				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5,
+						world.getBlockSize() / 2);
 				System.out.println("Adding point to map");
 			}
 		}
@@ -118,7 +130,7 @@ public class InitialWorldBuilder implements RobotListener
 		double x2 = point.getX();
 		double y2 = point.getY();
 
-		double dist = pos.distance(point) - 10;
+		double dist = pos.distance(point) - world.getBlockSize();
 		if (dist > 0)
 		{
 			for (int i = 0; i < dist; i++)
@@ -126,7 +138,7 @@ public class InitialWorldBuilder implements RobotListener
 				double percent = i / dist;
 				double x = (percent * x2) + ((1.0 - percent) * x1);
 				double y = (percent * y2) + ((1.0 - percent) * y1);
-				if (world.get(x, y) < 0.90)
+				if (world.get(x, y) < REQUIRED_POINT_CERTAINTY)
 				{
 					world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, 0.05, 2);
 				}

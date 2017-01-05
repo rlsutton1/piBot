@@ -10,6 +10,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.base.Preconditions;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
 import au.com.rsutton.ui.DataSourcePoint;
 
 public class ProbabilityMap implements DataSourcePoint
@@ -113,11 +114,9 @@ public class ProbabilityMap implements DataSourcePoint
 
 				double gausian = occupancyProbability[xc][yc];
 
-				double centered = probability - 0.5;
-				centered *= gausian;
-				centered += 0.5;
+				double centered = certainty * gausian;
 
-				updatePoint(xpos, ypos, centered, certainty);
+				updatePoint(xpos, ypos, occupied, centered);
 
 			}
 
@@ -231,15 +230,21 @@ public class ProbabilityMap implements DataSourcePoint
 		return shift;
 	}
 
-	private void updatePoint(int x, int y, double occupancyProbability, double certainty)
+	private void updatePoint(int x, int y, Occupancy occupied, double certainty)
 	{
 		Preconditions.checkArgument(certainty >= 0 && certainty <= 1.0, "Certainty must be between 0.0 and 1.0");
 
 		double currentValue = world.get(x, y);
+		if (occupied == Occupancy.OCCUPIED)
+		{
+			double delta = certainty * (1.0 - currentValue);
+			world.set(x, y, currentValue + delta);
+		} else
+		{
+			double delta = certainty * currentValue;
+			world.set(x, y, currentValue - delta);
+		}
 
-		double newValue = (currentValue * (1.0 - certainty)) + (occupancyProbability * certainty);
-
-		world.set(x, y, newValue);
 	}
 
 	public void dumpWorld()
@@ -343,7 +348,7 @@ public class ProbabilityMap implements DataSourcePoint
 		{
 			for (int y = world.getMinY() - 1; y < world.getMaxY() + 1; y += 1)
 			{
-				if (world.get(x, y) > 0.5)
+				if (world.get(x, y) >= InitialWorldBuilder.REQUIRED_POINT_CERTAINTY)
 				{
 					points.add(new Point(x * blockSize, y * blockSize));
 				}
