@@ -47,6 +47,8 @@ public class MapBuilder implements ParticleFilterListener
 		scanReferenceChecker = new ScanReferenceChecker();
 
 		particleFilter.addListener(this);
+
+		chooseTarget();
 	}
 
 	int lastHeading = 0;
@@ -68,7 +70,7 @@ public class MapBuilder implements ParticleFilterListener
 			return;
 		}
 
-		if (particleFilter.getBestScanMatchScore() < 0.3)
+		if (particleFilter.getBestScanMatchScore() < 0.001)
 		{
 			return;
 		}
@@ -131,9 +133,9 @@ public class MapBuilder implements ParticleFilterListener
 
 		navigatorControl.go();
 
-		if (navigatorControl.hasReachedDestination() || particleFilter.getBestScanMatchScore() < 0.3
-				|| (navigatorControl.isStuck() && targetAge.elapsed(TimeUnit.SECONDS) > 30)
-				|| targetAge.elapsed(TimeUnit.MINUTES) > 1)
+		if (navigatorControl.hasReachedDestination() || particleFilter.getBestScanMatchScore() < 0.002
+				|| (navigatorControl.isStuck() && targetAge.elapsed(TimeUnit.SECONDS) > 120)
+				|| targetAge.elapsed(TimeUnit.MINUTES) > 2)
 		{
 			chooseTarget();
 		}
@@ -168,7 +170,7 @@ public class MapBuilder implements ParticleFilterListener
 		Random r = new Random();
 
 		int ctr = 0;
-		while (ctr < 300)
+		while (ctr < 1000)
 		{
 			ctr++;
 			int x = r.nextInt(xspread) + world.getMinX();

@@ -90,18 +90,13 @@ public class ParticleFilterKalmanWrapper
 
 	public double getAverageHeading()
 	{
-		return headingKalmanHelper.getValueBasedOnChangedDeadReconningValue(lastObservation.get()
-				.getDeadReaconingHeading().getDegrees());
+		return headingKalmanHelper
+				.getValueBasedOnChangedDeadReconningValue(lastObservation.get().getDeadReaconingHeading().getDegrees());
 	}
 
 	public double getStdDev()
 	{
 		return particleFilter.getStdDev();
-	}
-
-	public int getSampleCount()
-	{
-		return particleFilter.getSampleCount();
 	}
 
 	public Double getBestRating()
@@ -155,8 +150,8 @@ public class ParticleFilterKalmanWrapper
 					// draw lidar observation lines
 					for (ScanObservation obs : lastObservation.get().getObservations())
 					{
-						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading)).applyTo(obs
-								.getVector());
+						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading))
+								.applyTo(obs.getVector());
 						graphics.drawLine((int) pointOriginX, (int) pointOriginY,
 								(int) (pointOriginX + (vector.getX() * scale)),
 								(int) (pointOriginY + (vector.getY() * scale)));

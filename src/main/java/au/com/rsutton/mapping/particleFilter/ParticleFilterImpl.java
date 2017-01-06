@@ -27,7 +27,7 @@ import au.com.rsutton.ui.DataSourcePoint;
 public class ParticleFilterImpl implements ParticleFilterIfc
 {
 
-	private static final double MINIMUM_MEANINGFUL_RATING = 0.02;
+	private static final double MINIMUM_MEANINGFUL_RATING = 0.001;
 	private final List<Particle> particles = new CopyOnWriteArrayList<>();
 	private volatile int particleQty;
 	private volatile double averageHeading;
@@ -142,18 +142,31 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		Stopwatch timer = Stopwatch.createStarted();
 
-		removeUnusableParticles();
-
 		Random rand = new Random();
 		List<Particle> newSet = new LinkedList<>();
 		int pos = 0;
 		double next = 0.0;
 		int size = particles.size();
 
+		double totalRating = 0;
+		double maxRating = 0;
+		for (Particle selectedParticle : particles)
+		{
+			totalRating += selectedParticle.getRating();
+			maxRating = Math.max(maxRating, selectedParticle.getRating());
+		}
+
+		for (Particle selectedParticle : particles)
+		{
+			selectedParticle.setRescaledRating(selectedParticle.getRating() / totalRating);
+		}
+
+		removeUnusableParticles();
+
 		double bestRatingSoFar = 0;
 		for (Particle selectedParticle : particles)
 		{
-			bestRatingSoFar = Math.max(bestRatingSoFar, selectedParticle.getRating());
+			bestRatingSoFar = Math.max(bestRatingSoFar, selectedParticle.getRescaledRating());
 		}
 		if (bestRatingSoFar < MINIMUM_MEANINGFUL_RATING)
 		{
@@ -166,7 +179,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		{
 			Particle selectedParticle = null;
 
-			while (newSet.size() < newParticleCount)
+			List<Particle> working = new LinkedList<>();
+			working.addAll(particles);
+
+			while (!working.isEmpty() && newSet.size() < newParticleCount)
 			{
 				next += rand.nextDouble() * 2.0;// 50/50 chance of the same or
 												// next
@@ -175,11 +191,11 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 												// rated 1.0
 				while (next > 0.0)
 				{
-					selectedParticle = particles.get(pos);
+					selectedParticle = working.get(pos);
 
-					next -= selectedParticle.getRating();
+					next -= selectedParticle.getRescaledRating();
 					pos++;
-					pos %= size;
+					pos %= working.size();
 
 				}
 				// System.out.println(selectedParticle.getRating());
@@ -213,7 +229,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		List<Particle> particlesToRemove = new LinkedList<>();
 		for (Particle particle : particles)
 		{
-			if (particle.getRating() < MINIMUM_MEANINGFUL_RATING)
+			if (particle.getRescaledRating() <= 1.0 / particles.size())
 			{
 				particlesToRemove.add(particle);
 			}
@@ -429,11 +445,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 			}
 		};
-	}
-
-	public int getSampleCount()
-	{
-		return particles.get(0).getSampleCount();
 	}
 
 	@Override

@@ -168,7 +168,7 @@ public class ScanMatcher extends JFrame
 
 		particle.addObservation(world, observations, compassAdjustment, false);
 
-		return particle.getScanMatchRating();
+		return particle.getRating();
 
 	}
 }

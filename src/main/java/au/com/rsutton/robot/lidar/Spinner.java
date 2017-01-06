@@ -19,8 +19,8 @@ import au.com.rsutton.config.Config;
 public class Spinner implements Runnable
 {
 
-	private static final double minAnglePercent = 0.20;
-	private static final double maxAnglePercent = 0.80;
+	private static final double minAnglePercent = 0.01;
+	private static final double maxAnglePercent = 0.99;
 	private static final long ONE_SECOND_IN_NANOS = TimeUnit.SECONDS.toNanos(1);
 	private GpioPinDigitalOutput stepPin;
 	private GpioPinDigitalOutput dirPin;

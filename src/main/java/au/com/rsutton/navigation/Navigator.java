@@ -99,7 +99,7 @@ public class Navigator implements Runnable, NavigatorControl
 			double std = pf.getStdDev();
 			// adjust the number of particles in the particle filter based on
 			// how well localised it is
-			pf.setParticleCount(Math.max(500, (int) (7 * std)));
+			pf.setParticleCount(Math.max(50, (int) (7 * std)));
 
 			if (std < 30)
 			{

@@ -54,7 +54,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	public void move(double distance)
 	{
-		distance += (distance * (random.nextGaussian() * 0.5));
+		distance -= Math.abs((distance * (random.nextGaussian() * 0.5)));
 
 		Vector3D unit = new Vector3D(0, distance, 0);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
@@ -76,7 +76,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	public void turn(double angle)
 	{
-		double noise = (random.nextGaussian() * 0.5) * (1.0 / hz);
+		double noise = Math.abs((random.nextGaussian() * 0.5) * (1.0 / hz));
 		heading += angle + noise;
 		if (heading < 0)
 		{

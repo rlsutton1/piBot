@@ -8,7 +8,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 
 public class Particle
@@ -17,13 +16,14 @@ public class Particle
 	double x;
 	double y;
 	double heading;
-	private double totalVotes = 0.0;
-	private double totalObservations;
 	private double distanceNoise;
 	private double headingNoise;
 	Random rand = new Random();
 
 	List<ScanReference> scanReferences = new LinkedList<>();
+	private double squaredError = 0;
+	private double observationCount = 0;
+	private double rescaledRating;
 
 	public Particle(double x, double y, double heading, double distanceNoise, double headingNoise)
 	{
@@ -106,21 +106,6 @@ public class Particle
 	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data, double compassAdjustment,
 			boolean useCompass)
 	{
-		if (useCompass && data.getCompassHeading().getError() < 45)
-		{
-
-			double compassDiff = Math.abs(HeadingHelper
-					.getChangeInHeading(data.getCompassHeading().getHeading() + compassAdjustment, heading));
-			if (compassDiff > 45)
-			{
-				// System.out.println("eliminating on compass heading " +
-				// data.getCompassHeading().getHeading() + " "
-				// + heading);
-				totalObservations++;
-				totalVotes -= 1000000;
-
-			}
-		}
 
 		// max error is 30cm, after that we vote negative
 		// error of 0 is a 1 vote
@@ -144,28 +129,9 @@ public class Particle
 			// world block size, but stay > 0
 			double error = Math.abs(simDistance - distance);
 
-			double e = -2;
-			if (error < maxGoodError)
-			{
-				e = ((maxGoodError - error) / maxGoodError) * maxGoodVote;
-				e -= 0.5;
-			}
-			// else
-			// {
-			// double er = error - maxGoodError;
-			// er = Math.min(maxBadError, er);
-			// e = -(er / maxBadError) * maxBadVote;
-			//
-			// }
+			squaredError += Math.pow(error, 2);
+			observationCount++;
 
-			totalVotes += e;
-			totalObservations++;
-			double currentRating = totalVotes / totalObservations;
-			if (currentRating > 1.0)
-			{
-				System.out.println("error " + currentRating);
-
-			}
 		}
 
 	}
@@ -182,18 +148,20 @@ public class Particle
 	public double simulateObservation(ProbabilityMap currentWorld, double angle, double maxDistance,
 			double occupancyThreshold)
 	{
-		Vector3D unit = new Vector3D(0, 1, 0);
+
+		int inc = Math.max(1, currentWorld.getBlockSize());
+
+		Vector3D unit = new Vector3D(0, inc, 0);
 		double hr = Math.toRadians(heading);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0.0, 0.0, hr + Math.toRadians(angle));
 		unit = rotation.applyTo(unit);
 		Vector3D location = new Vector3D(x, y, 0);
 		// step size half the world block size
-		int inc = Math.max(1, currentWorld.getBlockSize() / 4);
 
 		double bestMatchDistance = maxDistance;
 		double bestMatchOccupancy = 0;
 
-		for (int i = 0; i < maxDistance; i += 1)
+		for (int i = 0; i < maxDistance; i += inc)
 		{
 			double d = currentWorld.get(location.getX(), location.getY());
 			if (d >= occupancyThreshold && d > bestMatchOccupancy)
@@ -229,24 +197,29 @@ public class Particle
 	 */
 	public double getRating()
 	{
-		double rawRating = totalVotes / totalObservations;
-		if (rawRating > 1.0)
+
+		if (Math.abs(0 - observationCount) < 0.001)
 		{
-			System.out.println("Bad rating");
+			return 0;
 		}
-		return Math.max(0.01, rawRating);
+		double t = 1.0 / (Math.sqrt(squaredError) + 1.0);
+
+		if (t > 0.1)
+		{
+			System.out.println(t);
+		}
+		return t;
 
 	}
 
-	public double getScanMatchRating()
+	public void setRescaledRating(double rating)
 	{
-		return totalVotes / totalObservations;
+		rescaledRating = rating;
 	}
 
-	public int getSampleCount()
+	public double getRescaledRating()
 	{
-		return (int) totalObservations;
-
+		return rescaledRating;
 	}
 
 	public void addScanReference(final ParticleFilterObservationSet observations)

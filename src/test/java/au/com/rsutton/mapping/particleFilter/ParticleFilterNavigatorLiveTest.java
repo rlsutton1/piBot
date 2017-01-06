@@ -41,7 +41,7 @@ public class ParticleFilterNavigatorLiveTest
 			startPosition = StartPosition.ZERO;
 			createInitalMapForMapBuilder();
 		}
-		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 2000, 1.25, 1.50, startPosition);
+		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition);
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
 
