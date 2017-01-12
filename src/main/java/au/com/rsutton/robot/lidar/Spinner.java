@@ -19,14 +19,13 @@ import au.com.rsutton.config.Config;
 public class Spinner implements Runnable
 {
 
-	private static final double minAnglePercent = 0.01;
-	private static final double maxAnglePercent = 0.99;
-	private static final long ONE_SECOND_IN_NANOS = TimeUnit.SECONDS.toNanos(1);
+	private static final double minAnglePercent = 0.10;
+	private static final double maxAnglePercent = 0.85;
+	private static final long ONE_SECOND_IN_NANOS = TimeUnit.MILLISECONDS.toNanos(1200);
 	private GpioPinDigitalOutput stepPin;
 	private GpioPinDigitalOutput dirPin;
 
 	private long currentPosition;
-	private long requiredPosition;
 
 	private Stopwatch lastStep = Stopwatch.createStarted();
 
@@ -35,9 +34,9 @@ public class Spinner implements Runnable
 
 	private GrovePiProvider grove;
 
-	static final double stepsPerRotation = 200;
+	static final double STEPS_PER_REVOLUTION = 200;
 
-	static final double microSteps = 8;
+	static final double MICRO_STEPS = 8;
 
 	boolean stop = false;
 
@@ -60,26 +59,35 @@ public class Spinner implements Runnable
 
 		grove.setMode(GrovePiPin.GPIO_A2, PinMode.ANALOG_INPUT);
 
-		double ldrMax = 0;
+		double ldrMin = 1000;
 
 		int maxPos = 0;
 
-		for (int i = 0; i < stepsPerRotation * microSteps; i += microSteps)
+		double lastStepValue = 1000;
+		for (int i = 0; i < STEPS_PER_REVOLUTION * MICRO_STEPS; i += MICRO_STEPS)
 		{
 			moveTo(i);
 			double value = getLdrValue();
 			System.out.println(value);
 
-			if (value > ldrMax)
+			if (value < ldrMin && value < lastStepValue)
 			{
 				maxPos = i;
+				ldrMin = value;
 			}
-			ldrMax = Math.max(ldrMax, value);
+			lastStepValue = value;
 
 		}
 
-		moveTo((long) (maxPos + (0 * microSteps)));
+		// set zero to facing the back of the lidar mount
+		moveTo((long) (maxPos + (22 * MICRO_STEPS)));
 		setZero();
+
+		// face directly forward, for user to validate configuration
+		moveTo((long) (100L * MICRO_STEPS));
+		Thread.sleep(1000);
+
+		System.out.println("ldrMin " + ldrMin);
 
 		new Thread(this, "Spinner").start();
 		new Lidar(this, config);
@@ -170,7 +178,7 @@ public class Spinner implements Runnable
 
 	public void moveTo(long position) throws InterruptedException
 	{
-		requiredPosition = position;
+		long requiredPosition = position;
 		while (currentPosition != requiredPosition)
 		{
 			step((int) (requiredPosition - currentPosition));
@@ -192,7 +200,7 @@ public class Spinner implements Runnable
 	 */
 	public long getCurrentPosition()
 	{
-		return (long) (currentPosition % (microSteps * stepsPerRotation));
+		return (long) (currentPosition % (MICRO_STEPS * STEPS_PER_REVOLUTION));
 	}
 
 	public void setStepSpeed(long stepsPerSecond)
@@ -207,7 +215,7 @@ public class Spinner implements Runnable
 		long pos = 0;
 		while (!stop)
 		{
-			pos += (microSteps * stepsPerRotation);
+			pos += (MICRO_STEPS * STEPS_PER_REVOLUTION);
 			try
 			{
 				moveTo(pos);
@@ -232,7 +240,7 @@ public class Spinner implements Runnable
 	 */
 	public boolean isValidPosition()
 	{
-		long totalSteps = (long) (microSteps * stepsPerRotation);
+		long totalSteps = (long) (MICRO_STEPS * STEPS_PER_REVOLUTION);
 		long pos = currentPosition % totalSteps;
 		return pos > (totalSteps * minAnglePercent) && pos < (totalSteps * maxAnglePercent);
 
