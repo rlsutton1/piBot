@@ -116,18 +116,22 @@ public class ObsticleAvoidance
 				LidarObservation last = null;
 				for (LidarObservation obs : observations)
 				{
-					if (last != null)
+					double absObsAngle = Math
+							.abs(HeadingHelper.getChangeInHeading(0, Math.toDegrees(obs.getAngleRadians())));
+					if (absObsAngle < 90)
 					{
-						if (last.getVector().distance(obs.getVector()) > 20)
+						if (last != null)
 						{
-							prunedList.add(last);
+							if (last.getVector().distance(obs.getVector()) > 20)
+							{
+								prunedList.add(last);
+								last = obs;
+							}
+						} else
+						{
 							last = obs;
 						}
-					} else
-					{
-						last = obs;
 					}
-
 				}
 
 				// find the furthest point that is within maxDistance
