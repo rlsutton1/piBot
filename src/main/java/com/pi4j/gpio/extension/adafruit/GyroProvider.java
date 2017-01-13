@@ -64,36 +64,32 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 	public static final String NAME = GyroProvider.class.getCanonicalName();
 	public static final String DESCRIPTION = "GYRO";
 
-	final private I2CBus bus;
-	final private I2CDevice device;
+	private final I2CBus bus;
+	private final I2CDevice device;
 
 	public static final int CTRL_REG1 = 0x20;
 	public static final int CTRL_REG2 = 0x21;
 	public static final int CTRL_REG3 = 0x22;
 	public static final int CTRL_REG4 = 0x23;
-	private static final int SECOND = 1000;
 
 	public static final int Addr = 105; // I2C address of gyro
 	volatile double x, y, z;
 	volatile double currentX, currentY, currentZ;
-	// int ctr = 50;
 	private ScheduledExecutorService worker;
-	volatile private double outx;
-	volatile private double outy;
-	volatile private double outz;
+	private volatile double outx;
+	private volatile double outy;
+	private volatile double outz;
 
 	double xDrift;
 	double yDrift;
 	double zDrift;
 	int driftCnt;
-	private long calabrationStart;
 	boolean calabrated = false;
 	private Set<GyroListener> gyroListeners = new HashSet<>();
 
 	@Override
 	public void run()
 	{
-		// TODO Auto-generated method stub
 
 		try
 		{
@@ -134,14 +130,14 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 
 			double scaler = scaling / filter;
 
-			if (calabrationStart + (10 * SECOND) > System.currentTimeMillis() || driftCnt < 10)
+			if (driftCnt < 500)
 			{
 
 				xDrift += x;
 				yDrift += y;
 				zDrift += z;
 				driftCnt++;
-				if (driftCnt % 100 == 1)
+				if (driftCnt % 10 == 1)
 				{
 					System.out.println("calabrating...");
 				}
@@ -194,7 +190,6 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 		device.write(CTRL_REG4, (byte) 0x80); // Set scale (500 deg/sec)
 		// delay(100); // Wait to synchronize
 
-		calabrationStart = System.currentTimeMillis();
 		worker = GpioFactory.getExecutorServiceFactory().getScheduledExecutorService();
 
 		worker.scheduleAtFixedRate(this, 10, 10, TimeUnit.MILLISECONDS);
