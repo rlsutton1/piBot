@@ -8,6 +8,7 @@ import java.util.concurrent.BrokenBarrierException;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.calabrate.CalabrateCompass;
+import au.com.rsutton.calabrate.CalabrateDeadReconning;
 import au.com.rsutton.robot.rover.Rover;
 
 public class Main
@@ -23,6 +24,8 @@ public class Main
 		System.out.println("Press 0 to start the rover\n");
 		System.out.println("Press 1 to calabrate compass");
 
+		System.out.println("Press 2 to calabrate dead reconning");
+
 		int ch = br.read();
 		if (ch == '0')
 		{
@@ -34,6 +37,9 @@ public class Main
 		} else if (ch == '1')
 		{
 			new CalabrateCompass();
+		} else if (ch == '2')
+		{
+			new CalabrateDeadReconning();
 		}
 	}
 
