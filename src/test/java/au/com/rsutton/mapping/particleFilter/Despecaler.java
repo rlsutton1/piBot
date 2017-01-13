@@ -3,7 +3,6 @@ package au.com.rsutton.mapping.particleFilter;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 
@@ -48,7 +47,8 @@ public class Despecaler
 
 		for (ExpansionPoint point : toRemove)
 		{
-			inputMap.updatePoint(point.getX(), point.getY(), Occupancy.VACANT, 1, 1);
+
+			inputMap.resetPoint(point.getX(), point.getY());
 			System.out.println("Removing point at " + point.getX() + "," + point.getY());
 		}
 
