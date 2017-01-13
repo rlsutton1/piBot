@@ -10,9 +10,9 @@ import au.com.rsutton.entryPoint.units.DistanceUnit;
 public class DeadReconing
 {
 
-	private static final int VEHICAL_WIDTH = 225;
+	private static final double VEHICAL_WIDTH = 185;
 
-	private final static DistanceUnit unit = DistanceUnit.MM;
+	private final static DistanceUnit MILLIMETERS = DistanceUnit.MM;
 
 	double initialX = 0;
 	double initialY = 0;
@@ -28,8 +28,6 @@ public class DeadReconing
 
 	private GyroProvider gyro;
 
-	private double gyroSlip;
-
 	private double lastGyroHeading;
 
 	public DeadReconing(Angle angle, GyroProvider gyro)
@@ -38,9 +36,7 @@ public class DeadReconing
 		this.gyro = gyro;
 	}
 
-	long lastTime = System.currentTimeMillis();
-
-	public void updateLocation(Distance leftDistance, Distance rightDistance, final HeadingData compassData)
+	public void updateLocation(Distance leftDistance, Distance rightDistance)
 	{
 
 		try
@@ -50,11 +46,11 @@ public class DeadReconing
 			{
 				if (leftDistance != null)
 				{
-					currentLeftWheelReading = leftDistance.convert(unit);
+					currentLeftWheelReading = leftDistance.convert(MILLIMETERS);
 				}
 				if (rightDistance != null)
 				{
-					currentRightWheelReading = rightDistance.convert(unit);
+					currentRightWheelReading = rightDistance.convert(MILLIMETERS);
 				}
 
 				double t1 = initialLeftWheelReading - currentLeftWheelReading;
@@ -66,89 +62,35 @@ public class DeadReconing
 				initialLeftWheelReading = currentLeftWheelReading;
 				initialRightWheelReading = currentRightWheelReading;
 
-				long now = System.currentTimeMillis();
-				double elapsedMillis = now - lastTime;
-				lastTime = now;
-				double fraction = elapsedMillis / 1000.0;
-
-				// max change = 25 deg/sec
-				double maxChange = 25 * fraction;
-
 				// get gyro delta and prepare for the next
 				double gyroHeading = gyro.getHeading();
-				double deltaGyroHeading = gyroHeading - lastGyroHeading;
+				double gyroDelta = gyroHeading - lastGyroHeading;
 				lastGyroHeading = gyroHeading;
 
 				// check change in heading, based on odometry
-				final double odoHeadingChange = Math.toDegrees((t2 - t1) / VEHICAL_WIDTH) * 2.0;
+				final double odoDelta = Math.toDegrees((t2 - t1) / VEHICAL_WIDTH);
 
-				if (Math.abs(odoHeadingChange) < 0.2)
+				if (Math.signum(gyroDelta) != Math.signum(odoDelta))
 				{
-					// stationary, any change in gyro heading is slippage
-					gyroSlip += deltaGyroHeading;
-
-				} else if (Math.abs(deltaGyroHeading) > maxChange)
-				{
-					// excessive change in gyro heading, must be slipapge
-					gyroSlip += (Math.abs(deltaGyroHeading) - maxChange) * Math.signum(deltaGyroHeading);
+					System.out.println("Gyro and odo are different directions");
 				}
 
+				// cap the gyro delta equal to the odo delta and use the
+				// direction of the odo
+				gyroDelta = Math.min(Math.abs(gyroDelta), Math.abs(odoDelta)) * Math.signum(odoDelta);
+
+				// average the gyro and odo data
+
+				double delta = (odoDelta * 0.5) + (gyroDelta * 0.5);
+				double error = Math.abs(odoDelta - gyroDelta);
+
 				// determine heading allowing for slippage
-				final double telemetryHeading = HeadingHelper.normalizeHeading(gyroHeading - gyroSlip);
+				final double telemetryHeading = HeadingHelper.normalizeHeading(heading.getDegrees() - delta);
 
 				heading = new Angle(telemetryHeading, AngleUnits.DEGREES);
 
-				System.out.println(gyroHeading + " " + gyroSlip);
+				System.out.println(gyroDelta + " " + odoDelta);
 				System.out.println("final " + heading.getDegrees());
-
-			}
-
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-
-	}
-
-	public void replacement_updateLocation(Distance leftDistance, Distance rightDistance, final HeadingData compassData)
-	{
-
-		try
-		{
-
-			synchronized (sync)
-			{
-				if (leftDistance != null)
-				{
-					currentLeftWheelReading = leftDistance.convert(unit);
-				}
-				if (rightDistance != null)
-				{
-					currentRightWheelReading = rightDistance.convert(unit);
-				}
-
-				double leftDelta = currentLeftWheelReading - initialLeftWheelReading;
-				double rightDelta = currentRightWheelReading - initialRightWheelReading;
-
-				if (Math.abs(leftDelta - rightDelta) < 0.000005)
-				{
-					initialX += leftDelta * Math.cos(heading.getRadians());
-					initialY += leftDelta * Math.sin(heading.getRadians());
-				} else
-				{
-					double r = VEHICAL_WIDTH * (leftDelta + rightDelta) / (2.0 * (rightDelta - leftDelta));
-					double wd = (rightDelta - leftDelta) / VEHICAL_WIDTH;
-
-					initialX += r * Math.sin(wd + heading.getRadians()) - r * Math.sin(heading.getRadians());
-					initialY -= r * Math.cos(wd + heading.getRadians()) + r * Math.cos(heading.getRadians());
-					heading = new Angle(heading.getRadians() + wd, AngleUnits.RADIANS);
-				}
-
-				initialLeftWheelReading = currentLeftWheelReading;
-				initialRightWheelReading = currentRightWheelReading;
-
-				System.out.println("final " + heading.getDegrees());
-				System.out.println();
 
 			}
 
@@ -164,7 +106,7 @@ public class DeadReconing
 
 		synchronized (sync)
 		{
-			return new Distance(initialX, unit);
+			return new Distance(initialX, MILLIMETERS);
 		}
 	}
 
@@ -172,7 +114,7 @@ public class DeadReconing
 	{
 		synchronized (sync)
 		{
-			return new Distance(initialY, unit);
+			return new Distance(initialY, MILLIMETERS);
 		}
 
 	}
@@ -184,11 +126,5 @@ public class DeadReconing
 			return new HeadingData((float) heading.getDegrees(), 0);
 		}
 	}
-
-	// public void setHeading(int heading2)
-	// {
-	// heading = heading2;
-	//
-	// }
 
 }

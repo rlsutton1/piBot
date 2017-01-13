@@ -4,8 +4,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.pi4j.gpio.extension.lsm303.HeadingData;
-
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -18,10 +16,9 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
 		Distance leftDistance = new Distance(50, DistanceUnit.CM);
 		Distance rightDistance = new Distance(25, DistanceUnit.CM);
-		dr.updateLocation(leftDistance, rightDistance, compassData);
+		dr.updateLocation(leftDistance, rightDistance);
 
 		assertTrue(dr.getHeading().getHeading() < 0 || dr.getHeading().getHeading() > 180);
 
@@ -32,15 +29,13 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
-
 		double lastHeading = 0;
 		for (int i = 1; i < 30; i++)
 
 		{
 			Distance leftDistance = new Distance((i * 20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 10), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance, compassData);
+			dr.updateLocation(leftDistance, rightDistance);
 
 			double heading = dr.getHeading().getHeading();
 
@@ -57,15 +52,13 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
-
 		double lastHeading = 0;
 		for (int i = 1; i < 30; i++)
 
 		{
 			Distance leftDistance = new Distance((i * 10), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance, compassData);
+			dr.updateLocation(leftDistance, rightDistance);
 
 			double heading = dr.getHeading().getHeading();
 
@@ -82,15 +75,13 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
-
 		double lastHeading = 0;
 		for (int i = 1; i < 30; i++)
 
 		{
 			Distance leftDistance = new Distance((i * 0), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance, compassData);
+			dr.updateLocation(leftDistance, rightDistance);
 
 			double heading = dr.getHeading().getHeading();
 
@@ -107,15 +98,13 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
-
 		double lastHeading = 0;
 		for (int i = 1; i < 30; i++)
 
 		{
 			Distance leftDistance = new Distance((i * 20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 0), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance, compassData);
+			dr.updateLocation(leftDistance, rightDistance);
 
 			double heading = dr.getHeading().getHeading();
 
@@ -132,15 +121,13 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
-
 		double lastHeading = 0;
 		for (int i = 1; i < 30; i++)
 
 		{
 			Distance leftDistance = new Distance((i * 20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * -20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance, compassData);
+			dr.updateLocation(leftDistance, rightDistance);
 
 			double heading = dr.getHeading().getHeading();
 
@@ -157,15 +144,13 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
-
 		double lastHeading = 0;
 		for (int i = 1; i < 30; i++)
 
 		{
 			Distance leftDistance = new Distance((i * -20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance, compassData);
+			dr.updateLocation(leftDistance, rightDistance);
 
 			double heading = dr.getHeading().getHeading();
 
@@ -182,10 +167,9 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
 		Distance leftDistance = new Distance(25, DistanceUnit.CM);
 		Distance rightDistance = new Distance(50, DistanceUnit.CM);
-		dr.updateLocation(leftDistance, rightDistance, compassData);
+		dr.updateLocation(leftDistance, rightDistance);
 
 		assertTrue(dr.getHeading().getHeading() > 0 && dr.getHeading().getHeading() < 180);
 
@@ -196,10 +180,9 @@ public class DeadReconingTest
 	{
 		DeadReconing dr = new DeadReconing(new Angle(0, AngleUnits.DEGREES), null);
 
-		HeadingData compassData = new HeadingData(0, 100);
 		Distance leftDistance = new Distance(-25, DistanceUnit.CM);
 		Distance rightDistance = new Distance(0, DistanceUnit.CM);
-		dr.updateLocation(leftDistance, rightDistance, compassData);
+		dr.updateLocation(leftDistance, rightDistance);
 
 		assertTrue(dr.getHeading().getHeading() > 0 && dr.getHeading().getHeading() < 180);
 
