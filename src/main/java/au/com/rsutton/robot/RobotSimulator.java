@@ -14,8 +14,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.pi4j.gpio.extension.lsm303.HeadingData;
-
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
@@ -133,7 +131,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 		observation.addObservations(observations);
 
-		observation.setCompassHeading(new HeadingData((float) heading + 90, 10.0f));
 		observation.setDeadReaconingHeading(new Angle((float) heading, AngleUnits.DEGREES));
 		observation.setX(new Distance(x, DistanceUnit.CM));
 		observation.setY(new Distance(y, DistanceUnit.CM));

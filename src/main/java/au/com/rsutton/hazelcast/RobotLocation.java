@@ -4,10 +4,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.base.Objects;
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.robot.rover.Angle;
@@ -20,11 +18,9 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 	private Angle deadReaconingHeading;
 	private Distance x;
 	private Distance y;
-	private Speed speed;
 	private Distance clearSpaceAhead;
 	private long time = System.currentTimeMillis();
 	private List<LidarObservation> observations;
-	private HeadingData compassHeading;
 
 	public RobotLocation()
 	{
@@ -79,12 +75,6 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 		return deadReaconingHeading;
 	}
 
-	public void setSpeed(Speed speed)
-	{
-		this.speed = speed;
-
-	}
-
 	public void setClearSpaceAhead(Distance clearSpaceAhead)
 	{
 		this.clearSpaceAhead = clearSpaceAhead;
@@ -121,15 +111,4 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 		this.observations = observations;
 	}
 
-	public void setCompassHeading(HeadingData compassData)
-	{
-		compassHeading = compassData;
-
-	}
-
-	@Override
-	public HeadingData getCompassHeading()
-	{
-		return compassHeading;
-	}
 }

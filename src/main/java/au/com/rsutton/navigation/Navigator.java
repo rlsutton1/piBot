@@ -210,7 +210,6 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
-	private float compassHeading;
 	private double targetHeading;
 
 	private void setupRobotListener()
@@ -228,7 +227,6 @@ public class Navigator implements Runnable, NavigatorControl
 			@Override
 			public void observed(RobotLocation robotLocation)
 			{
-				compassHeading = robotLocation.getCompassHeading().getHeading();
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
 
 				// ParticleFilterObservationSet bufferedObservations =
@@ -327,22 +325,6 @@ public class Navigator implements Runnable, NavigatorControl
 			public String getLabel()
 			{
 				return "StdDev";
-			}
-		});
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + compassHeading;
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "compass Heading";
 			}
 		});
 
