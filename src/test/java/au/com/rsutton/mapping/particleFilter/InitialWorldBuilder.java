@@ -4,7 +4,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
@@ -25,14 +24,11 @@ public class InitialWorldBuilder implements RobotListener
 
 	Double heading = null;
 
-	private Double headingOffsetAdjustment;
-
 	private volatile boolean suspended = false;
 
-	public InitialWorldBuilder(ProbabilityMap map, RobotInterface robot, double headingOffsetAdjustment)
+	public InitialWorldBuilder(ProbabilityMap map, RobotInterface robot)
 	{
 		world = map;
-		this.headingOffsetAdjustment = headingOffsetAdjustment;
 
 		try
 		{
@@ -46,25 +42,29 @@ public class InitialWorldBuilder implements RobotListener
 
 			robot.addMessageListener(this);
 
-			Thread.sleep(20000);
+			Thread.sleep(10000);
 
 			suspended = true;
+			robot.setHeading(130);
 			robot.freeze(false);
-			robot.setHeading(120);
 			robot.publishUpdate();
 			Thread.sleep(10000);
 
 			robot.freeze(true);
-			suspended = false;
 			robot.publishUpdate();
-			Thread.sleep(20000);
+			Thread.sleep(3000);
+
+			suspended = false;
+			Thread.sleep(10000);
+
 			suspended = true;
 
-			robot.freeze(false);
-
-			robot.publishUpdate();
-
 			robot.removeMessageListener(this);
+
+			robot.setHeading(0);
+			robot.freeze(false);
+			robot.publishUpdate();
+			Thread.sleep(10000);
 
 		} catch (InterruptedException e)
 		{
@@ -83,13 +83,7 @@ public class InitialWorldBuilder implements RobotListener
 		}
 		Angle heading = observation.getDeadReaconingHeading();
 
-		if (offset == null)
-		{
-			offset = HeadingHelper.getChangeInHeading(observation.getCompassHeading().getHeading(),
-					observation.getDeadReaconingHeading().getDegrees()) - headingOffsetAdjustment;
-		}
-
-		double adjustedHeading = (heading.getDegrees() - offset);
+		double adjustedHeading = (heading.getDegrees());
 
 		Particle particle = new Particle(0, 0, adjustedHeading, 0, 0);
 		Vector3D pos = new Vector3D(0, 0, 0);
@@ -100,18 +94,24 @@ public class InitialWorldBuilder implements RobotListener
 
 			Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(adjustedHeading))
 					.applyTo(obs.getVector());
-			point = pos.add(point);
-
-			clearPoints(pos, point);
-			double simulateObservation = particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()),
-					1000, REQUIRED_POINT_CERTAINTY);
-			if (simulateObservation >= 1000 && simulateObservation > 0.1)
+			if (point.getNorm() < 1000)
 			{
-				hasFoundPoints = true;
-				hasNewPoints = true;
-				world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5,
-						world.getBlockSize() / 2);
-				System.out.println("Adding point to map");
+				point = pos.add(point);
+
+				clearPoints(pos, point);
+				double simulateObservation = particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()),
+						1000, REQUIRED_POINT_CERTAINTY);
+				if (simulateObservation == 1000)
+				{
+					hasFoundPoints = true;
+					hasNewPoints = true;
+					world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.5,
+							world.getBlockSize() / 2);
+					System.out.println("Adding point to map");
+				}
+			} else
+			{
+				System.out.println("Rejecting very distant point");
 			}
 		}
 		if (!hasNewPoints && observation.getObservations().size() > 5 && hasFoundPoints)

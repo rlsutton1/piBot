@@ -60,6 +60,13 @@ public class ProbabilityMap implements DataSourcePoint
 		return kernel;
 	}
 
+	public void resetPoint(int x, int y)
+	{
+		x = x / blockSize;
+		y = y / blockSize;
+		world.set(x, y, world.getDefaultValue());
+	}
+
 	/**
 	 * 
 	 * @param x
@@ -76,12 +83,6 @@ public class ProbabilityMap implements DataSourcePoint
 	{
 
 		Preconditions.checkArgument(certainty >= 0 && certainty <= 1.0, "Certainty must be between 0.0 and 1.0");
-
-		double probability = 1.0;
-		if (occupied == Occupancy.VACANT)
-		{
-			probability = 0.0;
-		}
 
 		// scale gausianRadis by blockSize
 

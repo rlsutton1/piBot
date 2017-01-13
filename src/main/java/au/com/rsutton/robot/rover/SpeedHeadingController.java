@@ -64,7 +64,7 @@ public class SpeedHeadingController implements Runnable
 				if (pid == null)
 				{
 					// System.out.println("new heading pid");
-					pid = new Pid(4, .10, .1, 100, 99, -99, true);
+					pid = new Pid(4, .05, .005, 100, 99, -99, true);
 				}
 				double offset = pid.computePid(0, changeInHeading);
 				// System.out.println("o " + offset + " c" + changeInHeading

@@ -35,13 +35,16 @@ public class ParticleFilterNavigatorLiveTest
 	{
 		boolean buildMap = true;
 		StartPosition startPosition = StartPosition.RANDOM;
-
+		final ParticleFilterImpl pf;
 		if (buildMap)
 		{
 			startPosition = StartPosition.ZERO;
 			createInitalMapForMapBuilder();
+			pf = new ParticleFilterImpl(map, 1000, 0.3, 0.3, startPosition);
+		} else
+		{
+			pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition);
 		}
-		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition);
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
 
@@ -59,11 +62,11 @@ public class ParticleFilterNavigatorLiveTest
 
 	}
 
-	private void createInitalMapForMapBuilder()
+	protected void createInitalMapForMapBuilder()
 	{
 		map = new ProbabilityMap(5);
 
-		new InitialWorldBuilder(map, robot, 0);
+		new InitialWorldBuilder(map, robot);
 
 	}
 

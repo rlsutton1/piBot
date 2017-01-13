@@ -2,12 +2,10 @@ package au.com.rsutton.mapping.particleFilter;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -32,14 +30,12 @@ import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
-import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
 
 public class ParticleFilterLiveTest
 {
-	volatile double compassHeading = 0;
 
 	volatile private int stop;
 
@@ -47,8 +43,6 @@ public class ParticleFilterLiveTest
 	volatile double speed;
 
 	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
-
-	List<Tuple<Double, Double>> headingTuples = new CopyOnWriteArrayList<>();
 
 	@Test
 	public void test() throws InterruptedException
@@ -210,8 +204,6 @@ public class ParticleFilterLiveTest
 		Thread.sleep(1000);
 	}
 
-	double lastCompassHeading = 0;
-
 	double lastDeadreconningHeading = 0;
 
 	private void setupRobotListener(final AtomicDouble currentDeadReconingHeading, final ProbabilityMap world,
@@ -234,7 +226,6 @@ public class ParticleFilterLiveTest
 
 				storeHeadingDeltas(robotLocation);
 
-				compassHeading = robotLocation.getCompassHeading().getHeading();
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
 
 				// ParticleFilterObservationSet bufferedObservations =
@@ -289,21 +280,11 @@ public class ParticleFilterLiveTest
 
 			private void storeHeadingDeltas(final RobotLocation robotLocation)
 			{
-				double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading,
-						robotLocation.getCompassHeading().getHeading());
 				double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading,
 						robotLocation.getDeadReaconingHeading().getDegrees());
 
-				deltaCompassHeading *= 4.0;
-
 				deltaDeadreconningHeading *= 4.0;
-				headingTuples.add(new Tuple<>(deltaCompassHeading, deltaDeadreconningHeading));
-				if (headingTuples.size() > 240)
-				{
-					headingTuples.remove(0);
-				}
 
-				lastCompassHeading = robotLocation.getCompassHeading().getHeading();
 				lastDeadreconningHeading = robotLocation.getDeadReaconingHeading().getDegrees();
 			}
 
@@ -358,22 +339,6 @@ public class ParticleFilterLiveTest
 			public String getLabel()
 			{
 				return "StdDev";
-			}
-		});
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + compassHeading;
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "compass Heading";
 			}
 		});
 
@@ -469,7 +434,8 @@ public class ParticleFilterLiveTest
 				graphics.setColor(new Color(255, 255, 255));
 
 				Vector3D line = new Vector3D(60 * scale, 0, 0);
-				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(compassHeading + 0)).applyTo(line);
+				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(lastDeadreconningHeading + 0))
+						.applyTo(line);
 
 				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
 						(int) (pointOriginY + line.getY()));
@@ -479,24 +445,6 @@ public class ParticleFilterLiveTest
 			}
 		});
 
-		ui.addDataSource(new DataSourcePaintRegion()
-		{
-
-			@Override
-			public void paint(Graphics2D graphics)
-			{
-				// draw chart of last 50 compass/pf heading
-				int ctr = 50;
-				for (Tuple<Double, Double> tuple : headingTuples)
-				{
-					graphics.setColor(new Color(255, 0, 0));
-					graphics.drawLine(ctr, 180 + tuple.getV1().intValue(), ctr + 1, 180 + tuple.getV1().intValue() + 1);
-					graphics.setColor(new Color(0, 0, 255));
-					graphics.drawLine(ctr, 180 + tuple.getV2().intValue(), ctr - 1, 180 + tuple.getV2().intValue() - 1);
-					ctr++;
-				}
-			}
-		});
 	}
 
 	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilterImpl pf, final RoutePlanner routePlanner)

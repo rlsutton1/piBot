@@ -9,6 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.base.Stopwatch;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.NavigatorControl;
@@ -20,7 +21,6 @@ public class MapBuilder implements ParticleFilterListener
 {
 
 	double maxUsableDistance = 1000;
-	double maxCertaintyDistance = 2000;
 
 	private MapDrawingWindow panel;
 
@@ -29,8 +29,6 @@ public class MapBuilder implements ParticleFilterListener
 	private NavigatorControl navigatorControl;
 
 	private ParticleFilterIfc particleFilter;
-
-	private ScanReferenceChecker scanReferenceChecker;
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 
@@ -44,9 +42,26 @@ public class MapBuilder implements ParticleFilterListener
 
 		this.particleFilter = particleFilter;
 
-		scanReferenceChecker = new ScanReferenceChecker();
-
 		particleFilter.addListener(this);
+
+		// for (int i = 0; i < 180; i += 30)
+		// {
+		// try
+		// {
+		// navigatorControl.calculateRouteTo(0, 0, i,
+		// RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+		// while (!navigatorControl.hasReachedDestination())
+		// {
+		//
+		// Thread.sleep(500);
+		// }
+		//
+		// Thread.sleep(5000);
+		// } catch (InterruptedException e)
+		// {
+		// Thread.currentThread().interrupt();
+		// }
+		// }
 
 		chooseTarget();
 	}
@@ -70,15 +85,20 @@ public class MapBuilder implements ParticleFilterListener
 			return;
 		}
 
-		if (particleFilter.getBestScanMatchScore() < 0.001)
+		Double bestScanMatchScore = particleFilter.getBestScanMatchScore();
+		if (bestScanMatchScore < 0.001)
 		{
 			return;
 		}
 
 		for (ScanObservation obs : particleFilterObservationSet.getObservations())
 		{
-			if (obs.getDisctanceCm() < 20)
+			double absObsAngle = Math.abs(HeadingHelper.getChangeInHeading(0, Math.toDegrees(obs.getAngleRadians())));
+			if (obs.getDisctanceCm() < 30 && absObsAngle < 45)
 			{
+
+				// we only consider this if the observation is in front of us,
+				// the lidar mount is visable behind... some times
 
 				// can't use observations closer that 30cm, the pariticle filter
 				// gets confused and the data becomes bad
@@ -87,7 +107,6 @@ public class MapBuilder implements ParticleFilterListener
 
 				chooseTarget();
 
-				return;
 			}
 		}
 
@@ -105,11 +124,6 @@ public class MapBuilder implements ParticleFilterListener
 
 			if (distance < maxUsableDistance)
 			{
-				// certainty of the observation is at max 0.5, and dimishes
-				// to 0 at 10 meters(1000 cm)
-				double certainty = ((maxCertaintyDistance - Math.min(maxCertaintyDistance, Math.max(0, distance)))
-						/ maxCertaintyDistance) * 0.75;
-
 				clearPoints(averagePosition, point);
 				if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000,
 						InitialWorldBuilder.REQUIRED_POINT_CERTAINTY) >= 1000)
@@ -122,20 +136,13 @@ public class MapBuilder implements ParticleFilterListener
 
 		lastHeading = (int) averageHeading;
 
-		// if (doWeNeedToStopWhileScanningCatchesUp(averagePosition,
-		// averageHeading))
-		// {
-		// navigatorControl.stop();
-		// } else
-		// {
-		// navigatorControl.go();
-		// }
-
 		navigatorControl.go();
 
-		if (navigatorControl.hasReachedDestination() || particleFilter.getBestScanMatchScore() < 0.002
-				|| (navigatorControl.isStuck() && targetAge.elapsed(TimeUnit.SECONDS) > 120)
-				|| targetAge.elapsed(TimeUnit.MINUTES) > 2)
+		boolean hasReachedDestination = navigatorControl.hasReachedDestination();
+		long targetElapsedMinutes = targetAge.elapsed(TimeUnit.MINUTES);
+		long targetElapsedSeconds = targetAge.elapsed(TimeUnit.SECONDS);
+		if (hasReachedDestination || bestScanMatchScore < 0.002
+				|| (navigatorControl.isStuck() && targetElapsedSeconds > 120) || targetElapsedMinutes > 2)
 		{
 			chooseTarget();
 		}
@@ -143,6 +150,7 @@ public class MapBuilder implements ParticleFilterListener
 
 	private void chooseTarget()
 	{
+		navigatorControl.stop();
 		if (targetAge.elapsed(TimeUnit.SECONDS) > 15)
 		{
 			if (returningHome)
@@ -160,17 +168,21 @@ public class MapBuilder implements ParticleFilterListener
 			targetAge.reset();
 			targetAge.start();
 		}
+		navigatorControl.go();
 	}
+
+	double maxDistance = 0;
 
 	boolean setNewTarget()
 	{
+		maxDistance = 0;
 		int xspread = Math.abs(world.getMaxX() - world.getMinX());
 		int yspread = Math.abs(world.getMaxY() - world.getMinY());
 
 		Random r = new Random();
 
 		int ctr = 0;
-		while (ctr < 1000)
+		while (ctr < 300)
 		{
 			ctr++;
 			int x = r.nextInt(xspread) + world.getMinX();
@@ -180,15 +192,17 @@ public class MapBuilder implements ParticleFilterListener
 
 				return true;
 			}
+			System.out.println(ctr);
 		}
-		// }
 
-		complete = true;
-		return false;
+		return true;
+		// complete = true;
+		// return false;
 	}
 
 	private boolean isTarget(int x, int y)
 	{
+		Vector3D currentLocation = particleFilter.dumpAveragePosition();
 		if (x >= world.getMinX() && x <= world.getMaxX())
 		{
 			if (y >= world.getMinY() && y <= world.getMaxY())
@@ -196,18 +210,25 @@ public class MapBuilder implements ParticleFilterListener
 				if (checkIsValidRouteTarget(x, y))
 				{
 
-					int heading = lastHeading + 90;
 					Vector3D position = new Vector3D(x, y, 0);
-					if (isUnexplored(position, heading))
+
+					if (isUnexplored(position, 90))
 					{
-						navigatorControl.calculateRouteTo(x, y, heading, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, 90, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 						return true;
 					}
-					heading = lastHeading - 90;
-					if (isUnexplored(position, heading))
+					if (isUnexplored(position, -90))
 					{
-						navigatorControl.calculateRouteTo(x, y, heading, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, -90, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 						return true;
+					}
+
+					double distance = Vector3D.distance(currentLocation, position);
+					if (maxDistance < distance)
+					{
+						maxDistance = distance;
+						navigatorControl.calculateRouteTo(x, y, 0, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+
 					}
 
 				}
@@ -220,26 +241,21 @@ public class MapBuilder implements ParticleFilterListener
 	{
 		double requiredValue = 0.25;
 		boolean isValid = world.get(x, y) < requiredValue;
-		int checkRadius = 30;
-		isValid &= world.get(x + checkRadius, y) < requiredValue;
-		isValid &= world.get(x - checkRadius, y) < requiredValue;
-		isValid &= world.get(x, y + checkRadius) < requiredValue;
-		isValid &= world.get(x, y - checkRadius) < requiredValue;
-		isValid &= world.get(x + checkRadius, y + checkRadius) < requiredValue;
-		isValid &= world.get(x - checkRadius, y - checkRadius) < requiredValue;
-		isValid &= world.get(x + checkRadius, y - checkRadius) < requiredValue;
-		isValid &= world.get(x - checkRadius, y + checkRadius) < requiredValue;
-
+		if (isValid)
+		{
+			int checkRadius = 30;
+			isValid &= world.get(x + checkRadius, y) < requiredValue;
+			isValid &= world.get(x - checkRadius, y) < requiredValue;
+			isValid &= world.get(x, y + checkRadius) < requiredValue;
+			isValid &= world.get(x, y - checkRadius) < requiredValue;
+			isValid &= world.get(x + checkRadius, y + checkRadius) < requiredValue;
+			isValid &= world.get(x - checkRadius, y - checkRadius) < requiredValue;
+			isValid &= world.get(x + checkRadius, y - checkRadius) < requiredValue;
+			isValid &= world.get(x - checkRadius, y + checkRadius) < requiredValue;
+		}
 		return isValid;
 
 	}
-
-	// boolean doWeNeedToStopWhileScanningCatchesUp(Vector3D averagePosition,
-	// double averageHeading)
-	// {
-	//
-	// return isUnexplored(averagePosition, averageHeading);
-	// }
 
 	boolean isUnexplored(Vector3D position, double heading)
 	{
@@ -271,6 +287,8 @@ public class MapBuilder implements ParticleFilterListener
 	{
 		// clear out points
 
+		Random rand = new Random();
+
 		double x1 = pos.getX();
 		double y1 = pos.getY();
 
@@ -281,16 +299,14 @@ public class MapBuilder implements ParticleFilterListener
 
 		if (dist > 0 && dist < maxUsableDistance)
 		{
-			// TODO: should inc i by the block size
 			for (int i = 0; i < dist; i += world.getBlockSize())
 			{
-
+				double percent = i / dist;
 				// certainty of the observation is at max 0.5, and dimishes
 				// to 0 at 10 meters(1000 cm)
-				double certainty = ((maxCertaintyDistance - Math.min(maxCertaintyDistance, Math.max(0, i)))
-						/ maxCertaintyDistance) * 0.75;
+				double certainty = 1.0 - Math.sqrt(percent);
+				certainty *= 0.3;
 
-				double percent = i / dist;
 				double x = (percent * x2) + ((1.0 - percent) * x1);
 				double y = (percent * y2) + ((1.0 - percent) * y1);
 				if (world.get(x, y) < InitialWorldBuilder.REQUIRED_POINT_CERTAINTY)
@@ -298,6 +314,14 @@ public class MapBuilder implements ParticleFilterListener
 					world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
 				} else
 				{
+					// check probability clearning
+					double randomValue = rand.nextDouble();
+					if (randomValue - 0.25 > percent)
+					{
+						// rand is greater than percentage of distace to the
+						// detected point, so clear
+						world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
+					}
 					// don't clear beyond a definite point
 					break;
 				}

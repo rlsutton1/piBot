@@ -16,4 +16,5 @@ public class ParticleFilterNavigatorTest extends ParticleFilterNavigatorLiveTest
 		robot.setLocation(-150, 300, new Random().nextInt(360));
 		return robot;
 	}
+
 }
