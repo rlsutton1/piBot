@@ -1,16 +1,12 @@
 package au.com.rsutton.mapping.particleFilter;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.Point;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
-
-import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
@@ -22,7 +18,6 @@ import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
-import au.com.rsutton.ui.DataSourcePaintRegion;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -48,8 +43,6 @@ public class ParticleFilterTest
 		}
 	}
 
-	List<Tuple<Double, Double>> headingTuples = new CopyOnWriteArrayList<>();
-
 	public void test()
 	{
 		MapDrawingWindow ui = new MapDrawingWindow();
@@ -71,24 +64,6 @@ public class ParticleFilterTest
 		robot.setLocation(-150, 300, 0);
 
 		ui.addDataSource(robot);
-
-		ui.addDataSource(new DataSourcePaintRegion()
-		{
-
-			@Override
-			public void paint(Graphics2D graphics)
-			{
-				int ctr = 50;
-				for (Tuple<Double, Double> tuple : headingTuples)
-				{
-					graphics.setColor(new Color(255, 0, 0));
-					graphics.drawLine(ctr, 180 + tuple.getV1().intValue(), ctr + 1, 180 + tuple.getV1().intValue() + 1);
-					graphics.setColor(new Color(0, 0, 255));
-					graphics.drawLine(ctr, 180 + tuple.getV2().intValue(), ctr - 1, 180 + tuple.getV2().intValue() - 1);
-					ctr++;
-				}
-			}
-		});
 
 		setupRoutePlanner(ui, pf, routePlanner);
 
@@ -259,8 +234,6 @@ public class ParticleFilterTest
 		}, new Color(255, 255, 0));
 	}
 
-	double lastCompassHeading = 0;
-
 	double lastDeadreconningHeading = 0;
 
 	private void update(ProbabilityMap map, ParticleFilterImpl pf, final double distance, final double dh,
@@ -306,11 +279,6 @@ public class ParticleFilterTest
 				return data.getDeadReaconingHeading();
 			}
 
-			@Override
-			public HeadingData getCompassHeading()
-			{
-				return data.getCompassHeading();
-			}
 		};
 
 		pf.addObservation(map, nd, -90d);
@@ -322,21 +290,6 @@ public class ParticleFilterTest
 
 	private void storeHeadingDeltas(final RobotLocation robotLocation)
 	{
-		double deltaCompassHeading = HeadingHelper.getChangeInHeading(lastCompassHeading,
-				robotLocation.getCompassHeading().getHeading());
-		double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading,
-				robotLocation.getDeadReaconingHeading().getDegrees());
-		deltaCompassHeading *= 4.0;
-
-		deltaDeadreconningHeading *= 4.0;
-
-		headingTuples.add(new Tuple<>(deltaCompassHeading, deltaDeadreconningHeading));
-		if (headingTuples.size() > 240)
-		{
-			headingTuples.remove(0);
-		}
-
-		lastCompassHeading = robotLocation.getCompassHeading().getHeading();
 		lastDeadreconningHeading = robotLocation.getDeadReaconingHeading().getDegrees();
 	}
 

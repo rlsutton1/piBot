@@ -56,20 +56,17 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			createRandomStart(map);
 		} else
 		{
-			createFixedStart(0, 0);
+			createFixedStart(0, 0, 0);
 		}
 	}
 
-	void createFixedStart(int x, int y)
+	void createFixedStart(int x, int y, int heading)
 	{
 		particles.clear();
 		// generate initial random scattering of particles
 
-		Random r = new Random();
-
 		for (int i = 0; i < particleQty; i++)
 		{
-			double heading = r.nextInt(360);
 			particles.add(new Particle(x, y, heading, distanceNoise, headingNoise));
 		}
 	}
