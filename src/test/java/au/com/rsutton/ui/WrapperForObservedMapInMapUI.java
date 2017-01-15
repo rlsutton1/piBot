@@ -7,14 +7,14 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class WrapperForObservedMapInMapUI implements DataSourceMap
 {
 
-	private ProbabilityMap world;
+	private ProbabilityMapIIFc world;
 
-	public WrapperForObservedMapInMapUI(ProbabilityMap world)
+	public WrapperForObservedMapInMapUI(ProbabilityMapIIFc world)
 	{
 		this.world = world;
 	}

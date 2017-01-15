@@ -11,12 +11,12 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.particleFilter.Despecaler;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class RoutePlanner
 {
 
-	private ProbabilityMap world;
+	private ProbabilityMapIIFc world;
 
 	static final int WALL = 1000000;
 
@@ -28,7 +28,7 @@ public class RoutePlanner
 
 	private int targetY;
 
-	public RoutePlanner(ProbabilityMap world)
+	public RoutePlanner(ProbabilityMapIIFc world)
 	{
 		this.world = world;
 	}

@@ -11,12 +11,13 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class FeatureSimulatorBase
 {
 
 	Random rand = new Random();
-	ProbabilityMap world = new ProbabilityMap(10);
+	ProbabilityMapIIFc world = new ProbabilityMap(10);
 
 	int cacheSize = 20000;
 

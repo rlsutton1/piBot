@@ -13,7 +13,7 @@ import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
 import au.com.rsutton.ui.DataSourcePoint;
 
-public class ProbabilityMap implements DataSourcePoint
+public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 {
 
 	private int blockSize;
@@ -27,6 +27,14 @@ public class ProbabilityMap implements DataSourcePoint
 		this.blockSize = blockSize;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#createGausian(int,
+	 * double, double)
+	 */
+	@Override
 	public double[][] createGausian(int radius, double sigma, double centerValue)
 	{
 
@@ -60,6 +68,14 @@ public class ProbabilityMap implements DataSourcePoint
 		return kernel;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#resetPoint(int,
+	 * int)
+	 */
+	@Override
 	public void resetPoint(int x, int y)
 	{
 		x = x / blockSize;
@@ -67,18 +83,14 @@ public class ProbabilityMap implements DataSourcePoint
 		world.set(x, y, world.getDefaultValue());
 	}
 
-	/**
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * @param x
-	 * @param y
-	 * @param occupied
-	 * @param certainty
-	 *            - Indicates how strongly the location should be updated to the
-	 *            new state <br>
-	 *            ie. location = (location * certainty) + ((location
-	 *            *(1.0-certainty))
-	 * @param gausianRadius
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#updatePoint(int,
+	 * int, au.com.rsutton.mapping.probability.Occupancy, double, int)
 	 */
+	@Override
 	public void updatePoint(int x, int y, Occupancy occupied, double certainty, int gausianRadius)
 	{
 
@@ -126,11 +138,26 @@ public class ProbabilityMap implements DataSourcePoint
 
 	List<Vector3D> features = new LinkedList<>();
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getFeatures()
+	 */
+	@Override
 	public List<Vector3D> getFeatures()
 	{
 		return features;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#drawLine(double,
+	 * double, double, double, au.com.rsutton.mapping.probability.Occupancy,
+	 * double, int)
+	 */
+	@Override
 	public void drawLine(double x1, double y1, double x2, double y2, Occupancy occupancy, double certainty, int radius)
 	{
 
@@ -190,6 +217,14 @@ public class ProbabilityMap implements DataSourcePoint
 		return result;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#createShiftMatrix(
+	 * double, double)
+	 */
+	@Override
 	public double[][] createShiftMatrix(double xShiftAmount, double yShiftAmount)
 	{
 		// System.out.println("xs: " + xShiftAmount + " ys: " + yShiftAmount);
@@ -248,6 +283,12 @@ public class ProbabilityMap implements DataSourcePoint
 
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#dumpWorld()
+	 */
+	@Override
 	public void dumpWorld()
 	{
 
@@ -262,6 +303,13 @@ public class ProbabilityMap implements DataSourcePoint
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#dumpTextWorld()
+	 */
+	@Override
 	public void dumpTextWorld()
 	{
 
@@ -311,36 +359,79 @@ public class ProbabilityMap implements DataSourcePoint
 		System.out.println(world.getMaxX() * blockSize + "," + world.getMaxY() * blockSize);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getMaxX()
+	 */
+	@Override
 	public int getMaxX()
 	{
 		return world.getMaxX() * blockSize;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getMinX()
+	 */
+	@Override
 	public int getMinX()
 	{
 		return world.getMinX() * blockSize;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getMaxY()
+	 */
+	@Override
 	public int getMaxY()
 	{
 		return world.getMaxY() * blockSize;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getMinY()
+	 */
+	@Override
 	public int getMinY()
 	{
 		return world.getMinY() * blockSize;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#get(double,
+	 * double)
+	 */
+	@Override
 	public double get(double x, double y)
 	{
 		return world.get((int) x / blockSize, (int) y / blockSize);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getBlockSize()
+	 */
+	@Override
 	public int getBlockSize()
 	{
 		return blockSize;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getOccupiedPoints()
+	 */
 	@Override
 	public List<Point> getOccupiedPoints()
 	{

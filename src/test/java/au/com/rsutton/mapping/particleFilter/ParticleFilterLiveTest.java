@@ -25,6 +25,7 @@ import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -206,7 +207,7 @@ public class ParticleFilterLiveTest
 
 	double lastDeadreconningHeading = 0;
 
-	private void setupRobotListener(final AtomicDouble currentDeadReconingHeading, final ProbabilityMap world,
+	private void setupRobotListener(final AtomicDouble currentDeadReconingHeading, final ProbabilityMapIIFc world,
 			final ParticleFilterImpl pf)
 	{
 		new RobotLocation().addMessageListener(new MessageListener<RobotLocation>()

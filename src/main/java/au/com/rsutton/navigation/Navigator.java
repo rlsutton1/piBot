@@ -20,7 +20,7 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleUpdate;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -34,7 +34,7 @@ import au.com.rsutton.ui.MapDrawingWindow;
 public class Navigator implements Runnable, NavigatorControl
 {
 
-	private ProbabilityMap map;
+	private ProbabilityMapIIFc map;
 	private ParticleFilterIfc pf;
 	private RoutePlanner routePlanner;
 	private RobotInterface robot;
@@ -52,11 +52,11 @@ public class Navigator implements Runnable, NavigatorControl
 
 	double speed = 0;
 
-	public Navigator(ProbabilityMap map, ParticleFilterIfc pf, RobotInterface robot)
+	public Navigator(ProbabilityMapIIFc map2, ParticleFilterIfc pf, RobotInterface robot)
 	{
 		ui = new MapDrawingWindow();
-		this.map = map;
-		ui.addDataSource(map, new Color(255, 255, 255));
+		this.map = map2;
+		ui.addDataSource(map2, new Color(255, 255, 255));
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
@@ -65,7 +65,7 @@ public class Navigator implements Runnable, NavigatorControl
 		// dl4j.train();
 		// ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
 
-		routePlanner = new RoutePlanner(map);
+		routePlanner = new RoutePlanner(map2);
 		this.robot = robot;
 
 		obsticleAvoidance = new ObsticleAvoidance(robot);

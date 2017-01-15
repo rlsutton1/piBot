@@ -15,6 +15,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapUI;
@@ -25,7 +26,7 @@ public class ScanMatcher extends JFrame
 
 	private MapUI graph = new MapUI();
 
-	ProbabilityMap world;
+	ProbabilityMapIIFc world;
 	private ParticleFilterObservationSet observations;
 	private double compassAdjustment;
 

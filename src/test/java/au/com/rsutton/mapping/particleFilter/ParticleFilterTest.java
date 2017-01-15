@@ -12,6 +12,7 @@ import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -236,7 +237,7 @@ public class ParticleFilterTest
 
 	double lastDeadreconningHeading = 0;
 
-	private void update(ProbabilityMap map, ParticleFilterImpl pf, final double distance, final double dh,
+	private void update(ProbabilityMapIIFc map, ParticleFilterImpl pf, final double distance, final double dh,
 			RobotSimulator robot)
 	{
 

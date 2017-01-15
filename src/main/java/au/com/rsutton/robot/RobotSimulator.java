@@ -21,7 +21,7 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
 import au.com.rsutton.mapping.particleFilter.Particle;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.robot.lidar.Spinner;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
@@ -32,7 +32,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 {
 
 	Random random = new Random();
-	private ProbabilityMap map;
+	private ProbabilityMapIIFc map;
 
 	double x;
 	double y;
@@ -43,7 +43,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	private double targetHeading;
 	private List<RobotListener> listeners = new CopyOnWriteArrayList<>();
 
-	public RobotSimulator(ProbabilityMap map)
+	public RobotSimulator(ProbabilityMapIIFc map)
 	{
 		this.map = map;
 
@@ -52,7 +52,14 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	public void move(double distance)
 	{
-		distance -= Math.abs((distance * (random.nextGaussian() * 0.5)));
+		if (freeze)
+		{
+			return;
+		}
+		if (Math.abs(distance - 0.0) > 0.2)
+		{
+			distance -= Math.abs((distance * (random.nextGaussian() * 0.5)));
+		}
 
 		Vector3D unit = new Vector3D(0, distance, 0);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
@@ -74,6 +81,10 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	public void turn(double angle)
 	{
+		if (freeze)
+		{
+			return;
+		}
 		double noise = Math.abs((random.nextGaussian() * 0.5) * (1.0 / hz));
 		heading += angle + noise;
 		if (heading < 0)

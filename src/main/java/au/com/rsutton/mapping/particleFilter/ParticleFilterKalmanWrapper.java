@@ -11,7 +11,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.robot.rover.KalmanFilterForCompass;
 import au.com.rsutton.robot.rover.KalmanHelper;
 import au.com.rsutton.robot.rover.KalmanValue;
@@ -28,7 +28,7 @@ public class ParticleFilterKalmanWrapper
 
 	KalmanHelper headingKalmanHelper = new KalmanHelper();
 
-	ParticleFilterKalmanWrapper(ProbabilityMap map, int particles, double distanceNoise, double headingNoise)
+	ParticleFilterKalmanWrapper(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise)
 	{
 		particleFilter = new ParticleFilterImpl(map, particles, distanceNoise, headingNoise, StartPosition.RANDOM);
 
@@ -41,7 +41,7 @@ public class ParticleFilterKalmanWrapper
 		particleFilter.moveParticles(update);
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
+	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
 		particleFilter.addObservation(currentWorld, observations, compassAdjustment);
@@ -78,7 +78,7 @@ public class ParticleFilterKalmanWrapper
 	//
 	// }
 
-	public void dumpTextWorld(ProbabilityMap map)
+	public void dumpTextWorld(ProbabilityMapIIFc map)
 	{
 		// particleFilter.dumpTextWorld(map);
 	}

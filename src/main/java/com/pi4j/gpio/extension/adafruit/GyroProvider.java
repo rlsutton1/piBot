@@ -171,7 +171,8 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 
 	public double getHeading()
 	{
-		return outz;
+		// correction for gyro after testing with the calabrate dead reconing
+		return outz * 1.15;
 	}
 
 	public GyroProvider(int busNumber, int address)
@@ -207,6 +208,11 @@ public class GyroProvider extends GpioProviderBase implements GpioProvider, Runn
 
 		worker.shutdown();
 
+	}
+
+	public boolean isCalabrated()
+	{
+		return calabrated;
 	}
 
 }

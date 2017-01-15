@@ -30,6 +30,8 @@ public class DeadReconing
 
 	private double lastGyroHeading;
 
+	private double totalError;
+
 	public DeadReconing(Angle angle, GyroProvider gyro)
 	{
 		heading = angle;
@@ -64,7 +66,7 @@ public class DeadReconing
 
 				// get gyro delta and prepare for the next
 				double gyroHeading = gyro.getHeading();
-				double gyroDelta = gyroHeading - lastGyroHeading;
+				double gyroDelta = lastGyroHeading - gyroHeading;
 				lastGyroHeading = gyroHeading;
 
 				// check change in heading, based on odometry
@@ -84,13 +86,15 @@ public class DeadReconing
 				double delta = (odoDelta * 0.5) + (gyroDelta * 0.5);
 				double error = Math.abs(odoDelta - gyroDelta);
 
+				totalError += error;
+
 				// determine heading allowing for slippage
 				final double telemetryHeading = HeadingHelper.normalizeHeading(heading.getDegrees() - delta);
 
 				heading = new Angle(telemetryHeading, AngleUnits.DEGREES);
 
-				System.out.println(gyroDelta + " " + odoDelta);
-				System.out.println("final " + heading.getDegrees());
+				System.out.println("gyro: " + gyroDelta + " odo: " + odoDelta + " err: " + error);
+				System.out.println("final " + heading.getDegrees() + " total Error " + totalError);
 
 			}
 

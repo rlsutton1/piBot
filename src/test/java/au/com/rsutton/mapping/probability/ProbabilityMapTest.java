@@ -10,7 +10,7 @@ public class ProbabilityMapTest
 	@Test
 	public void testShiftMatrix()
 	{
-		ProbabilityMap pm = new ProbabilityMap(1);
+		ProbabilityMapIIFc pm = new ProbabilityMap(1);
 		System.out.println("pm 0,0");
 		pm.createShiftMatrix(0.0, 0.0);
 		System.out.println("pm 0.5,0");
@@ -30,7 +30,7 @@ public class ProbabilityMapTest
 	public void test()
 	{
 		int worldSize = 50;
-		ProbabilityMap world = new ProbabilityMap(1);
+		ProbabilityMapIIFc world = new ProbabilityMap(1);
 
 		Random r = new Random();
 
@@ -56,7 +56,7 @@ public class ProbabilityMapTest
 	@Test
 	public void testUp()
 	{
-		ProbabilityMap world = new ProbabilityMap(1);
+		ProbabilityMapIIFc world = new ProbabilityMap(1);
 
 		for (int i = 0; i < 20; i++)
 		{
@@ -68,7 +68,7 @@ public class ProbabilityMapTest
 	@Test
 	public void drawWorld()
 	{
-		ProbabilityMap world = new ProbabilityMap(10);
+		ProbabilityMapIIFc world = new ProbabilityMap(10);
 		world.drawLine(0, 0, 0, 89, Occupancy.OCCUPIED, 1.0, 2);// a
 		world.drawLine(0, 0, -141, 0, Occupancy.OCCUPIED, 1.0, 2);// b
 		world.drawLine(-141, 0, -141, 42, Occupancy.OCCUPIED, 1.0, 2);// c

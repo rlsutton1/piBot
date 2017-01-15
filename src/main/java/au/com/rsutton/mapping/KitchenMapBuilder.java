@@ -2,6 +2,7 @@ package au.com.rsutton.mapping;
 
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class KitchenMapBuilder
 {
@@ -16,7 +17,7 @@ public class KitchenMapBuilder
 
 	}
 
-	public static void buildKitchenMap(ProbabilityMap world)
+	public static void buildKitchenMap(ProbabilityMapIIFc world)
 	{
 		// table leg
 		world.drawLine(-120, 60, -120, 70, Occupancy.OCCUPIED, 1.0, 2);

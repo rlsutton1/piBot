@@ -8,7 +8,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class Particle
 {
@@ -103,7 +103,7 @@ public class Particle
 
 	}
 
-	public void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet data, double compassAdjustment,
+	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet data, double compassAdjustment,
 			boolean useCompass)
 	{
 
@@ -145,7 +145,7 @@ public class Particle
 	 * @param occupancyThreshold
 	 * @return
 	 */
-	public double simulateObservation(ProbabilityMap currentWorld, double angle, double maxDistance,
+	public double simulateObservation(ProbabilityMapIIFc currentWorld, double angle, double maxDistance,
 			double occupancyThreshold)
 	{
 

@@ -51,6 +51,11 @@ public class CalabrateDeadReconning implements Runnable
 		Angle initialAngle = new Angle(0, AngleUnits.DEGREES);
 		reconing = new DeadReconing(initialAngle, gyro);
 
+		while (!gyro.isCalabrated())
+		{
+			Thread.sleep(100);
+		}
+
 		speedHeadingController = new SpeedHeadingController(rightWheel, leftWheel, 0);
 
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 200, TimeUnit.MILLISECONDS);

@@ -11,7 +11,7 @@ import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.Occupancy;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -24,7 +24,7 @@ public class MapBuilder implements ParticleFilterListener
 
 	private MapDrawingWindow panel;
 
-	ProbabilityMap world;
+	ProbabilityMapIIFc world;
 
 	private NavigatorControl navigatorControl;
 
@@ -32,7 +32,7 @@ public class MapBuilder implements ParticleFilterListener
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 
-	MapBuilder(ProbabilityMap map, ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
+	MapBuilder(ProbabilityMapIIFc map, ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
 	{
 		world = map;
 		panel = new MapDrawingWindow();

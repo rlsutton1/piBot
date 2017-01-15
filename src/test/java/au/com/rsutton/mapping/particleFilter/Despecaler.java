@@ -3,7 +3,7 @@ package au.com.rsutton.mapping.particleFilter;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 
 public class Despecaler
@@ -14,7 +14,7 @@ public class Despecaler
 
 	}
 
-	public static void despecal(ProbabilityMap inputMap)
+	public static void despecal(ProbabilityMapIIFc inputMap)
 	{
 		int minX = inputMap.getMinX();
 		int maxX = inputMap.getMaxX();

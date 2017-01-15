@@ -1,17 +1,21 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.mapping.multimap;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.mapping.particleFilter.Particle;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.NavigatorControl;
+import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotListener;
-import au.com.rsutton.robot.rover.Angle;
 
-public class InitialWorldBuilder implements RobotListener
+public class SegmentMapBuilder implements RobotListener
 {
 
 	public static final double REQUIRED_POINT_CERTAINTY = 0.90;
@@ -26,45 +30,55 @@ public class InitialWorldBuilder implements RobotListener
 
 	private volatile boolean suspended = false;
 
-	public InitialWorldBuilder(ProbabilityMapIIFc map, RobotInterface robot)
+	private ParticleFilterIfc activeParticleFilter;
+
+	/**
+	 * this initialWorldBuilder expects the navigator to position the robot
+	 * based on a map which is not passed in here. The map that is passed in
+	 * here is expected to be an uninitialized map which will be built
+	 * 
+	 * @param map
+	 * @param navigator
+	 * @param robot
+	 * @param x
+	 * @param y
+	 * @param heading
+	 */
+	public SegmentMapBuilder(ProbabilityMapIIFc map, NavigatorControl navigator, RobotInterface robot, int x, int y,
+			int heading, ParticleFilterIfc activeParticleFilter)
 	{
 		world = map;
 
+		this.activeParticleFilter = activeParticleFilter;
+
 		try
 		{
-			robot.setHeading(0);
-			robot.freeze(false);
-			robot.publishUpdate();
-			Thread.sleep(10000);
-			robot.freeze(true);
-			robot.publishUpdate();
-			Thread.sleep(3000);
+
+			navigator.calculateRouteTo(x, y, heading, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			navigator.go();
+			while (!navigator.hasReachedDestination())
+			{
+				Thread.sleep(1000);
+			}
+			Thread.sleep(1000);
 
 			robot.addMessageListener(this);
-
-			Thread.sleep(10000);
+			Thread.sleep(15000);
 
 			suspended = true;
-			robot.setHeading(130);
-			robot.freeze(false);
-			robot.publishUpdate();
-			Thread.sleep(10000);
 
-			robot.freeze(true);
-			robot.publishUpdate();
-			Thread.sleep(3000);
-
+			navigator.calculateRouteTo(x, y, heading + 180, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			navigator.go();
+			while (!navigator.hasReachedDestination())
+			{
+				Thread.sleep(1000);
+			}
+			Thread.sleep(1000);
 			suspended = false;
-			Thread.sleep(10000);
 
-			suspended = true;
+			Thread.sleep(15000);
 
 			robot.removeMessageListener(this);
-
-			robot.setHeading(0);
-			robot.freeze(false);
-			robot.publishUpdate();
-			Thread.sleep(10000);
 
 		} catch (InterruptedException e)
 		{
@@ -81,12 +95,12 @@ public class InitialWorldBuilder implements RobotListener
 		{
 			return;
 		}
-		Angle heading = observation.getDeadReaconingHeading();
+		double adjustedHeading = activeParticleFilter.getAverageHeading();
 
-		double adjustedHeading = (heading.getDegrees());
-
-		Particle particle = new Particle(0, 0, adjustedHeading, 0, 0);
-		Vector3D pos = new Vector3D(0, 0, 0);
+		double cx = activeParticleFilter.dumpAveragePosition().getX();
+		double cy = activeParticleFilter.dumpAveragePosition().getY();
+		Particle particle = new Particle(cx, cy, adjustedHeading, 0, 0);
+		Vector3D pos = new Vector3D(cx, cy, 0);
 
 		boolean hasNewPoints = false;
 		for (ScanObservation obs : observation.getObservations())

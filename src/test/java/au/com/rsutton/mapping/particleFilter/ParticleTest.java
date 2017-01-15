@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.KitchenMapBuilder;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -22,7 +22,7 @@ public class ParticleTest
 	@Test
 	public void test()
 	{
-		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
+		ProbabilityMapIIFc map = KitchenMapBuilder.buildKitchenMap();
 		map.dumpTextWorld();
 
 		RoutePlanner routePlanner = new RoutePlanner(map);
@@ -59,7 +59,7 @@ public class ParticleTest
 
 	}
 
-	private void update(ProbabilityMap map, Particle testParticle, double x, double y, final double heading)
+	private void update(ProbabilityMapIIFc map, Particle testParticle, double x, double y, final double heading)
 	{
 
 		RobotLocation observation = new RobotLocation();

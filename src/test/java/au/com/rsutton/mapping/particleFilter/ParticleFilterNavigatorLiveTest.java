@@ -17,6 +17,7 @@ import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.router.RouteOption;
@@ -70,7 +71,7 @@ public class ParticleFilterNavigatorLiveTest
 
 	}
 
-	private void buildMap(NavigatorControl navigator, ParticleFilterIfc pf, ProbabilityMap map)
+	private void buildMap(NavigatorControl navigator, ParticleFilterIfc pf, ProbabilityMapIIFc map)
 			throws InterruptedException
 	{
 		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);

@@ -20,7 +20,7 @@ import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.Occupancy;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 
@@ -44,7 +44,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	Stopwatch lastResample = Stopwatch.createStarted();
 
-	ParticleFilterImpl(ProbabilityMap map, int particles, double distanceNoise, double headingNoise,
+	public ParticleFilterImpl(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition)
 	{
 		this.headingNoise = headingNoise;
@@ -71,7 +71,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	private void createRandomStart(ProbabilityMap map)
+	private void createRandomStart(ProbabilityMapIIFc map)
 	{
 		int maxX = map.getMaxX();
 		int minX = map.getMinX();
@@ -95,7 +95,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	}
 
 	@Override
-	public synchronized void addObservation(ProbabilityMap currentWorld, ParticleFilterObservationSet observations,
+	public synchronized void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet observations,
 			double compassAdjustment)
 	{
 		lastObservation.set(observations);
@@ -134,7 +134,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		stablisedHeading += update.getDeltaHeading();
 	}
 
-	protected synchronized void resample(ProbabilityMap map)
+	protected synchronized void resample(ProbabilityMapIIFc map)
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -244,7 +244,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	public void dumpTextWorld(ProbabilityMap map)
+	public void dumpTextWorld(ProbabilityMapIIFc map)
 	{
 		for (Particle particle : particles)
 		{
