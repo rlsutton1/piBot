@@ -9,7 +9,7 @@ public class Pose
 	double y;
 	double heading;
 
-	Pose(double x, double y, double heading)
+	public Pose(double x, double y, double heading)
 	{
 		this.x = x;
 		this.y = y;

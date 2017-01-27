@@ -103,8 +103,7 @@ public class Particle
 
 	}
 
-	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet data, double compassAdjustment,
-			boolean useCompass)
+	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet data, boolean isLost)
 	{
 
 		// max error is 30cm, after that we vote negative
@@ -116,21 +115,33 @@ public class Particle
 		// double maxBadError = 100.0 - maxGoodError;
 		// double maxBadVote = 3.0;
 
+		int maxDistance = 1000;
+
 		List<ScanObservation> observations = data.getObservations();
 		for (ScanObservation obs : observations)
 		{
 			double distance = obs.getDisctanceCm();
 			double angle = Math.toDegrees(obs.getAngleRadians());
-			double simDistance = simulateObservation(currentWorld, angle, distance + maxGoodError,
+			double simDistance = simulateObservation(currentWorld, angle, maxDistance,
 					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY);// +
 			// maxBadError);
 
-			// subtract world block size as this is the error caused by the
-			// world block size, but stay > 0
-			double error = Math.abs(simDistance - distance);
+			if (simDistance < maxDistance)
+			{
+				// subtract world block size as this is the error caused by the
+				// world block size, but stay > 0
+				double error = Math.abs(simDistance - distance);
 
-			squaredError += Math.pow(error, 2);
-			observationCount++;
+				squaredError += Math.pow(error, 2);
+				observationCount++;
+			} else if (isLost)
+			{
+				// a penalty for an unscanned area
+
+				// without this the particle filter localises out side of the
+				// map when it's lost
+				squaredError += Math.pow(maxDistance, 2);
+			}
 
 		}
 
@@ -164,6 +175,7 @@ public class Particle
 		for (int i = 0; i < maxDistance; i += inc)
 		{
 			double d = currentWorld.get(location.getX(), location.getY());
+
 			if (d >= occupancyThreshold && d > bestMatchOccupancy)
 			{
 				bestMatchDistance = i;
@@ -206,7 +218,7 @@ public class Particle
 
 		if (t > 0.1)
 		{
-			System.out.println(t);
+			System.out.println("rating better than 0.1 " + t);
 		}
 		return t;
 

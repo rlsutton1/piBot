@@ -1,20 +1,10 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.Test;
 
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
-
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
@@ -22,7 +12,6 @@ import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
 
 public class ParticleFilterNavigatorLiveTest
 {
@@ -41,10 +30,10 @@ public class ParticleFilterNavigatorLiveTest
 		{
 			startPosition = StartPosition.ZERO;
 			createInitalMapForMapBuilder();
-			pf = new ParticleFilterImpl(map, 1000, 0.3, 0.3, startPosition);
+			pf = new ParticleFilterImpl(map, 1000, 0.3, 0.3, startPosition, robot, null);
 		} else
 		{
-			pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition);
+			pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition, robot, null);
 		}
 
 		NavigatorControl navigator = new Navigator(map, pf, robot);
@@ -84,7 +73,7 @@ public class ParticleFilterNavigatorLiveTest
 
 	private void navigateTo(NavigatorControl navigator, int x, int y) throws InterruptedException
 	{
-		navigator.calculateRouteTo(x, y, 0, RouteOption.ROUTE_THROUGH_UNEXPLORED);
+		navigator.calculateRouteTo(x, y, 0d, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 		navigator.go();
 
 		while (!navigator.hasReachedDestination())//
@@ -92,79 +81,6 @@ public class ParticleFilterNavigatorLiveTest
 			Thread.sleep(100);
 		}
 	}
-
-	class RobotImple implements RobotInterface
-	{
-
-		double heading = 0;
-		Speed speed = new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond());
-		private boolean freeze;
-
-		RobotImple()
-		{
-			RobotLocation robotDataBus = new RobotLocation();
-			robotDataBus.addMessageListener(new MessageListener<RobotLocation>()
-			{
-
-				@Override
-				public void onMessage(Message<RobotLocation> message)
-				{
-					for (RobotListener listener : listeners)
-					{
-						listener.observed(message.getMessageObject());
-					}
-
-				}
-			});
-		}
-
-		@Override
-		public void setSpeed(Speed speed)
-		{
-			this.speed = speed;
-
-		}
-
-		@Override
-		public void setHeading(double normalizeHeading)
-		{
-			this.heading = normalizeHeading;
-
-		}
-
-		@Override
-		public void publishUpdate()
-		{
-			SetMotion motion = new SetMotion();
-			motion.setFreeze(freeze);
-			motion.setSpeed(speed);
-			motion.setHeading(heading);
-			motion.publish();
-
-		}
-
-		@Override
-		public void freeze(boolean b)
-		{
-			freeze = b;
-
-		}
-
-		List<RobotListener> listeners = new LinkedList<>();
-
-		@Override
-		public void addMessageListener(final RobotListener listener)
-		{
-			listeners.add(listener);
-
-		}
-
-		@Override
-		public void removeMessageListener(RobotListener listener)
-		{
-			listeners.remove(listener);
-		}
-	};
 
 	protected RobotInterface getRobot()
 	{

@@ -17,7 +17,6 @@ import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.RobotSimulator;
-import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
@@ -51,9 +50,10 @@ public class ParticleFilterTest
 		ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
 		map.dumpTextWorld();
 		ui.addDataSource(map, new Color(255, 255, 255));
+		RobotSimulator robot = new RobotSimulator(map);
 
-		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 2000, 2, 4, StartPosition.RANDOM);
-		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
+		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 2000, 2, 4, StartPosition.RANDOM, robot, null);
+		pf.dumpTextWorld();
 
 		setupDataSources(ui, pf);
 
@@ -61,7 +61,6 @@ public class ParticleFilterTest
 		int pfX = 0;
 		int pfY = 0;
 
-		RobotSimulator robot = new RobotSimulator(map);
 		robot.setLocation(-150, 300, 0);
 
 		ui.addDataSource(robot);
@@ -263,28 +262,7 @@ public class ParticleFilterTest
 		storeHeadingDeltas(data);
 		buffer.addObservation(data);
 
-		ParticleFilterObservationSet nd = new ParticleFilterObservationSet()
-		{
-
-			@Override
-			public List<ScanObservation> getObservations()
-			{
-				List<ScanObservation> result = new LinkedList<>();
-				result.addAll(buffer.getObservations(data));
-				return result;
-			}
-
-			@Override
-			public Angle getDeadReaconingHeading()
-			{
-				return data.getDeadReaconingHeading();
-			}
-
-		};
-
-		pf.addObservation(map, nd, -90d);
-
-		pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
+		pf.dumpTextWorld();
 		pf.dumpAveragePosition();
 
 	}

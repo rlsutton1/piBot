@@ -23,12 +23,16 @@ public interface NavigatorControl
 	 * @param y
 	 * @param heading
 	 */
-	void calculateRouteTo(int x, int y, double heading, RouteOption routeOption);
+	void calculateRouteTo(int x, int y, Double heading, RouteOption routeOption);
 
 	boolean hasReachedDestination();
 
 	boolean isStuck();
 
 	boolean isStopped();
+
+	void suspend();
+
+	void resume();
 
 }

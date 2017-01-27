@@ -22,7 +22,6 @@ import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.robot.lidar.Spinner;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
@@ -115,17 +114,18 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
 		Random rand = new Random();
-		double stepSize = 3.6;
+		double stepSize = 2.4;
 		double stepNoise = 1.2;
 
-		for (double h = (int) (Spinner.getMinAngle() * (fromPercentage / 100.0)); h < (int) (Spinner.getMaxAngle()
-				* (toPercentage / 100.0)); h += stepSize + (rand.nextGaussian() * stepNoise))
+		int from = (int) (fromPercentage * (360.0 / 100.0));
+		int to = (int) (toPercentage * (360.0 / 100.0));
+		for (double h = from; h < to; h += stepSize + Math.abs((rand.nextGaussian() * stepNoise)))
 		{
 			double adjustedHeading = h - 180 + 45;
 			double distance = particle.simulateObservation(map, adjustedHeading, 1000,
 					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY);
 
-			if (Math.abs(distance) > 1)
+			if (Math.abs(distance) > 1 && Math.abs(distance) < 1000)
 			{
 				Vector3D unit = new Vector3D(0, 1, 0).scalarMultiply(distance);
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(adjustedHeading));
@@ -136,7 +136,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 		if (observations.isEmpty())
 		{
-			System.out.println("NO observations!");
+			System.out.println("NO observations! " + from + " " + to);
 		}
 		// System.out.println("Observations " + observations.size());
 

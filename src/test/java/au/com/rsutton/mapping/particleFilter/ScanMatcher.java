@@ -167,7 +167,7 @@ public class ScanMatcher extends JFrame
 
 		Particle particle = new Particle(testPose.getX(), testPose.getY(), testPose.getHeading(), 0, 0);
 
-		particle.addObservation(world, observations, compassAdjustment, false);
+		particle.addObservation(world, observations, true);
 
 		return particle.getRating();
 

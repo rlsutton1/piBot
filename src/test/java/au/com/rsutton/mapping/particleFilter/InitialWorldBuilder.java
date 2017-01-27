@@ -32,39 +32,18 @@ public class InitialWorldBuilder implements RobotListener
 
 		try
 		{
-			robot.setHeading(0);
-			robot.freeze(false);
-			robot.publishUpdate();
-			Thread.sleep(10000);
 			robot.freeze(true);
 			robot.publishUpdate();
 			Thread.sleep(3000);
 
 			robot.addMessageListener(this);
 
-			Thread.sleep(10000);
-
-			suspended = true;
-			robot.setHeading(130);
-			robot.freeze(false);
-			robot.publishUpdate();
-			Thread.sleep(10000);
-
-			robot.freeze(true);
-			robot.publishUpdate();
-			Thread.sleep(3000);
-
-			suspended = false;
-			Thread.sleep(10000);
-
-			suspended = true;
+			Thread.sleep(30000);
 
 			robot.removeMessageListener(this);
 
-			robot.setHeading(0);
 			robot.freeze(false);
 			robot.publishUpdate();
-			Thread.sleep(10000);
 
 		} catch (InterruptedException e)
 		{

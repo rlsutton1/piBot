@@ -162,7 +162,7 @@ public class MapBuilder implements ParticleFilterListener
 			} else
 			{
 				// return home every second move, to make sure we don't get lost
-				navigatorControl.calculateRouteTo(0, 0, 0, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				navigatorControl.calculateRouteTo(0, 0, 0d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 				returningHome = true;
 			}
 			targetAge.reset();
@@ -214,12 +214,12 @@ public class MapBuilder implements ParticleFilterListener
 
 					if (isUnexplored(position, 90))
 					{
-						navigatorControl.calculateRouteTo(x, y, 90, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, 90d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 						return true;
 					}
 					if (isUnexplored(position, -90))
 					{
-						navigatorControl.calculateRouteTo(x, y, -90, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, -90d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 						return true;
 					}
 
@@ -227,7 +227,7 @@ public class MapBuilder implements ParticleFilterListener
 					if (maxDistance < distance)
 					{
 						maxDistance = distance;
-						navigatorControl.calculateRouteTo(x, y, 0, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, 0d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 
 					}
 

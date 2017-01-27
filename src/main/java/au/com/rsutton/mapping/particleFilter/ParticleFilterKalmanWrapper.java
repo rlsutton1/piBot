@@ -12,6 +12,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.rover.KalmanFilterForCompass;
 import au.com.rsutton.robot.rover.KalmanHelper;
 import au.com.rsutton.robot.rover.KalmanValue;
@@ -28,9 +29,11 @@ public class ParticleFilterKalmanWrapper
 
 	KalmanHelper headingKalmanHelper = new KalmanHelper();
 
-	ParticleFilterKalmanWrapper(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise)
+	ParticleFilterKalmanWrapper(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
+			RobotInterface robot)
 	{
-		particleFilter = new ParticleFilterImpl(map, particles, distanceNoise, headingNoise, StartPosition.RANDOM);
+		particleFilter = new ParticleFilterImpl(map, particles, distanceNoise, headingNoise, StartPosition.RANDOM,
+				robot, null);
 
 		// lastKnownPosition = particleFilter.dumpAveragePosition();
 
@@ -40,43 +43,6 @@ public class ParticleFilterKalmanWrapper
 	{
 		particleFilter.moveParticles(update);
 	}
-
-	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet observations,
-			double compassAdjustment)
-	{
-		particleFilter.addObservation(currentWorld, observations, compassAdjustment);
-		lastObservation.set(observations);
-	}
-
-	// public void resample(ProbabilityMap map)
-	// {
-	// particleFilter.resample(map);
-	//
-	// headingFilter.calculate(new KalmanDataProvider()
-	// {
-	//
-	// @Override
-	// public KalmanValue getObservation()
-	// {
-	// return new KalmanValue(particleFilter.getAverageHeading(), 50);
-	// }
-	//
-	// @Override
-	// public KalmanValue getCalculatedNewValue(KalmanValue previousValue)
-	// {
-	//
-	// return new
-	// KalmanValue(headingKalmanHelper.getValueBasedOnChangedDeadReconningValue(lastObservation
-	// .get().getDeadReaconingHeading().getDegrees()), 50);
-	// }
-	// });
-	//
-	// headingKalmanHelper.setCurrentKalmanAndDeadReconningValue(headingFilter.getCurrentValue().getEstimate(),
-	// lastObservation.get().getDeadReaconingHeading().getDegrees());
-	//
-	// // lastKnownPosition = particleFilter.dumpAveragePosition();
-	//
-	// }
 
 	public void dumpTextWorld(ProbabilityMapIIFc map)
 	{

@@ -133,7 +133,7 @@ public class Lidar implements Runnable
 				int reading = getLatestReading();
 				if (reading != lastReading)
 				{
-					if (spinner.isValidPosition())// || reading > 80)
+					if (spinner.isValidPosition() && reading < 400)
 					{
 						publishPoint(spinner.getCurrentPosition(), reading);
 					}

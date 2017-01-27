@@ -19,14 +19,12 @@ import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
-import au.com.rsutton.mapping.particleFilter.ParticleUpdate;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotListener;
-import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -49,6 +47,11 @@ public class Navigator implements Runnable, NavigatorControl
 	double lastAngle;
 	private boolean reachedDestination = false;
 	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
+
+	/**
+	 * if target heading is null, any orientation will do
+	 */
+	private Double targetHeading;
 
 	double speed = 0;
 
@@ -81,11 +84,18 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
+	volatile boolean isSuspended = false;
+
 	@Override
 	public void run()
 	{
 		try
 		{
+			if (isSuspended)
+			{
+				return;
+			}
+
 			robot.freeze(false);
 
 			if (stopped)
@@ -101,7 +111,7 @@ public class Navigator implements Runnable, NavigatorControl
 			// how well localised it is
 			pf.setParticleCount(Math.max(50, (int) (7 * std)));
 
-			if (std < 30)
+			if (std < 40)
 			{
 				// the partical filter is sufficently localized
 				Vector3D ap = pf.dumpAveragePosition();
@@ -161,7 +171,8 @@ public class Navigator implements Runnable, NavigatorControl
 				{
 					// we have arrived at our target location
 					speed = 0;
-					if (Math.abs(HeadingHelper.getChangeInHeading(lastAngle, targetHeading)) > 5)
+					if (targetHeading != null
+							&& Math.abs(HeadingHelper.getChangeInHeading(lastAngle, targetHeading)) > 5)
 					{
 						// turn on the spot to set our heading
 						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
@@ -210,56 +221,15 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
-	private double targetHeading;
-
 	private void setupRobotListener()
 	{
 		robot.addMessageListener(new RobotListener()
 		{
 
-			Double lastx = null;
-			Double lasty = null;
-			private Angle lastheading;
-
-			// MovingLidarObservationMultiBuffer buffer = new
-			// MovingLidarObservationMultiBuffer(2);
-
 			@Override
 			public void observed(RobotLocation robotLocation)
 			{
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
-
-				// ParticleFilterObservationSet bufferedObservations =
-				// updateBuffer(robotLocation);
-				pf.addObservation(map, robotLocation, -90d);
-
-				if (lastx != null)
-				{
-					pf.moveParticles(new ParticleUpdate()
-					{
-
-						@Override
-						public double getDeltaHeading()
-						{
-
-							return HeadingHelper.getChangeInHeading(
-									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());
-						}
-
-						@Override
-						public double getMoveDistance()
-						{
-							double dx = (lastx - robotLocation.getX().convert(DistanceUnit.CM));
-							double dy = (lasty - robotLocation.getY().convert(DistanceUnit.CM));
-							return Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
-						}
-					});
-				}
-				lasty = robotLocation.getY().convert(DistanceUnit.CM);
-				lastx = robotLocation.getX().convert(DistanceUnit.CM);
-				lastheading = robotLocation.getDeadReaconingHeading();
-
-				// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 			}
 
@@ -350,7 +320,7 @@ public class Navigator implements Runnable, NavigatorControl
 			@Override
 			public String getValue()
 			{
-				return "" + pf.getBestScanMatchScore();
+				return "" + pf.getBestScanMatchScore() + " " + pf.getBestRawScore();
 			}
 
 			@Override
@@ -393,7 +363,7 @@ public class Navigator implements Runnable, NavigatorControl
 	}
 
 	@Override
-	public void calculateRouteTo(int x, int y, double heading, RouteOption routeOption)
+	public void calculateRouteTo(int x, int y, Double heading, RouteOption routeOption)
 	{
 		routePlanner.createRoute(x, y, routeOption);
 		targetHeading = heading;
@@ -417,6 +387,19 @@ public class Navigator implements Runnable, NavigatorControl
 	public boolean isStopped()
 	{
 		return stopped;
+	}
+
+	@Override
+	public void suspend()
+	{
+		isSuspended = true;
+
+	}
+
+	@Override
+	public void resume()
+	{
+		isSuspended = false;
 	}
 
 }

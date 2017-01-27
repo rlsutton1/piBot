@@ -19,8 +19,13 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 
@@ -43,21 +48,81 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	private double lastObservationAngle;
 
 	Stopwatch lastResample = Stopwatch.createStarted();
+	volatile private double bestRawScore;
+
+	private boolean stop = false;
+	private RobotInterface robot;
+	private ProbabilityMapIIFc map;
+	private RobotListener observer;
 
 	public ParticleFilterImpl(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
-			StartPosition startPosition)
+			StartPosition startPosition, RobotInterface robot, Pose pose)
 	{
 		this.headingNoise = headingNoise;
 		this.distanceNoise = distanceNoise;
+		this.robot = robot;
+		this.map = map;
 		particleQty = particles;
 		newParticleCount = particleQty;
 		if (startPosition == StartPosition.RANDOM)
 		{
-			createRandomStart(map);
+			createRandomStart();
+		} else if (startPosition == StartPosition.USE_POSE)
+		{
+			createFixedStart((int) pose.getX(), (int) pose.getY(), (int) pose.getHeading());
 		} else
 		{
 			createFixedStart(0, 0, 0);
 		}
+
+		observer = getObserver();
+
+		robot.addMessageListener(observer);
+	}
+
+	private RobotListener getObserver()
+	{
+		return new RobotListener()
+		{
+
+			private Double lasty;
+			private Double lastx;
+			private Angle lastheading;
+
+			@Override
+			public void observed(RobotLocation robotLocation)
+			{
+
+				addObservation(robotLocation);
+
+				if (lastx != null)
+				{
+					moveParticles(new ParticleUpdate()
+					{
+
+						@Override
+						public double getDeltaHeading()
+						{
+
+							return HeadingHelper.getChangeInHeading(
+									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());
+						}
+
+						@Override
+						public double getMoveDistance()
+						{
+							double dx = (lastx - robotLocation.getX().convert(DistanceUnit.CM));
+							double dy = (lasty - robotLocation.getY().convert(DistanceUnit.CM));
+							return Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
+						}
+					});
+				}
+				lasty = robotLocation.getY().convert(DistanceUnit.CM);
+				lastx = robotLocation.getX().convert(DistanceUnit.CM);
+				lastheading = robotLocation.getDeadReaconingHeading();
+
+			}
+		};
 	}
 
 	void createFixedStart(int x, int y, int heading)
@@ -71,7 +136,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	private void createRandomStart(ProbabilityMapIIFc map)
+	private void createRandomStart()
 	{
 		int maxX = map.getMaxX();
 		int minX = map.getMinX();
@@ -94,16 +159,21 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	@Override
-	public synchronized void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet observations,
-			double compassAdjustment)
+	public synchronized void addObservation(ParticleFilterObservationSet observations)
 	{
+
+		if (stop)
+		{
+			return;
+		}
 		lastObservation.set(observations);
-		boolean useCompass = false;// getStdDev() > 30;
 
-		particles.parallelStream()
-				.forEach(e -> e.addObservation(currentWorld, observations, compassAdjustment, useCompass));
+		particles.parallelStream().forEach(e -> {
+			boolean isLost = getStdDev() > 100;
+			e.addObservation(map, observations, isLost);
+		});
 
+		boolean resampleRequired = false;
 		if (!observations.getObservations().isEmpty())
 		{
 			double currentObservationAngle = observations.getObservations().iterator().next().getAngleRadians();
@@ -114,15 +184,24 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 			if (signum != lastSignum || lastResample.elapsed(TimeUnit.MILLISECONDS) > 1500)
 			{
-				lastResample.reset();
-				lastResample.start();
-				resample(currentWorld);
+				resampleRequired = true;
 			}
 			lastSignum = signum;
 		}
+		if (resampleRequired)
+		{
+			if (lastResample.elapsed(TimeUnit.MILLISECONDS) > 1500)
+			{
+				System.out.println("************************* resample over due by "
+						+ (lastResample.elapsed(TimeUnit.MILLISECONDS) - 1500)
+						+ " *******************************************");
+			}
+			lastResample.reset();
+			lastResample.start();
+			resample();
+		}
 	}
 
-	@Override
 	public void moveParticles(ParticleUpdate update)
 	{
 		System.out.println("Delta move " + update.getDeltaHeading() + " " + update.getMoveDistance());
@@ -134,7 +213,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		stablisedHeading += update.getDeltaHeading();
 	}
 
-	protected synchronized void resample(ProbabilityMapIIFc map)
+	protected synchronized void resample()
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -143,12 +222,12 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		List<Particle> newSet = new LinkedList<>();
 		int pos = 0;
 		double next = 0.0;
-		int size = particles.size();
-
 		double totalRating = 0;
 		double maxRating = 0;
+		double bestRawSoFar = 1000000;
 		for (Particle selectedParticle : particles)
 		{
+			bestRawSoFar = Math.min(bestRawSoFar, selectedParticle.getRating());
 			totalRating += selectedParticle.getRating();
 			maxRating = Math.max(maxRating, selectedParticle.getRating());
 		}
@@ -200,11 +279,12 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			}
 		}
 		bestScanMatchScore = bestRatingSoFar;
+		bestRawScore = bestRawSoFar;
 		System.out.println("Best rating " + bestScanMatchScore);
 		if (bestScanMatchScore < MINIMUM_MEANINGFUL_RATING && getStdDev() > 60)
 		{
 			// there is no useful data, re-seed the particle filter
-			createRandomStart(map);
+			createRandomStart();
 		} else
 		{
 			particles.clear();
@@ -244,7 +324,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	public void dumpTextWorld(ProbabilityMapIIFc map)
+	public void dumpTextWorld()
 	{
 		for (Particle particle : particles)
 		{
@@ -488,4 +568,17 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		return new LinkedList<>(particles);
 	}
 
+	@Override
+	public Double getBestRawScore()
+	{
+		return bestRawScore;
+	}
+
+	@Override
+	public void shutdown()
+	{
+		stop = true;
+		robot.removeMessageListener(observer);
+
+	}
 }

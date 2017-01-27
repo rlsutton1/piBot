@@ -10,7 +10,7 @@ import au.com.rsutton.entryPoint.units.DistanceUnit;
 public class DeadReconing
 {
 
-	private static final double VEHICAL_WIDTH = 185;
+	private static final double VEHICAL_WIDTH = 220;
 
 	private final static DistanceUnit MILLIMETERS = DistanceUnit.MM;
 
@@ -67,6 +67,9 @@ public class DeadReconing
 				// get gyro delta and prepare for the next
 				double gyroHeading = gyro.getHeading();
 				double gyroDelta = lastGyroHeading - gyroHeading;
+
+				// flip gyro direction
+				gyroDelta = -1.0 * gyroDelta;
 				lastGyroHeading = gyroHeading;
 
 				// check change in heading, based on odometry

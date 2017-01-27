@@ -13,8 +13,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
@@ -25,10 +23,11 @@ import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
+import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -45,6 +44,8 @@ public class ParticleFilterLiveTest
 
 	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
 
+	RobotInterface robot = new RobotImple();
+
 	@Test
 	public void test() throws InterruptedException
 	{
@@ -55,11 +56,12 @@ public class ParticleFilterLiveTest
 		ui.addDataSource(world, new Color(255, 255, 255));
 
 		double headingNoise = 1.0; // degrees/second
-		final ParticleFilterImpl pf = new ParticleFilterImpl(world, 1000, 0.75, headingNoise, StartPosition.RANDOM);
+		final ParticleFilterImpl pf = new ParticleFilterImpl(world, 1000, 0.75, headingNoise, StartPosition.RANDOM,
+				robot, null);
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		setupDataSources(ui, pf);
-		setupRobotListener(currentDeadReconingHeading, world, pf);
+		setupRobotListener();
 
 		RoutePlanner routePlanner = new RoutePlanner(world);
 		setupRoutePlanner(ui, pf, routePlanner);
@@ -205,121 +207,21 @@ public class ParticleFilterLiveTest
 		Thread.sleep(1000);
 	}
 
-	double lastDeadreconningHeading = 0;
+	private int lastDeadreconningHeading = 0;
 
-	private void setupRobotListener(final AtomicDouble currentDeadReconingHeading, final ProbabilityMapIIFc world,
-			final ParticleFilterImpl pf)
+	private void setupRobotListener()
 	{
-		new RobotLocation().addMessageListener(new MessageListener<RobotLocation>()
+		robot.addMessageListener(new RobotListener()
 		{
 
-			Double lastx = null;
-			Double lasty = null;
-
-			// MovingLidarObservationMultiBuffer buffer = new
-			// MovingLidarObservationMultiBuffer(2);
-
 			@Override
-			public void onMessage(Message<RobotLocation> message)
+			public void observed(RobotLocation observation)
 			{
-
-				final RobotLocation robotLocation = message.getMessageObject();
-
-				storeHeadingDeltas(robotLocation);
-
-				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
-
-				// ParticleFilterObservationSet bufferedObservations =
-				// updateBuffer(robotLocation);
-				pf.addObservation(world, robotLocation, -90d);
-
-				if (lastx != null)
-				{
-					pf.moveParticles(new ParticleUpdate()
-					{
-
-						@Override
-						public double getDeltaHeading()
-						{
-							// return -lastheading.difference(new
-							// Angle(HeadingHelper.normalizeHeading(robotLocation
-							// .getDeadReaconingHeading().getDegrees()),
-							// AngleUnits.DEGREES));
-
-							return HeadingHelper.getChangeInHeading(
-									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());
-						}
-
-						@Override
-						public double getMoveDistance()
-						{
-							double dx = (lastx - robotLocation.getX().convert(DistanceUnit.CM));
-							double dy = (lasty - robotLocation.getY().convert(DistanceUnit.CM));
-							return Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
-						}
-					});
-				}
-				lasty = robotLocation.getY().convert(DistanceUnit.CM);
-				lastx = robotLocation.getX().convert(DistanceUnit.CM);
-				lastheading = robotLocation.getDeadReaconingHeading();
-
-				for (ScanObservation obs : robotLocation.getObservations())
-				{
-
-					if (Vector3D.distance(Vector3D.ZERO, obs.getVector()) < 20)
-					{
-						// stop for 2 seconds
-						stop = 20;
-					}
-
-				}
-
-				stop--;
-				// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
+				lastDeadreconningHeading = (int) observation.getDeadReaconingHeading().getDegrees();
 
 			}
-
-			private void storeHeadingDeltas(final RobotLocation robotLocation)
-			{
-				double deltaDeadreconningHeading = HeadingHelper.getChangeInHeading(lastDeadreconningHeading,
-						robotLocation.getDeadReaconingHeading().getDegrees());
-
-				deltaDeadreconningHeading *= 4.0;
-
-				lastDeadreconningHeading = robotLocation.getDeadReaconingHeading().getDegrees();
-			}
-
-			// private ParticleFilterObservationSet updateBuffer(final
-			// RobotLocation robotLocation)
-			// {
-			// buffer.addObservation(robotLocation);
-			// ParticleFilterObservationSet bufferedObservations = new
-			// ParticleFilterObservationSet()
-			// {
-			//
-			// @Override
-			// public List<ScanObservation> getObservations()
-			// {
-			// List<ScanObservation> result = new LinkedList<>();
-			// result.addAll(buffer.getObservations(robotLocation));
-			// return result;
-			// }
-			//
-			// @Override
-			// public Angle getDeadReaconingHeading()
-			// {
-			// return robotLocation.getDeadReaconingHeading();
-			// }
-			//
-			// @Override
-			// public HeadingData getCompassHeading()
-			// {
-			// return robotLocation.getCompassHeading();
-			// }
-			// };
-			// return bufferedObservations;
-			// }
 		});
+
 	}
 
 	private void setupDataSources(MapDrawingWindow ui, final ParticleFilterImpl pf)

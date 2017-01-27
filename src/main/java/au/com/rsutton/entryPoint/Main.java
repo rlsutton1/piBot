@@ -9,6 +9,8 @@ import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.calabrate.CalabrateCompass;
 import au.com.rsutton.calabrate.CalabrateDeadReconning;
+import au.com.rsutton.calabrate.CalabrateLeftWheel;
+import au.com.rsutton.calabrate.CalabrateRightWheel;
 import au.com.rsutton.robot.rover.Rover;
 
 public class Main
@@ -26,6 +28,10 @@ public class Main
 
 		System.out.println("Press 2 to calabrate dead reconning");
 
+		System.out.println("Press 3 to calabrate right wheel");
+
+		System.out.println("Press 4 to calabrate left wheel");
+
 		int ch = br.read();
 		if (ch == '0')
 		{
@@ -40,6 +46,12 @@ public class Main
 		} else if (ch == '2')
 		{
 			new CalabrateDeadReconning();
+		} else if (ch == '3')
+		{
+			new CalabrateRightWheel();
+		} else if (ch == '4')
+		{
+			new CalabrateLeftWheel();
 		}
 	}
 

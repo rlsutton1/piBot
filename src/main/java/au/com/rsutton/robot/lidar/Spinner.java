@@ -19,8 +19,6 @@ import au.com.rsutton.config.Config;
 public class Spinner implements Runnable
 {
 
-	private static final double minAnglePercent = 0.10;
-	private static final double maxAnglePercent = 0.85;
 	private static final long ONE_SECOND_IN_NANOS = TimeUnit.MILLISECONDS.toNanos(1200);
 	private GpioPinDigitalOutput stepPin;
 	private GpioPinDigitalOutput dirPin;
@@ -80,7 +78,7 @@ public class Spinner implements Runnable
 		}
 
 		// set zero to facing the back of the lidar mount
-		moveTo((long) (maxPos + (22 * MICRO_STEPS)));
+		moveTo((long) (maxPos + (47 * MICRO_STEPS)));
 		setZero();
 
 		// face directly forward, for user to validate configuration
@@ -242,18 +240,9 @@ public class Spinner implements Runnable
 	{
 		long totalSteps = (long) (MICRO_STEPS * STEPS_PER_REVOLUTION);
 		long pos = currentPosition % totalSteps;
-		return pos > (totalSteps * minAnglePercent) && pos < (totalSteps * maxAnglePercent);
+		return true;// pos > (totalSteps * badTo) || pos < (totalSteps *
+					// badFrom);
 
-	}
-
-	public static double getMinAngle()
-	{
-		return 360.0 * minAnglePercent;
-	}
-
-	public static double getMaxAngle()
-	{
-		return 360.0 * maxAnglePercent;
 	}
 
 }

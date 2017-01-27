@@ -8,8 +8,6 @@ import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
-import au.com.rsutton.mapping.particleFilter.ParticleUpdate;
-import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 
@@ -71,19 +69,6 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	}
 
 	@Override
-	public void moveParticles(ParticleUpdate particleUpdate)
-	{
-		pf.moveParticles(particleUpdate);
-	}
-
-	@Override
-	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet observations,
-			double compassAdjustment)
-	{
-		pf.addObservation(currentWorld, observations, compassAdjustment);
-	}
-
-	@Override
 	public void setParticleCount(int max)
 	{
 		pf.setParticleCount(max);
@@ -99,6 +84,19 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	public List<Particle> getParticles()
 	{
 		return pf.getParticles();
+	}
+
+	@Override
+	public Double getBestRawScore()
+	{
+		return pf.getBestRawScore();
+	}
+
+	@Override
+	public void shutdown()
+	{
+		pf.shutdown();
+
 	}
 
 }

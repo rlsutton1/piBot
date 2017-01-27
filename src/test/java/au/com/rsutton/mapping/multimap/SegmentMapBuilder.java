@@ -4,6 +4,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
@@ -14,6 +18,8 @@ import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
 public class SegmentMapBuilder implements RobotListener
 {
@@ -26,11 +32,17 @@ public class SegmentMapBuilder implements RobotListener
 	volatile boolean hasFoundPoints = false;
 	Double offset = null;
 
-	Double heading = null;
+	Double heading = 0d;
 
 	private volatile boolean suspended = false;
 
-	private ParticleFilterIfc activeParticleFilter;
+	private MapDrawingWindow panel;
+
+	private double fixedX;
+
+	private double fixedY;
+
+	private double fixedHeading;
 
 	/**
 	 * this initialWorldBuilder expects the navigator to position the robot
@@ -44,41 +56,46 @@ public class SegmentMapBuilder implements RobotListener
 	 * @param y
 	 * @param heading
 	 */
-	public SegmentMapBuilder(ProbabilityMapIIFc map, NavigatorControl navigator, RobotInterface robot, int x, int y,
-			int heading, ParticleFilterIfc activeParticleFilter)
+	public SegmentMapBuilder(ProbabilityMapIIFc map, NavigatorControl navigator, RobotInterface robot,
+			Vector3D position, ParticleFilterIfc activeParticleFilter)
 	{
+
 		world = map;
 
-		this.activeParticleFilter = activeParticleFilter;
+		panel = new MapDrawingWindow();
+
+		panel.addDataSource(new WrapperForObservedMapInMapUI(map));
 
 		try
 		{
 
-			navigator.calculateRouteTo(x, y, heading, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			navigator.calculateRouteTo((int) position.getX(), (int) position.getY(), null,
+					RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 			navigator.go();
 			while (!navigator.hasReachedDestination())
 			{
 				Thread.sleep(1000);
 			}
+
+			navigator.suspend();
+
+			robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+
+			Thread.sleep(12000);
+			robot.freeze(true);
+			robot.publishUpdate();
 			Thread.sleep(1000);
+
+			this.fixedX = activeParticleFilter.dumpAveragePosition().getX();
+			this.fixedY = activeParticleFilter.dumpAveragePosition().getY();
+			this.fixedHeading = activeParticleFilter.getAverageHeading();
 
 			robot.addMessageListener(this);
-			Thread.sleep(15000);
-
-			suspended = true;
-
-			navigator.calculateRouteTo(x, y, heading + 180, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-			navigator.go();
-			while (!navigator.hasReachedDestination())
-			{
-				Thread.sleep(1000);
-			}
-			Thread.sleep(1000);
-			suspended = false;
-
-			Thread.sleep(15000);
+			Thread.sleep(20000);
 
 			robot.removeMessageListener(this);
+
+			navigator.resume();
 
 		} catch (InterruptedException e)
 		{
@@ -95,10 +112,10 @@ public class SegmentMapBuilder implements RobotListener
 		{
 			return;
 		}
-		double adjustedHeading = activeParticleFilter.getAverageHeading();
+		double adjustedHeading = fixedHeading;
 
-		double cx = activeParticleFilter.dumpAveragePosition().getX();
-		double cy = activeParticleFilter.dumpAveragePosition().getY();
+		double cx = fixedX;
+		double cy = fixedY;
 		Particle particle = new Particle(cx, cy, adjustedHeading, 0, 0);
 		Vector3D pos = new Vector3D(cx, cy, 0);
 
