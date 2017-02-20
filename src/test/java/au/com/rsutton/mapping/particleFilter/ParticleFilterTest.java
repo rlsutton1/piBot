@@ -86,8 +86,6 @@ public class ParticleFilterTest
 				speed -= 0.05;
 			}
 
-			pf.setParticleCount(Math.max(200, (int) (7 * std)));
-
 			speed = Math.max(0.01, speed);
 			speed = Math.min(0.15, speed);
 

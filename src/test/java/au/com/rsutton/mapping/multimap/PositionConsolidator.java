@@ -27,6 +27,10 @@ public class PositionConsolidator
 			navigateTo(i, navigator, p1);
 
 			navigateTo(i, navigator, p2);
+			if (averager.hasEnoughData())
+			{
+				break;
+			}
 		}
 
 		newPf.shutdown();
@@ -56,6 +60,11 @@ public class PositionConsolidator
 			{
 				averager.addSample(mp1.getX() - mp2.getX(), mp1.getY() - mp2.getY(),
 						HeadingHelper.getChangeInHeading(h1, h2), e1 + e2);
+				if (averager.hasEnoughData())
+				{
+					break;
+				}
+
 			}
 		}
 	}

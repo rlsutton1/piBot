@@ -39,6 +39,17 @@ public class Averager
 		}
 	}
 
+	int getSampleCount()
+	{
+		return samples.size();
+	}
+
+	boolean hasEnoughData()
+	{
+		// TODO: do proper analysis
+		return samples.size() > 100;
+	}
+
 	public Sample getRefinedValue()
 	{
 		double totalQuality = 0;

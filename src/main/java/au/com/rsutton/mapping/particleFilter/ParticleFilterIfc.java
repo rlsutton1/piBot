@@ -24,8 +24,6 @@ public interface ParticleFilterIfc
 
 	public abstract Vector3D dumpAveragePosition();
 
-	public abstract void setParticleCount(int max);
-
 	public abstract void addPendingScan(ParticleFilterObservationSet par);
 
 	public abstract List<Particle> getParticles();
@@ -33,4 +31,8 @@ public interface ParticleFilterIfc
 	public abstract Double getBestRawScore();
 
 	public abstract void shutdown();
+
+	public abstract void suspend();
+
+	public abstract void resume();
 }

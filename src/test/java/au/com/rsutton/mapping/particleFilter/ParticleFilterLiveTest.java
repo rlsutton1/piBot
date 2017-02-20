@@ -91,7 +91,6 @@ public class ParticleFilterLiveTest
 			// speed -= 0.25;
 			// }
 			speed = Math.max(0.01, speed);
-			pf.setParticleCount(Math.max(500, (int) (7 * std)));
 			Vector3D ap = pf.dumpAveragePosition();
 
 			// if (!mapping)

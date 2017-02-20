@@ -20,6 +20,9 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.feature.FeatureExtractor;
+import au.com.rsutton.navigation.feature.FeatureExtractorCorner;
+import au.com.rsutton.navigation.feature.FeatureExtractorSpike;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -55,6 +58,8 @@ public class Navigator implements Runnable, NavigatorControl
 
 	double speed = 0;
 
+	private Double initialHeading = null;
+
 	public Navigator(ProbabilityMapIIFc map2, ParticleFilterIfc pf, RobotInterface robot)
 	{
 		ui = new MapDrawingWindow();
@@ -62,6 +67,12 @@ public class Navigator implements Runnable, NavigatorControl
 		ui.addDataSource(map2, new Color(255, 255, 255));
 		this.pf = pf;
 		setupDataSources(ui, pf);
+
+		FeatureExtractor extractor = new FeatureExtractorSpike();
+		ui.addDataSource(extractor.getHeadingMapDataSource(pf, robot));
+
+		FeatureExtractor extractor2 = new FeatureExtractorCorner();
+		ui.addDataSource(extractor2.getHeadingMapDataSource(pf, robot));
 
 		// FeatureExtractionTestFullWold dl4j = new
 		// FeatureExtractionTestFullWold();
@@ -107,9 +118,6 @@ public class Navigator implements Runnable, NavigatorControl
 			speed = 15;
 
 			double std = pf.getStdDev();
-			// adjust the number of particles in the particle filter based on
-			// how well localised it is
-			pf.setParticleCount(Math.max(50, (int) (7 * std)));
 
 			if (std < 40)
 			{
@@ -207,6 +215,9 @@ public class Navigator implements Runnable, NavigatorControl
 			robot.publishUpdate();
 		}
 
+		System.out
+				.println("******************************************************* Heading drift " + getHeadingDrift());
+
 	}
 
 	double setHeadingWithObsticleAvoidance(double desiredHeading, double desiredSpeed)
@@ -230,6 +241,11 @@ public class Navigator implements Runnable, NavigatorControl
 			public void observed(RobotLocation robotLocation)
 			{
 				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
+				if (initialHeading == null && pf.getStdDev() < 30)
+				{
+					initialHeading = HeadingHelper.getChangeInHeading(pf.getAverageHeading(),
+							currentDeadReconingHeading.get());
+				}
 
 			}
 
@@ -400,6 +416,18 @@ public class Navigator implements Runnable, NavigatorControl
 	public void resume()
 	{
 		isSuspended = false;
+	}
+
+	@Override
+	public double getHeadingDrift()
+	{
+		if (initialHeading != null)
+		{
+			return HeadingHelper.getChangeInHeading(
+					HeadingHelper.getChangeInHeading(currentDeadReconingHeading.get(), initialHeading),
+					pf.getAverageHeading());
+		}
+		return 0;
 	}
 
 }

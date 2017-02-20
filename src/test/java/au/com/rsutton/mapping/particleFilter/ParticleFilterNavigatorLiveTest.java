@@ -23,7 +23,7 @@ public class ParticleFilterNavigatorLiveTest
 	@Test
 	public void test() throws InterruptedException
 	{
-		boolean buildMap = true;
+		boolean buildMap = false;
 		StartPosition startPosition = StartPosition.RANDOM;
 		final ParticleFilterImpl pf;
 		if (buildMap)
@@ -46,9 +46,12 @@ public class ParticleFilterNavigatorLiveTest
 			navigateTo(navigator, 120, -260);
 		}
 
+		double headingDrift = navigator.getHeadingDrift();
+
 		navigator.stop();
 
 		Thread.sleep(1000);
+		System.out.println("Heading drift " + headingDrift);
 
 	}
 

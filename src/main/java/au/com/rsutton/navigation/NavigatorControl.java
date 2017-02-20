@@ -35,4 +35,6 @@ public interface NavigatorControl
 
 	void resume();
 
+	double getHeadingDrift();
+
 }

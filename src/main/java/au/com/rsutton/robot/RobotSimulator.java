@@ -238,14 +238,16 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 				turn(delta);
 			}
-			long to = (long) ((lastScan + (100.0 / hz)) % 100);
-			if (to < lastScan)
+			long to = (long) (((lastScan) + (100.0 / hz)));
+			if (to > 100)
 			{
-				lastScan = 0;
+				to = 100;
 			}
 
+			System.out.println(lastScan + " " + to);
+
 			RobotLocation observation = getObservation(lastScan, to);
-			lastScan = to;
+			lastScan = to % 100;
 
 			for (RobotListener listener : listeners)
 			{

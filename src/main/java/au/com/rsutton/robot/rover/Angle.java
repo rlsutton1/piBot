@@ -2,6 +2,8 @@ package au.com.rsutton.robot.rover;
 
 import java.io.Serializable;
 
+import com.google.common.base.Preconditions;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 
 public class Angle implements Serializable
@@ -15,6 +17,7 @@ public class Angle implements Serializable
 
 	public Angle(double angle, AngleUnits units)
 	{
+		Preconditions.checkArgument(Double.NaN != angle, "Nan angle");
 		this.angle = units.convertTo(angle, internalUnits);
 		rationalizeAngle();
 	}

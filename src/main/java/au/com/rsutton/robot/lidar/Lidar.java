@@ -3,6 +3,8 @@ package au.com.rsutton.robot.lidar;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -133,7 +135,7 @@ public class Lidar implements Runnable
 				int reading = getLatestReading();
 				if (reading != lastReading)
 				{
-					if (spinner.isValidPosition() && reading < 400)
+					if (spinner.isValidPosition() && reading < 1001 && reading > 0)
 					{
 						publishPoint(spinner.getCurrentPosition(), reading);
 					}
@@ -150,18 +152,48 @@ public class Lidar implements Runnable
 
 	Map<Integer, Set<Integer>> blindMap = new HashMap<>();
 
+	List<RotationPositionRange> recentPoints = new LinkedList<>();
+
 	private void publishPoint(long position, long range)
 	{
-		double angle = (position / (200.0 * 8)) * 360;
+		recentPoints.add(new RotationPositionRange(position, range));
+		if (recentPoints.size() == 3)
+		{
+			int margin = 50;
+			// check that the point falls between it's neighbours, allowing an
+			// additional 50cm margin.
+			// This is intended to remove scan errors, which tend to be in the
+			// form of range spikes.
+			long min = Math.min(recentPoints.get(0).range, recentPoints.get(2).range);
+			long max = Math.max(recentPoints.get(0).range, recentPoints.get(2).range);
+			RotationPositionRange rangeToPublish = recentPoints.get(1);
 
-		angle += 180;
+			if (rangeToPublish.range > min - margin && rangeToPublish.range < max + margin)
+			{
+				double angle = (rangeToPublish.rotationPosition / (200.0 * 8)) * 360;
 
-		Rotation rotation = new Rotation(RotationOrder.XYZ, 0.0, 0.0, Math.toRadians(angle));
+				angle += 180;
 
-		Vector3D temp = rotation.applyInverseTo(new Vector3D(0, range, 0));
-		LidarObservation lo = new LidarObservation(temp, false);
+				Rotation rotation = new Rotation(RotationOrder.XYZ, 0.0, 0.0, Math.toRadians(angle));
 
-		lo.publish();
+				Vector3D temp = rotation.applyInverseTo(new Vector3D(0, rangeToPublish.range, 0));
+				LidarObservation lo = new LidarObservation(temp, false);
+
+				lo.publish();
+			} else
+			{
+				System.out.println("Not pushlishing, " + rangeToPublish.range + " is not between " + (min - margin)
+						+ " and " + (max + margin));
+			}
+		} else
+		{
+			System.out.println("Not publishing, recentPoints is of wrong size " + recentPoints.size() + " != 3");
+		}
+		if (recentPoints.size() > 2)
+		{
+			recentPoints.remove(0);
+		}
+
 	}
 
 	/**

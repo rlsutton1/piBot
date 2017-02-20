@@ -69,12 +69,6 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	}
 
 	@Override
-	public void setParticleCount(int max)
-	{
-		pf.setParticleCount(max);
-	}
-
-	@Override
 	public void addPendingScan(ParticleFilterObservationSet par)
 	{
 		pf.addPendingScan(par);
@@ -97,6 +91,18 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	{
 		pf.shutdown();
 
+	}
+
+	@Override
+	public void suspend()
+	{
+		pf.suspend();
+	}
+
+	@Override
+	public void resume()
+	{
+		pf.resume();
 	}
 
 }

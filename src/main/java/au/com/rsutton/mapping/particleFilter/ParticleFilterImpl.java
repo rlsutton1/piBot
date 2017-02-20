@@ -63,7 +63,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		this.robot = robot;
 		this.map = map;
 		particleQty = particles;
-		newParticleCount = particleQty;
 		if (startPosition == StartPosition.RANDOM)
 		{
 			createRandomStart();
@@ -93,6 +92,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			public void observed(RobotLocation robotLocation)
 			{
 
+				if (suspended)
+				{
+					return;
+				}
 				addObservation(robotLocation);
 
 				if (lastx != null)
@@ -162,18 +165,23 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	public synchronized void addObservation(ParticleFilterObservationSet observations)
 	{
 
-		if (stop)
+		if (stop || suspended)
 		{
 			return;
 		}
 		lastObservation.set(observations);
 
+		double stdDev = getStdDev();
+		boolean isLost = stdDev > 100;
+
 		particles.parallelStream().forEach(e -> {
-			boolean isLost = getStdDev() > 100;
 			e.addObservation(map, observations, isLost);
 		});
 
-		boolean resampleRequired = false;
+		// adjust the number of particles in the particle filter based on
+		// how well localised it is
+		int newParticleCount = Math.max(500, (int) (7 * stdDev));
+
 		if (!observations.getObservations().isEmpty())
 		{
 			double currentObservationAngle = observations.getObservations().iterator().next().getAngleRadians();
@@ -182,24 +190,9 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 			lastObservationAngle = currentObservationAngle;
 
-			if (signum != lastSignum || lastResample.elapsed(TimeUnit.MILLISECONDS) > 1500)
-			{
-				resampleRequired = true;
-			}
 			lastSignum = signum;
 		}
-		if (resampleRequired)
-		{
-			if (lastResample.elapsed(TimeUnit.MILLISECONDS) > 1500)
-			{
-				System.out.println("************************* resample over due by "
-						+ (lastResample.elapsed(TimeUnit.MILLISECONDS) - 1500)
-						+ " *******************************************");
-			}
-			lastResample.reset();
-			lastResample.start();
-			resample();
-		}
+		resample(newParticleCount);
 	}
 
 	public void moveParticles(ParticleUpdate update)
@@ -213,7 +206,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		stablisedHeading += update.getDeltaHeading();
 	}
 
-	protected synchronized void resample()
+	protected synchronized void resample(int newParticleCount)
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -421,7 +414,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	}
 
 	int counter = 10;
-	private int newParticleCount;
+	private volatile boolean suspended;
 
 	/*
 	 * (non-Javadoc)
@@ -530,13 +523,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		return bestScanMatchScore;
 	}
 
-	@Override
-	public void setParticleCount(int i)
-	{
-		newParticleCount = i;
-
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -580,5 +566,17 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		stop = true;
 		robot.removeMessageListener(observer);
 
+	}
+
+	@Override
+	public void suspend()
+	{
+		suspended = true;
+	}
+
+	@Override
+	public void resume()
+	{
+		suspended = false;
 	}
 }

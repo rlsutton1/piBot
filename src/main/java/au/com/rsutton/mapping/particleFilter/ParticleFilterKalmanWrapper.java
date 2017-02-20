@@ -70,11 +70,6 @@ public class ParticleFilterKalmanWrapper
 		return particleFilter.getBestScanMatchScore();
 	}
 
-	public void setParticleCount(int i)
-	{
-		particleFilter.setParticleCount(i);
-	}
-
 	public DataSourcePoint getParticlePointSource()
 	{
 		return particleFilter.getParticlePointSource();

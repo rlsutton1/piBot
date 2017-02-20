@@ -15,7 +15,6 @@ import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.NavigatorControl;
-import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -57,7 +56,7 @@ public class SegmentMapBuilder implements RobotListener
 	 * @param heading
 	 */
 	public SegmentMapBuilder(ProbabilityMapIIFc map, NavigatorControl navigator, RobotInterface robot,
-			Vector3D position, ParticleFilterIfc activeParticleFilter)
+			ParticleFilterIfc activeParticleFilter)
 	{
 
 		world = map;
@@ -69,22 +68,16 @@ public class SegmentMapBuilder implements RobotListener
 		try
 		{
 
-			navigator.calculateRouteTo((int) position.getX(), (int) position.getY(), null,
-					RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-			navigator.go();
-			while (!navigator.hasReachedDestination())
-			{
-				Thread.sleep(1000);
-			}
-
+			Thread.sleep(2000);
 			navigator.suspend();
+			activeParticleFilter.suspend();
 
 			robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
-			Thread.sleep(12000);
+			Thread.sleep(2000);
 			robot.freeze(true);
 			robot.publishUpdate();
-			Thread.sleep(1000);
+			Thread.sleep(3000);
 
 			this.fixedX = activeParticleFilter.dumpAveragePosition().getX();
 			this.fixedY = activeParticleFilter.dumpAveragePosition().getY();
@@ -94,6 +87,7 @@ public class SegmentMapBuilder implements RobotListener
 			Thread.sleep(20000);
 
 			robot.removeMessageListener(this);
+			activeParticleFilter.resume();
 
 			navigator.resume();
 

@@ -216,10 +216,6 @@ public class Particle
 		}
 		double t = 1.0 / (Math.sqrt(squaredError) + 1.0);
 
-		if (t > 0.1)
-		{
-			System.out.println("rating better than 0.1 " + t);
-		}
 		return t;
 
 	}
