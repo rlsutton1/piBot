@@ -6,9 +6,15 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.robot.RobotInterface;
 
 public class FeatureExtractorSpike extends FeatureExtractor
 {
+
+	public FeatureExtractorSpike(SpikeListener listener, RobotInterface robot)
+	{
+		super(listener, robot);
+	}
 
 	@Override
 	List<Spike> detectSpike(List<ScanObservation> lastObs2)

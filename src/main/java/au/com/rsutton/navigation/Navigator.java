@@ -20,9 +20,7 @@ import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.FeatureExtractor;
-import au.com.rsutton.navigation.feature.FeatureExtractorCorner;
-import au.com.rsutton.navigation.feature.FeatureExtractorSpike;
+import au.com.rsutton.navigation.feature.PiBotGraphSlamFeatureTracker;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -68,11 +66,13 @@ public class Navigator implements Runnable, NavigatorControl
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
-		FeatureExtractor extractor = new FeatureExtractorSpike();
-		ui.addDataSource(extractor.getHeadingMapDataSource(pf, robot));
+		new PiBotGraphSlamFeatureTracker(ui, pf, robot);
 
-		FeatureExtractor extractor2 = new FeatureExtractorCorner();
-		ui.addDataSource(extractor2.getHeadingMapDataSource(pf, robot));
+		// FeatureExtractor extractor = new FeatureExtractorSpike(null);
+		// ui.addDataSource(extractor.getHeadingMapDataSource(pf, robot));
+		//
+		// FeatureExtractor extractor2 = new FeatureExtractorCorner(null);
+		// ui.addDataSource(extractor2.getHeadingMapDataSource(pf, robot));
 
 		// FeatureExtractionTestFullWold dl4j = new
 		// FeatureExtractionTestFullWold();

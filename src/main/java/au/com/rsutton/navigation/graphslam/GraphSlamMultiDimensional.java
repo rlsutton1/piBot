@@ -14,7 +14,7 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 	Class<T> dimensionClass;
 
 	@SuppressWarnings("unchecked")
-	GraphSlamMultiDimensional(T initialPosition)
+	public GraphSlamMultiDimensional(T initialPosition)
 	{
 		dimensions = initialPosition.getDimensions();
 		dimensionClass = (Class<T>) initialPosition.getClass();
@@ -27,7 +27,7 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 
 	}
 
-	List<T> getPositions()
+	public List<T> getPositions()
 	{
 		List<T> positions = new LinkedList<>();
 		for (int i = 0; i < dimensions; i++)
@@ -59,15 +59,15 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 		}
 	}
 
-	void addMove(T distanceMoved, DimensionCertainty certainty)
+	public void setNewLocation(T newLocation, DimensionCertainty certainty)
 	{
 		for (int i = 0; i < dimensions; i++)
 		{
-			slams[i].addMove(distanceMoved.get(i), certainty.get(i));
+			slams[i].setNewLocation(newLocation.get(i), certainty.get(i));
 		}
 	}
 
-	int add(T distanceToLandmark, DimensionCertainty certainty)
+	public int add(T distanceToLandmark, DimensionCertainty certainty)
 	{
 		int position = 0;
 		for (int i = 0; i < dimensions; i++)
@@ -77,12 +77,20 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 		return position;
 	}
 
-	void update(int position, T distanceToLandmark, DimensionCertainty certainty)
+	public void update(int position, T distanceToLandmark, DimensionCertainty certainty)
 	{
 		for (int i = 0; i < dimensions; i++)
 		{
 			slams[i].update(position, distanceToLandmark.get(i), certainty.get(i));
 		}
 
+	}
+
+	public void dumpPositions()
+	{
+		for (int i = 0; i < dimensions; i++)
+		{
+			slams[i].dumpPositions();
+		}
 	}
 }

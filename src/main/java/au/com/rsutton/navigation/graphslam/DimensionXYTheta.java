@@ -21,12 +21,12 @@ public class DimensionXYTheta implements Dimension
 	 * @param y
 	 * @param thetaRadians
 	 */
-	DimensionXYTheta(double x, double y, double thetaRadians)
+	public DimensionXYTheta(double x, double y, double thetaDegrees)
 	{
 		this.x = x;
 		this.y = y;
-		thetaX = Math.cos(thetaRadians);
-		thetaY = Math.sin(thetaRadians);
+		thetaX = Math.cos(Math.toRadians(thetaDegrees));
+		thetaY = Math.sin(Math.toRadians(thetaDegrees));
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public class DimensionXYTheta implements Dimension
 		return 4;
 	}
 
-	double getX()
+	public double getX()
 	{
 		return x;
 	}
@@ -47,11 +47,11 @@ public class DimensionXYTheta implements Dimension
 
 	/**
 	 * 
-	 * @return theta in radians
+	 * @return theta in degrees
 	 */
-	public double getTheta()
+	public double getThetaDegrees()
 	{
-		return Math.atan2(thetaY, thetaX);
+		return Math.toDegrees(Math.atan2(thetaY, thetaX));
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class DimensionXYTheta implements Dimension
 	@Override
 	public String toString()
 	{
-		return "DimensionXYZ [x=" + x + ", y=" + y + ", theta=" + getTheta() + "(radians)]";
+		return "DimensionXYZ [x=" + x + ", y=" + y + ", theta=" + getThetaDegrees() + "(degrees)]";
 	}
 
 }

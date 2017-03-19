@@ -17,7 +17,7 @@ public class GraphSlamMultiDimensionalTest
 		int landMark = slam.add(landmark1, new DimensionCertainty(new double[] {
 				1, 1, 1, 1 }));
 
-		slam.addMove(new DimensionXYTheta(1, 0, 0), new DimensionCertainty(new double[] {
+		slam.setNewLocation(new DimensionXYTheta(1, 0, 0), new DimensionCertainty(new double[] {
 				1, 1, 1, 1 }));
 
 		landmark1 = new DimensionXYTheta(5, 10, Math.toRadians(35));

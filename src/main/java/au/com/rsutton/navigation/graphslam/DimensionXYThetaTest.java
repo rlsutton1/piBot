@@ -12,9 +12,9 @@ public class DimensionXYThetaTest
 	{
 		for (int i = 0; i < 360; i++)
 		{
-			DimensionXYTheta dimension = new DimensionXYTheta(0, 0, Math.toRadians(i));
+			DimensionXYTheta dimension = new DimensionXYTheta(0, 0, i);
 
-			double degrees = Math.toDegrees(dimension.getTheta());
+			double degrees = dimension.getThetaDegrees();
 			if (degrees < 0)
 			{
 				degrees += 360;

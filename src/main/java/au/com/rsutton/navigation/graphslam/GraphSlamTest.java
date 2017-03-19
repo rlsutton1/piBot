@@ -12,7 +12,7 @@ public class GraphSlamTest
 		System.out.println("Test move");
 		GraphSlam slam = new GraphSlam(0);
 
-		slam.addMove(5, 1);
+		slam.setNewLocation(5, 1);
 		slam.dumpAllData();
 
 	}
@@ -24,18 +24,25 @@ public class GraphSlamTest
 		System.out.println("Test move and landmark 4");
 		GraphSlam slam = new GraphSlam(0);
 
-		slam.addMove(5, 1);
+		slam.setNewLocation(5, 1);
 		slam.dumpAllData();
+		slam.dumpPositions();
 		int pos = slam.add(9, 1);
 
 		slam.dumpAllData();
+		slam.dumpPositions();
 		slam.update(pos, 8, 1);
 
 		slam.dumpAllData();
-		slam.addMove(10, 1);
-		slam.add(15, 1);
+		slam.dumpPositions();
+		slam.setNewLocation(10, 1);
+		slam.dumpAllData();
+		slam.dumpPositions();
+		pos = slam.add(15, 1);
+		slam.update(pos, 14, 1);
 
 		slam.dumpAllData();
+		slam.dumpPositions();
 
 		slam.dumpPositions();
 

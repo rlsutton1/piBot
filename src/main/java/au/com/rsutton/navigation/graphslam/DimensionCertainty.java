@@ -11,7 +11,7 @@ public class DimensionCertainty implements Dimension
 	 * @param y
 	 * @param thetaRadians
 	 */
-	DimensionCertainty(double[] certainty)
+	public DimensionCertainty(double[] certainty)
 	{
 		this.certainty = certainty;
 	}

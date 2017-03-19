@@ -12,7 +12,7 @@ public class GraphSlam
 
 	RealMatrix p = MatrixUtils.createRealMatrix(1, 1);
 
-	GraphSlam(double value)
+	public GraphSlam(double value)
 	{
 		omega.setEntry(0, 0, 1.0);
 		p.setEntry(0, 0, value);
@@ -20,10 +20,12 @@ public class GraphSlam
 
 	public RealMatrix getPositions()
 	{
-		System.out.println("Omega before inverse: ");
-		dumpMatrix(omega);
+		// System.out.println("Omega before inverse: ");
+		// dumpMatrix(omega);
 		RealMatrix omegaInverse = inv(omega);
-		return omegaInverse.multiply(p);
+		RealMatrix positions = omegaInverse.multiply(p);
+
+		return positions;
 	}
 
 	public void dumpAllData()
@@ -40,19 +42,28 @@ public class GraphSlam
 		dumpMatrix(getPositions());
 	}
 
-	public void addMove(double distanceMoved, double certainty)
+	public void setNewLocation(double newLocationRelativeToLastLocation, double certainty)
 	{
 
+		if (p.getRowDimension() > 1)
+		{
+			collapseRobotPath();
+		} else
+		{
+			System.out.println("not collapsing matrix, dimesion is " + p.getRowDimension());
+		}
+
+		System.out.println("New location offset " + newLocationRelativeToLastLocation);
 		omega = insertRow(omega, 1);
 		omega = insertCol(omega, 1);
 
 		// insert new row at position 1 into
 		p = insertRow(p, 1);
 
-		update(1, distanceMoved, certainty);
+		update(1, newLocationRelativeToLastLocation, certainty);
 
-		collapseRobotPath();
-
+		System.out.println("Pos add new Location");
+		dumpPositions();
 	}
 
 	private void collapseRobotPath()
@@ -68,8 +79,8 @@ public class GraphSlam
 		// o = o'-At.B-1.A
 		// p = p'-At.B-1.C
 
-		omega = oo.subtract(a.transpose().multiply(inv(b).multiply(a)));
-		p = pp.subtract(a.transpose().multiply(inv(b).multiply(c)));
+		omega = oo.subtract(a.transpose().multiply(inv(b)).multiply(a));
+		p = pp.subtract(a.transpose().multiply(inv(b)).multiply(c));
 
 	}
 
@@ -99,12 +110,22 @@ public class GraphSlam
 	{
 		// certainty = 1/sigma
 		// row, col
-		omega.addToEntry(0, 0, 1 * certainty);
-		omega.addToEntry(0, position, -1 * certainty);
-		omega.addToEntry(position, 0, -1 * certainty);
+
+		// at start up the current position is stored at column/row zero
+		int origin = 0;
+
+		if (position > 1)
+		{
+			// current position is stored at column/row one
+			origin = 1;
+		}
+
+		omega.addToEntry(origin, origin, 1 * certainty);
+		omega.addToEntry(origin, position, -1 * certainty);
+		omega.addToEntry(position, origin, -1 * certainty);
 		omega.addToEntry(position, position, 1 * certainty);
 
-		p.addToEntry(0, 0, -distanceToLandmark * certainty);
+		p.addToEntry(origin, 0, -distanceToLandmark * certainty);
 		p.addToEntry(position, 0, distanceToLandmark * certainty);
 
 	}
@@ -116,7 +137,7 @@ public class GraphSlam
 		p = addRow(p);
 		int landmarkNumber = omega.getColumnDimension() - 1;
 		update(landmarkNumber, distanceToLandmark, certainty);
-		System.out.println(landmarkNumber);
+		// System.out.println(landmarkNumber);
 		return landmarkNumber;
 
 	}

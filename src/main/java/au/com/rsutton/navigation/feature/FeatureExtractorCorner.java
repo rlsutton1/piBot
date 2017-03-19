@@ -7,9 +7,15 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.robot.RobotInterface;
 
 public class FeatureExtractorCorner extends FeatureExtractor
 {
+
+	public FeatureExtractorCorner(SpikeListener listener, RobotInterface robot)
+	{
+		super(listener, robot);
+	}
 
 	@Override
 	List<Spike> detectSpike(List<ScanObservation> lastObs3)
@@ -73,8 +79,6 @@ public class FeatureExtractorCorner extends FeatureExtractor
 	List<Double> convertFromPointsToAngles(List<ScanObservation> list)
 	{
 		List<Double> results = new LinkedList<>();
-
-		Double lastAngle = null;
 
 		for (int i = 1; i < list.size(); i++)
 		{
