@@ -1,6 +1,7 @@
 package au.com.rsutton.robot;
 
 import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 
 public interface RobotInterface
 {
@@ -9,12 +10,12 @@ public interface RobotInterface
 
 	void setSpeed(Speed speed);
 
-	void setHeading(double normalizeHeading);
+	void turn(double normalizeHeading);
 
 	void publishUpdate();
 
-	void addMessageListener(RobotListener listener);
+	void addMessageListener(RobotLocationDeltaListener listener);
 
-	void removeMessageListener(RobotListener listener);
+	void removeMessageListener(RobotLocationDeltaListener listener);
 
 }

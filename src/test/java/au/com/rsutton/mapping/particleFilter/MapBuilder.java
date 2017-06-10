@@ -1,5 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -10,14 +11,21 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.NavigatorControl;
+import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotSimulator;
+import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
-public class MapBuilder implements ParticleFilterListener
+public class MapBuilder
 {
 
 	double maxUsableDistance = 1000;
@@ -28,11 +36,12 @@ public class MapBuilder implements ParticleFilterListener
 
 	private NavigatorControl navigatorControl;
 
-	private ParticleFilterIfc particleFilter;
+	private RobotPoseSource particleFilter;
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 
-	MapBuilder(ProbabilityMapIIFc map, ParticleFilterIfc particleFilter, NavigatorControl navigatorControl)
+	MapBuilder(ProbabilityMapIIFc map, RobotPoseSource particleFilter, NavigatorControl navigatorControl,
+			RobotInterface robot)
 	{
 		world = map;
 		panel = new MapDrawingWindow();
@@ -42,26 +51,17 @@ public class MapBuilder implements ParticleFilterListener
 
 		this.particleFilter = particleFilter;
 
-		particleFilter.addListener(this);
+		robot.addMessageListener(new RobotLocationDeltaListener()
+		{
 
-		// for (int i = 0; i < 180; i += 30)
-		// {
-		// try
-		// {
-		// navigatorControl.calculateRouteTo(0, 0, i,
-		// RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-		// while (!navigatorControl.hasReachedDestination())
-		// {
-		//
-		// Thread.sleep(500);
-		// }
-		//
-		// Thread.sleep(5000);
-		// } catch (InterruptedException e)
-		// {
-		// Thread.currentThread().interrupt();
-		// }
-		// }
+			@Override
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+			{
+				update(particleFilter.getXyPosition(), particleFilter.getHeading(), particleFilter.getStdDev(),
+						robotLocation);
+
+			}
+		});
 
 		chooseTarget();
 	}
@@ -70,11 +70,8 @@ public class MapBuilder implements ParticleFilterListener
 
 	private boolean complete = false;
 
-	private boolean returningHome = true;
-
-	@Override
-	public void update(Vector3D averagePosition, double averageHeading, double stdDev,
-			ParticleFilterObservationSet particleFilterObservationSet)
+	public void update(DistanceXY averagePosition, double averageHeading, double stdDev,
+			List<ScanObservation> particleFilterObservationSet)
 	{
 
 		// TODO: add a somewhat kalman fiter on the heading here!!!
@@ -85,13 +82,7 @@ public class MapBuilder implements ParticleFilterListener
 			return;
 		}
 
-		Double bestScanMatchScore = particleFilter.getBestScanMatchScore();
-		if (bestScanMatchScore < 0.001)
-		{
-			return;
-		}
-
-		for (ScanObservation obs : particleFilterObservationSet.getObservations())
+		for (ScanObservation obs : particleFilterObservationSet)
 		{
 			double absObsAngle = Math.abs(HeadingHelper.getChangeInHeading(0, Math.toDegrees(obs.getAngleRadians())));
 			if (obs.getDisctanceCm() < 30 && absObsAngle < 45)
@@ -110,23 +101,24 @@ public class MapBuilder implements ParticleFilterListener
 			}
 		}
 
-		for (ScanObservation obs : particleFilterObservationSet.getObservations())
+		for (ScanObservation obs : particleFilterObservationSet)
 		{
 
-			Particle particle = new Particle(averagePosition.getX(), averagePosition.getY(), averageHeading, 0, 0);
+			Particle particle = new Particle(averagePosition.getX().convert(DistanceUnit.CM),
+					averagePosition.getY().convert(DistanceUnit.CM), averageHeading, 0, 0);
 
 			Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
 					.applyTo(obs.getVector());
-			point = averagePosition.add(point);
+			point = averagePosition.getVector(DistanceUnit.CM).add(point);
 
 			// calculate distance of the point observed
-			double distance = Vector3D.distance(averagePosition, point);
+			double distance = Vector3D.distance(averagePosition.getVector(DistanceUnit.CM), point);
 
 			if (distance < maxUsableDistance)
 			{
-				clearPoints(averagePosition, point);
+				clearPoints(averagePosition.getVector(DistanceUnit.CM), point);
 				if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000,
-						InitialWorldBuilder.REQUIRED_POINT_CERTAINTY) >= 1000)
+						RobotSimulator.REQUIRED_POINT_CERTAINTY) >= 1000)
 				{
 					world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75,
 							(int) particleFilter.getStdDev());
@@ -141,8 +133,8 @@ public class MapBuilder implements ParticleFilterListener
 		boolean hasReachedDestination = navigatorControl.hasReachedDestination();
 		long targetElapsedMinutes = targetAge.elapsed(TimeUnit.MINUTES);
 		long targetElapsedSeconds = targetAge.elapsed(TimeUnit.SECONDS);
-		if (hasReachedDestination || bestScanMatchScore < 0.002
-				|| (navigatorControl.isStuck() && targetElapsedSeconds > 120) || targetElapsedMinutes > 2)
+		if (hasReachedDestination || (navigatorControl.isStuck() && targetElapsedSeconds > 120)
+				|| targetElapsedMinutes > 2)
 		{
 			chooseTarget();
 		}
@@ -153,18 +145,8 @@ public class MapBuilder implements ParticleFilterListener
 		navigatorControl.stop();
 		if (targetAge.elapsed(TimeUnit.SECONDS) > 15)
 		{
-			if (returningHome)
-			{
-				if (setNewTarget())
-				{
-					returningHome = false;
-				}
-			} else
-			{
-				// return home every second move, to make sure we don't get lost
-				navigatorControl.calculateRouteTo(0, 0, 0d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-				returningHome = true;
-			}
+
+			setNewTarget();
 			targetAge.reset();
 			targetAge.start();
 		}
@@ -202,7 +184,7 @@ public class MapBuilder implements ParticleFilterListener
 
 	private boolean isTarget(int x, int y)
 	{
-		Vector3D currentLocation = particleFilter.dumpAveragePosition();
+		DistanceXY currentLocation = particleFilter.getXyPosition();
 		if (x >= world.getMinX() && x <= world.getMaxX())
 		{
 			if (y >= world.getMinY() && y <= world.getMaxY())
@@ -214,20 +196,20 @@ public class MapBuilder implements ParticleFilterListener
 
 					if (isUnexplored(position, 90))
 					{
-						navigatorControl.calculateRouteTo(x, y, 90d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 						return true;
 					}
 					if (isUnexplored(position, -90))
 					{
-						navigatorControl.calculateRouteTo(x, y, -90d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 						return true;
 					}
 
-					double distance = Vector3D.distance(currentLocation, position);
+					double distance = Vector3D.distance(currentLocation.getVector(DistanceUnit.CM), position);
 					if (maxDistance < distance)
 					{
 						maxDistance = distance;
-						navigatorControl.calculateRouteTo(x, y, 0d, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+						navigatorControl.calculateRouteTo(x, y, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 
 					}
 
@@ -272,7 +254,7 @@ public class MapBuilder implements ParticleFilterListener
 		{
 
 			if (particle.simulateObservation(world, h, maxDistance,
-					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY) < maxDistance)
+					RobotSimulator.REQUIRED_POINT_CERTAINTY) < maxDistance)
 			{
 				existInMap++;
 
@@ -309,7 +291,7 @@ public class MapBuilder implements ParticleFilterListener
 
 				double x = (percent * x2) + ((1.0 - percent) * x1);
 				double y = (percent * y2) + ((1.0 - percent) * y1);
-				if (world.get(x, y) < InitialWorldBuilder.REQUIRED_POINT_CERTAINTY)
+				if (world.get(x, y) < RobotSimulator.REQUIRED_POINT_CERTAINTY)
 				{
 					world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
 				} else

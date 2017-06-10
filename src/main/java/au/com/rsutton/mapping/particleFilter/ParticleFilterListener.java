@@ -1,11 +1,14 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import java.util.List;
+
+import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.robot.rover.Angle;
 
 public interface ParticleFilterListener
 {
 
-	void update(Vector3D averagePosition, double averageHeading, double stdDev,
-			ParticleFilterObservationSet particleFilterObservationSet);
+	void update(DistanceXY averagePosition, Angle averageHeading, double stdDev,
+			List<ScanObservation> particleFilterObservationSet);
 
 }

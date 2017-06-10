@@ -14,10 +14,12 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
@@ -31,8 +33,6 @@ public class ObsticleAvoidance
 
 	protected Double correctionAngle;
 
-	protected Angle currentHeading;
-
 	private Double correction;
 
 	private Vector3D sp1;
@@ -43,22 +43,21 @@ public class ObsticleAvoidance
 	double distanceForCorrection = 40;
 	double requiredObsticalClearance = 30;
 
-	ObsticleAvoidance(RobotInterface robot)
+	ObsticleAvoidance(RobotInterface robot, RobotPoseSource pf)
 	{
-		scanBuffer = new MovingLidarObservationMultiBuffer(120);
+		scanBuffer = new MovingLidarObservationMultiBuffer(50, robot, pf);
 
-		robot.addMessageListener(new RobotListener()
+		robot.addMessageListener(new RobotLocationDeltaListener()
 		{
 
 			@Override
-			public void observed(RobotLocation observation)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observation)
 			{
 				scanBuffer.addObservation(observation);
 
-				currentHeading = observation.getDeadReaconingHeading();
-
 				currentObservations.clear();
-				currentObservations.addAll(scanBuffer.getObservations(observation));
+
+				currentObservations.addAll(scanBuffer.getObservations());
 
 				List<LidarObservation> closest = getClosest(currentObservations, requiredObsticalClearance + 10);
 				if (closest.size() == 2)
@@ -224,7 +223,7 @@ public class ObsticleAvoidance
 
 	}
 
-	public DataSourceMap getHeadingMapDataSource(final ParticleFilterIfc pf, RobotInterface robot)
+	public DataSourceMap getHeadingMapDataSource(final RobotPoseSource pf, RobotInterface robot)
 	{
 		return new DataSourceMap()
 		{
@@ -232,7 +231,7 @@ public class ObsticleAvoidance
 			@Override
 			public List<Point> getPoints()
 			{
-				Vector3D pos = pf.dumpAveragePosition();
+				Vector3D pos = pf.getXyPosition().getVector(DistanceUnit.CM);
 				List<Point> points = new LinkedList<>();
 				points.add(new Point((int) pos.getX(), (int) pos.getY()));
 				return points;
@@ -246,7 +245,7 @@ public class ObsticleAvoidance
 				graphics.setColor(new Color(255, 255, 255));
 				// draw lidar observation lines
 
-				double pfh = pf.getAverageHeading();
+				double pfh = pf.getHeading();
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pfh));
 
 				if (awayFromObsticle.get() != null)

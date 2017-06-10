@@ -3,8 +3,6 @@ package au.com.rsutton.hazelcast;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.google.common.base.Objects;
-
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
@@ -16,8 +14,9 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 
 	private static final long serialVersionUID = 938950572423708619L;
 	private Angle deadReaconingHeading;
-	private Distance x;
-	private Distance y;
+
+	private Distance distanceTravelled;
+
 	private Distance clearSpaceAhead;
 	private long time = System.currentTimeMillis();
 	private List<LidarObservation> observations;
@@ -38,35 +37,6 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 	{
 		this.deadReaconingHeading = angle;
 
-	}
-
-	@Override
-	public String toString()
-	{
-		return Objects.toStringHelper(RobotLocation.class).add("x", x).add("y", y).add("heading", deadReaconingHeading)
-				.toString();
-	}
-
-	public void setX(Distance distance)
-	{
-		x = distance;
-
-	}
-
-	public void setY(Distance currentY)
-	{
-		y = currentY;
-
-	}
-
-	public Distance getX()
-	{
-		return x;
-	}
-
-	public Distance getY()
-	{
-		return y;
 	}
 
 	@Override
@@ -109,6 +79,23 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 	public void setObservations(List<LidarObservation> observations)
 	{
 		this.observations = observations;
+	}
+
+	public Distance getDistanceTravelled()
+	{
+		return distanceTravelled;
+	}
+
+	public void setDistanceTravelled(Distance distanceTravelled)
+	{
+		this.distanceTravelled = distanceTravelled;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "RobotLocation [deadReaconingHeading=" + deadReaconingHeading + ", distanceTravelled="
+				+ distanceTravelled + "]";
 	}
 
 }

@@ -10,77 +10,103 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.navigation.graphslam.v3.DimensionWrapperXYTheta;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.MapDrawingWindow;
 
-public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMap
+public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMap, RobotPoseSource
 {
 
-	private FeatureExtractorSpike spikeExtractor;
-	private FeatureExtractorCorner cornerExtractor;
+	private Logger logger = LogManager.getLogger();
+	private GraphSlamFeatureTracker tracker = new GraphSlamFeatureTracker();
 
-	GraphSlamFeatureTracker tracker = new GraphSlamFeatureTracker();
-	private ParticleFilterIfc pf;
+	private double heading = 0;
+	private Vector3D position = new Vector3D(0, 0, 0);
+	private double lastX = 0;
+	private double lastY = 0;
+	private double lastHeading = 0;
 
-	public PiBotGraphSlamFeatureTracker(MapDrawingWindow ui, ParticleFilterIfc pf, RobotInterface robot)
+	private boolean initial = true;
+
+	public PiBotGraphSlamFeatureTracker(MapDrawingWindow ui, RobotInterface robot)
 	{
 
-		this.pf = pf;
+		new FeatureExtractorSpike(this, robot);
 
-		spikeExtractor = new FeatureExtractorSpike(this, robot);
-		// ui.addDataSource(spikeExtractor.getHeadingMapDataSource(pf, robot));
+		new FeatureExtractorCorner(this, robot);
 
-		cornerExtractor = new FeatureExtractorCorner(this, robot);
-		// ui.addDataSource(cornerExtractor.getHeadingMapDataSource(pf, robot));
+		tracker.setNewLocation(0, 0, 0, 0.1);
 
 		ui.addDataSource(this);
 
+		setupRobotListener(robot);
+
 	}
 
-	double lastX = 0;
-	double lastY = 0;
-	double lastHeading = 0;
+	void setupRobotListener(RobotInterface robot)
+	{
+		robot.addMessageListener(new RobotLocationDeltaListener()
+		{
+
+			@Override
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+			{
+				logger.info("Delta heading " + deltaHeading.getDegrees());
+				heading += deltaHeading.getDegrees();
+				DistanceXY result = RobotLocationDeltaHelper.applyDelta(deltaHeading, deltaDistance,
+						new Angle(heading, AngleUnits.DEGREES), new Distance(position.getX(), DistanceUnit.CM),
+						new Distance(position.getY(), DistanceUnit.CM));
+
+				position = result.getVector(DistanceUnit.CM);
+
+				logger.info("Slam position " + deltaDistance + " " + position);
+				updatePosition();
+			}
+		});
+
+	}
 
 	@Override
-	public void discoveredSpikes(List<Spike> spikes)
+	public void discoveredSpikes(List<Feature> features)
 	{
-		if (pf.getStdDev() < 60)
+
+		updatePosition();
+
+		tracker.addObservations(features, heading);
+
+	}
+
+	private void updatePosition()
+	{
+		if (initial)
 		{
-			double heading = pf.getAverageHeading();
-			Vector3D position = pf.dumpAveragePosition();
-
-			double dx = position.getX() - lastX;
-			double dy = position.getY() - lastY;
-			double dt = HeadingHelper.getChangeInHeading(heading, lastHeading);
-			if (Math.abs(dx) > 1 || Math.abs(dy) > 1)// || Math.abs(dt) > 3)
-			{
-				lastX = position.getX();
-				lastY = position.getY();
-				lastHeading = heading;
-				tracker.setNewLocation(dx, dy, 0, 0.25);
-			}
-
-			double angleOffset = 0;
-
-			for (Spike spike : spikes)
-			{
-
-				Vector3D spd = new Vector3D(spike.x, spike.y, 0);
-				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
-
-				Vector3D result = rotation.applyTo(spd);
-
-				Spike offsetSpike = new Spike(result.getX(), result.getY(), heading + spike.angle + angleOffset,
-						heading + spike.getAngleAwayFromWall() + angleOffset);
-				tracker.addObservation(offsetSpike);
-			}
-
+			lastX = position.getX();
+			lastY = position.getY();
+			lastHeading = heading;
+			initial = false;
 		}
 
+		double dx = position.getX() - lastX;
+		double dy = position.getY() - lastY;
+		double dt = HeadingHelper.getChangeInHeading(heading, lastHeading);
+		if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || Math.abs(dt) > 3)
+		{
+			lastX = position.getX();
+			lastY = position.getY();
+			lastHeading = heading;
+			tracker.setNewLocation(dx, dy, dt, 0.1);
+		}
 	}
 
 	@Override
@@ -95,36 +121,79 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
 	{
 		Graphics graphics = image.getGraphics();
-
+		//
+		// DimensionWrapperXYTheta node = tracker.getCurrentLocation();
+		// tracker.getCurrentConstraints
+		//
+		// draw all the current constraints
+		//
 		// draw lidar observation lines
-		for (Spike spike : tracker.featureMap.values())
-		// for (Spike spike : current)
-
+		for (Feature feature : tracker.getFeatures())
 		{
 			graphics.setColor(new Color(255, 0, 0));
-
-			int pointX = (int) (pointOriginX + (spike.x * scale));
-			int pointY = (int) (pointOriginY + (spike.y * scale));
+			if (feature.getFeatureType() == FeatureType.CONCAVE)
+			{
+				graphics.setColor(new Color(0, 255, 255));
+			}
+			int pointX = (int) (pointOriginX + (feature.x * scale));
+			int pointY = (int) (pointOriginY + (feature.y * scale));
 			graphics.drawRect(pointX, pointY, 5, 5);
 
-			double direction = spike.angle + 90;
+			double direction = feature.angle + 90;
 
-			Vector3D line1 = new Vector3D(0, 30, 0);
+			Vector3D line1 = new Vector3D(0, 15, 0);
 			line1 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(direction)).applyTo(line1);
 
 			graphics.drawLine(pointX, pointY, (int) (pointX + line1.getX()), (int) (pointY + line1.getY()));
 
-			direction = spike.getAngleAwayFromWall() + 90;
+			direction = feature.getAngleAwayFromWall() + 90;
 
-			Vector3D line = new Vector3D(0, 15, 0);
+			Vector3D line = new Vector3D(0, 8, 0);
 			line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(direction)).applyTo(line);
 
 			graphics.setColor(new Color(255, 255, 0));
+
 			graphics.drawLine((int) (pointX + line1.getX()), (int) (pointY + line1.getY()),
 					(int) (pointX + line1.getX() + line.getX()), (int) (pointY + line1.getY() + line.getY()));
 
 		}
 
+	}
+
+	@Override
+	public double getHeading()
+	{
+		return heading;
+	}
+
+	@Override
+	public DistanceXY getXyPosition()
+	{
+		DimensionWrapperXYTheta slamLocation = tracker.getCurrentLocation();
+		return new DistanceXY(slamLocation.getX(), slamLocation.getY(), DistanceUnit.CM);
+	}
+
+	/**
+	 * this is implemented by particle filter, generally return a low value
+	 * (close to zero but not zero)
+	 * 
+	 * @return
+	 */
+	@Override
+	public double getStdDev()
+	{
+		return 1;
+	}
+
+	@Override
+	public void addDataSoures(MapDrawingWindow ui)
+	{
+
+	}
+
+	@Override
+	public void shutdown()
+	{
 	}
 
 }

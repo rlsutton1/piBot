@@ -2,15 +2,12 @@ package au.com.rsutton.mapping.particleFilter;
 
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
+import au.com.rsutton.ui.MapDrawingWindow;
 
-public interface ParticleFilterIfc
+public interface ParticleFilterIfc extends RobotPoseSource
 {
-
-	public abstract double getAverageHeading();
 
 	public abstract double getStdDev();
 
@@ -21,8 +18,6 @@ public interface ParticleFilterIfc
 	public abstract DataSourceMap getHeadingMapDataSource();
 
 	public abstract Double getBestScanMatchScore();
-
-	public abstract Vector3D dumpAveragePosition();
 
 	public abstract void addPendingScan(ParticleFilterObservationSet par);
 
@@ -35,4 +30,6 @@ public interface ParticleFilterIfc
 	public abstract void suspend();
 
 	public abstract void resume();
+
+	public abstract void addDataSoures(MapDrawingWindow ui);
 }

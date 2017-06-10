@@ -10,7 +10,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.base.Preconditions;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
-import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
+import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.DataSourcePoint;
 
 public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
@@ -440,7 +440,7 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 		{
 			for (int y = world.getMinY() - 1; y < world.getMaxY() + 1; y += 1)
 			{
-				if (world.get(x, y) >= InitialWorldBuilder.REQUIRED_POINT_CERTAINTY)
+				if (world.get(x, y) >= RobotSimulator.REQUIRED_POINT_CERTAINTY)
 				{
 					points.add(new Point(x * blockSize, y * blockSize));
 				}

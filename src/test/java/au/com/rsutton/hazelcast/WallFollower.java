@@ -2,7 +2,6 @@ package au.com.rsutton.hazelcast;
 
 import java.util.Collection;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
 import com.hazelcast.core.Message;
@@ -13,10 +12,12 @@ import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.mapping.XY;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.rover.LidarObservation;
 import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
 
-public class WallFollower implements Runnable, MessageListener<RobotLocation>
+public class WallFollower implements Runnable, MessageListener<RobotLocation>, RobotInterface
 {
 
 	volatile int currentX = 0;
@@ -40,11 +41,11 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 
 	}
 
-	Integer setHeading = null;
+	Integer setHeading = 0;
 
 	double currentSpeed = 0;
 
-	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer(1);
+	MovingLidarObservationMultiBuffer buffer = new MovingLidarObservationMultiBuffer(1, this, null);
 
 	WallFollowerUI ui = new WallFollowerUI();
 
@@ -52,21 +53,14 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 	public void onMessage(Message<RobotLocation> message)
 	{
 		RobotLocation messageObject = message.getMessageObject();
-		int heading = (int) messageObject.getDeadReaconingHeading().getDegrees();
-		if (setHeading == null)
-		{
-			setHeading = heading;
-		}
+
 		int speed = 100;
 
-		System.out.println("Size "+messageObject.getObservations().size());
+		System.out.println("Size " + messageObject.getObservations().size());
 
-		buffer.addObservation(messageObject);
+		buffer.addObservation(messageObject.getObservations());
 
-		Vector3D position = new Vector3D(messageObject.getX().convert(DistanceUnit.CM), messageObject.getY().convert(
-				DistanceUnit.CM), 0);
-		System.out.println(position);
-		Collection<LidarObservation> laserData = buffer.getObservations(messageObject);
+		Collection<LidarObservation> laserData = buffer.getObservations();
 
 		ui.showPoints(laserData);
 
@@ -75,8 +69,8 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		{
 			XY xy = new XY(observation.getX(), observation.getY());
 
-			int x = (int) xy.getX();
-			int y = (int) xy.getY();
+			int x = xy.getX();
+			int y = xy.getY();
 
 			if (y < 40 && y > 0)
 			{
@@ -87,12 +81,12 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 						speed = 0;
 					}
 					System.out.println("Something directly ahead, turning right");
-					setHeading = heading + 10;
+					setHeading = +10;
 					break;
 				}
 			}
 		}
-		if (setHeading.intValue() == heading)
+		if (setHeading.intValue() == 0)
 		{
 			int changeInHeading = 0;
 			int changeCount = 0;
@@ -100,8 +94,8 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 			{
 				XY xy = new XY(observation.getX(), observation.getY());
 
-				int x = (int) xy.getX();
-				int y = (int) xy.getY();
+				int x = xy.getX();
+				int y = xy.getY();
 				if (y > 0)
 				{
 
@@ -138,19 +132,18 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 					// }
 				}
 			}
-			setHeading = heading + (changeInHeading / Math.max(1, changeCount));
+			setHeading = (changeInHeading / Math.max(1, changeCount));
 		}
-		if ((setHeading.intValue() % 360 == heading || setHeading.intValue() == heading || setHeading.intValue() + 360 == heading)
-				&& minX > -30)
+		if (setHeading.intValue() == 0 && minX > -30)
 		{
 			// no negative x values were detected in the near range (y < 80)
 			// and
 			// no heading change has been
 			// set, so set one... we'll turn left to try to find something
-			setHeading = heading - 45;
+			setHeading = -45;
 			System.out.println("Nothing detected, turning left");
 		}
-		if (Math.abs(setHeading - heading) > 10)
+		if (Math.abs(setHeading) > 10)
 		{
 			speed = Math.min(speed, 0);
 		}
@@ -158,8 +151,50 @@ public class WallFollower implements Runnable, MessageListener<RobotLocation>
 		currentSpeed = speed / 10.0;
 		SetMotion message2 = new SetMotion();
 		message2.setSpeed(new Speed(new Distance(currentSpeed, DistanceUnit.CM), Time.perSecond()));
-		message2.setHeading((double) setHeading);
-	//	message2.publish();
+		message2.setChangeHeading(setHeading.doubleValue());
+		// message2.publish();
+
+	}
+
+	@Override
+	public void freeze(boolean b)
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void setSpeed(Speed speed)
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void turn(double normalizeHeading)
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void publishUpdate()
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void addMessageListener(RobotLocationDeltaListener listener)
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void removeMessageListener(RobotLocationDeltaListener listener)
+	{
+		// TODO Auto-generated method stub
 
 	}
 }

@@ -26,21 +26,18 @@ import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.Graph;
 
-public class MainWindow extends JFrame implements
-		MessageListener<RobotLocation>
+public class MainWindow extends JFrame implements MessageListener<RobotLocation>
 {
 
 	private static final int SPEED = 10;
 	private static final long serialVersionUID = -4490943128993707547L;
 	private JTextField heading;
 	private JLabel xLocationLabel;
-	private JLabel yLocationLabel;
 	private JLabel headingLabel;
 	private JLabel spaceLabel;
 	private Graph graph;
 
-	public static void main(String[] args) throws InterruptedException,
-			IOException
+	public static void main(String[] args) throws InterruptedException, IOException
 	{
 		new MainWindow();
 
@@ -62,15 +59,12 @@ public class MainWindow extends JFrame implements
 
 		xLocationLabel = new JLabel("X: 0");
 		xLocationLabel.setPreferredSize(new Dimension(80, 30));
-		yLocationLabel = new JLabel("Y: 0");
-		yLocationLabel.setPreferredSize(new Dimension(80, 30));
 		headingLabel = new JLabel("H: 0");
 		headingLabel.setPreferredSize(new Dimension(80, 30));
 		spaceLabel = new JLabel("S: 0");
 		spaceLabel.setPreferredSize(new Dimension(80, 30));
 
 		telemetryPanel.add(xLocationLabel);
-		telemetryPanel.add(yLocationLabel);
 		telemetryPanel.add(headingLabel);
 		telemetryPanel.add(spaceLabel);
 		this.add(telemetryPanel);
@@ -127,7 +121,6 @@ public class MainWindow extends JFrame implements
 					logReader = new Runnable()
 					{
 
-
 						@Override
 						public void run()
 						{
@@ -154,10 +147,9 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(
-						new Distance(SPEED, DistanceUnit.CM), Time.perSecond()));
+				message.setSpeed(new Speed(new Distance(SPEED, DistanceUnit.CM), Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
-				message.setHeading((double) v);
+				message.setChangeHeading((double) v);
 				message.publish();
 
 			}
@@ -177,10 +169,9 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(
-						new Distance(-SPEED, DistanceUnit.CM), Time.perSecond()));
+				message.setSpeed(new Speed(new Distance(-SPEED, DistanceUnit.CM), Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
-				message.setHeading((double) v);
+				message.setChangeHeading((double) v);
 				message.publish();
 
 			}
@@ -200,10 +191,9 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
-						Time.perSecond()));
+				message.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
-				message.setHeading((double) v);
+				message.setChangeHeading((double) v);
 				message.setFreeze(true);
 				message.publish();
 
@@ -224,10 +214,9 @@ public class MainWindow extends JFrame implements
 			public void actionPerformed(ActionEvent e)
 			{
 				SetMotion message = new SetMotion();
-				message.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
-						Time.perSecond()));
+				message.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 				int v = Integer.parseInt(heading.getText());
-				message.setHeading((double) v);
+				message.setChangeHeading((double) v);
 				message.publish();
 
 			}
@@ -241,16 +230,11 @@ public class MainWindow extends JFrame implements
 	{
 		RobotLocation m = message.getMessageObject();
 
-		xLocationLabel.setText("X:" + (int) m.getX().convert(DistanceUnit.CM)
-				+ "cm");
-		yLocationLabel.setText("Y:" + (int) m.getY().convert(DistanceUnit.CM)
-				+ "cm");
+		xLocationLabel.setText("Distance:" + (int) m.getDistanceTravelled().convert(DistanceUnit.CM) + "cm");
 		headingLabel.setText("H:" + (int) m.getDeadReaconingHeading().getDegrees());
 		if (m.getClearSpaceAhead() != null)
 		{
-			spaceLabel.setText("S:"
-					+ (int) m.getClearSpaceAhead().convert(DistanceUnit.CM)
-					+ "cm");
+			spaceLabel.setText("S:" + (int) m.getClearSpaceAhead().convert(DistanceUnit.CM) + "cm");
 		}
 	}
 }

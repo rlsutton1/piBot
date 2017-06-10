@@ -19,15 +19,19 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
+import au.com.rsutton.ui.DataSourceStatistic;
+import au.com.rsutton.ui.MapDrawingWindow;
 
 public class ParticleFilterImpl implements ParticleFilterIfc
 {
@@ -39,7 +43,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	private volatile double bestScanMatchScore = 0;
 
-	private AtomicReference<ParticleFilterObservationSet> lastObservation = new AtomicReference<>();
+	private AtomicReference<List<ScanObservation>> lastObservation = new AtomicReference<>();
 	private final double headingNoise;
 	private final double distanceNoise;
 	private double stablisedHeading = 0;
@@ -47,13 +51,15 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	private int lastSignum;
 	private double lastObservationAngle;
 
+	DistanceUnit distanceUnit = DistanceUnit.CM;
+
 	Stopwatch lastResample = Stopwatch.createStarted();
 	volatile private double bestRawScore;
 
 	private boolean stop = false;
 	private RobotInterface robot;
 	private ProbabilityMapIIFc map;
-	private RobotListener observer;
+	private RobotLocationDeltaListener observer;
 
 	public ParticleFilterImpl(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition, RobotInterface robot, Pose pose)
@@ -79,17 +85,14 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		robot.addMessageListener(observer);
 	}
 
-	private RobotListener getObserver()
+	private RobotLocationDeltaListener getObserver()
 	{
-		return new RobotListener()
+		return new RobotLocationDeltaListener()
 		{
 
-			private Double lasty;
-			private Double lastx;
-			private Angle lastheading;
-
 			@Override
-			public void observed(RobotLocation robotLocation)
+			public void onMessage(final Angle deltaHeading, final Distance deltaDistance,
+					List<ScanObservation> robotLocation)
 			{
 
 				if (suspended)
@@ -98,33 +101,25 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 				}
 				addObservation(robotLocation);
 
-				if (lastx != null)
+				moveParticles(new ParticleUpdate()
 				{
-					moveParticles(new ParticleUpdate()
+
+					@Override
+					public double getDeltaHeading()
 					{
 
-						@Override
-						public double getDeltaHeading()
-						{
+						return deltaHeading.getDegrees();
+					}
 
-							return HeadingHelper.getChangeInHeading(
-									robotLocation.getDeadReaconingHeading().getDegrees(), lastheading.getDegrees());
-						}
-
-						@Override
-						public double getMoveDistance()
-						{
-							double dx = (lastx - robotLocation.getX().convert(DistanceUnit.CM));
-							double dy = (lasty - robotLocation.getY().convert(DistanceUnit.CM));
-							return Vector3D.distance(Vector3D.ZERO, new Vector3D(dx, dy, 0));
-						}
-					});
-				}
-				lasty = robotLocation.getY().convert(DistanceUnit.CM);
-				lastx = robotLocation.getX().convert(DistanceUnit.CM);
-				lastheading = robotLocation.getDeadReaconingHeading();
+					@Override
+					public double getMoveDistance()
+					{
+						return deltaDistance.convert(DistanceUnit.CM);
+					}
+				});
 
 			}
+
 		};
 	}
 
@@ -162,29 +157,29 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	public synchronized void addObservation(ParticleFilterObservationSet observations)
+	public synchronized void addObservation(List<ScanObservation> robotLocation)
 	{
 
 		if (stop || suspended)
 		{
 			return;
 		}
-		lastObservation.set(observations);
+		lastObservation.set(robotLocation);
 
 		double stdDev = getStdDev();
 		boolean isLost = stdDev > 100;
 
 		particles.parallelStream().forEach(e -> {
-			e.addObservation(map, observations, isLost);
+			e.addObservation(map, robotLocation, isLost);
 		});
 
 		// adjust the number of particles in the particle filter based on
 		// how well localised it is
 		int newParticleCount = Math.max(500, (int) (7 * stdDev));
 
-		if (!observations.getObservations().isEmpty())
+		if (!robotLocation.isEmpty())
 		{
-			double currentObservationAngle = observations.getObservations().iterator().next().getAngleRadians();
+			double currentObservationAngle = robotLocation.iterator().next().getAngleRadians();
 
 			int signum = (int) Math.signum(currentObservationAngle - lastObservationAngle);
 
@@ -193,6 +188,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			lastSignum = signum;
 		}
 		resample(newParticleCount);
+
 	}
 
 	public void moveParticles(ParticleUpdate update)
@@ -289,7 +285,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		if (listener != null)
 		{
-			listener.update(dumpAveragePosition(), stablisedHeading, getStdDev(), lastObservation.get());
+			listener.update(getXyPosition(), new Angle(stablisedHeading, AngleUnits.DEGREES), getStdDev(),
+					lastObservation.get());
 		}
 
 	}
@@ -328,7 +325,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	}
 
 	@Override
-	public Vector3D dumpAveragePosition()
+	public DistanceXY getXyPosition()
 	{
 		double x = 0;
 		double y = 0;
@@ -396,7 +393,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		stablisedHeading = stablisedHeading
 				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.5);
 
-		return new Vector3D((x / particles.size()), (y / particles.size()), 0);
+		return new DistanceXY((x / particles.size()), (y / particles.size()), DistanceUnit.CM);
 
 	}
 
@@ -408,7 +405,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	 * ()
 	 */
 	@Override
-	public double getAverageHeading()
+	public double getHeading()
 	{
 		return averageHeading;
 	}
@@ -474,9 +471,9 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			@Override
 			public List<Point> getPoints()
 			{
-				Vector3D pos = dumpAveragePosition();
+				DistanceXY pos = getXyPosition();
 				List<Point> points = new LinkedList<>();
-				points.add(new Point((int) pos.getX(), (int) pos.getY()));
+				points.add(new Point((int) pos.getX().convert(distanceUnit), (int) pos.getY().convert(distanceUnit)));
 				return points;
 			}
 
@@ -496,7 +493,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 				{
 					graphics.setColor(new Color(0, 0, 255));
 					// draw lidar observation lines
-					for (ScanObservation obs : lastObservation.get().getObservations())
+					for (ScanObservation obs : lastObservation.get())
 					{
 						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(stablisedHeading))
 								.applyTo(obs.getVector());
@@ -578,5 +575,47 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	public void resume()
 	{
 		suspended = false;
+	}
+
+	@Override
+	public void addDataSoures(MapDrawingWindow ui)
+	{
+		ui.addDataSource(getParticlePointSource(), new Color(255, 0, 0));
+		ui.addDataSource(getHeadingMapDataSource());
+
+		ui.addStatisticSource(new DataSourceStatistic()
+		{
+
+			@Override
+			public String getValue()
+			{
+				return "" + getBestScanMatchScore() + " " + getBestRawScore();
+			}
+
+			@Override
+			public String getLabel()
+			{
+				return "Best Match";
+			}
+		});
+
+		ui.addStatisticSource(new DataSourceStatistic()
+		{
+
+			@Override
+			public String getValue()
+			{
+
+				return "" + getStdDev();
+
+			}
+
+			@Override
+			public String getLabel()
+			{
+				return "StdDev";
+			}
+		});
+
 	}
 }

@@ -2,14 +2,14 @@ package au.com.rsutton.mapping.multimap;
 
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
+import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
+import au.com.rsutton.ui.MapDrawingWindow;
 
 public class ParticleFilterProxy implements ParticleFilterIfc
 {
@@ -27,9 +27,9 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	}
 
 	@Override
-	public double getAverageHeading()
+	public double getHeading()
 	{
-		return pf.getAverageHeading();
+		return pf.getHeading();
 	}
 
 	@Override
@@ -63,9 +63,9 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	}
 
 	@Override
-	public Vector3D dumpAveragePosition()
+	public DistanceXY getXyPosition()
 	{
-		return pf.dumpAveragePosition();
+		return pf.getXyPosition();
 	}
 
 	@Override
@@ -103,6 +103,12 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	public void resume()
 	{
 		pf.resume();
+	}
+
+	@Override
+	public void addDataSoures(MapDrawingWindow ui)
+	{
+		pf.addDataSoures(ui);
 	}
 
 }

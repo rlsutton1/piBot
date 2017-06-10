@@ -3,17 +3,15 @@ package au.com.rsutton.mapping.particleFilter;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
-
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.robot.rover.Angle;
 
 public class RobotImple implements RobotInterface
 {
@@ -24,19 +22,17 @@ public class RobotImple implements RobotInterface
 
 	public RobotImple()
 	{
-		RobotLocation robotDataBus = new RobotLocation();
-		robotDataBus.addMessageListener(new MessageListener<RobotLocation>()
+		RobotLocationDeltaMessagePump robotDataBus = new RobotLocationDeltaMessagePump(new RobotLocationDeltaListener()
 		{
 
 			@Override
-			public void onMessage(Message<RobotLocation> message)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
 			{
-				System.out.println("Message received ");
-				for (RobotListener listener : listeners)
+				for (RobotLocationDeltaListener listener : listeners)
 				{
 					try
 					{
-						listener.observed(message.getMessageObject());
+						listener.onMessage(deltaHeading, deltaDistance, robotLocation);
 					} catch (Exception e)
 					{
 						e.printStackTrace();
@@ -44,6 +40,7 @@ public class RobotImple implements RobotInterface
 				}
 			}
 		});
+
 	}
 
 	@Override
@@ -54,7 +51,7 @@ public class RobotImple implements RobotInterface
 	}
 
 	@Override
-	public void setHeading(double normalizeHeading)
+	public void turn(double normalizeHeading)
 	{
 		this.heading = normalizeHeading;
 
@@ -66,7 +63,7 @@ public class RobotImple implements RobotInterface
 		SetMotion motion = new SetMotion();
 		motion.setFreeze(freeze);
 		motion.setSpeed(speed);
-		motion.setHeading(heading);
+		motion.setChangeHeading(heading);
 		motion.publish();
 
 	}
@@ -78,17 +75,17 @@ public class RobotImple implements RobotInterface
 
 	}
 
-	List<RobotListener> listeners = new CopyOnWriteArrayList<>();
+	List<RobotLocationDeltaListener> listeners = new CopyOnWriteArrayList<>();
 
 	@Override
-	public void addMessageListener(final RobotListener listener)
+	public void addMessageListener(final RobotLocationDeltaListener listener)
 	{
 		listeners.add(listener);
 
 	}
 
 	@Override
-	public void removeMessageListener(RobotListener listener)
+	public void removeMessageListener(RobotLocationDeltaListener listener)
 	{
 		listeners.remove(listener);
 	}

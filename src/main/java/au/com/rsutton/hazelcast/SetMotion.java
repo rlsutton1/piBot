@@ -9,7 +9,7 @@ public class SetMotion extends MessageBase<SetMotion>
 
 	private static final long serialVersionUID = 4595314712852835336L;
 	private Speed speed;
-	private Double heading;
+	private Double changeHeading;
 	private long timeStamp;
 	private boolean freeze = false;
 
@@ -23,13 +23,14 @@ public class SetMotion extends MessageBase<SetMotion>
 		this.speed = speed;
 	}
 
-	public void setHeading(Double heading)
+	public void setChangeHeading(Double changeHeading)
 	{
-		this.heading = heading;
+		this.changeHeading = changeHeading;
 	}
-	
+
 	/**
 	 * disable motors completely
+	 * 
 	 * @param freeze
 	 */
 	public void setFreeze(boolean freeze)
@@ -42,9 +43,9 @@ public class SetMotion extends MessageBase<SetMotion>
 		return speed;
 	}
 
-	public Double getHeading()
+	public Double getChangeHeading()
 	{
-		return heading;
+		return changeHeading;
 	}
 
 	public long getTimeStamp()
@@ -60,8 +61,8 @@ public class SetMotion extends MessageBase<SetMotion>
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(SetMotion.class).add("Speed", speed)
-				.add("Heading", heading).toString();
+		return Objects.toStringHelper(SetMotion.class).add("Speed", speed).add("changeHeading", changeHeading)
+				.toString();
 	}
 
 	public boolean getFreeze()

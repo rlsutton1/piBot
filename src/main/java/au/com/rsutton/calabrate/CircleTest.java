@@ -65,9 +65,7 @@ public class CircleTest implements Runnable
 		for (double i = 90; i <= 360; i += 20)
 		{
 
-			h = HeadingHelper.normalizeHeading(i);
-
-			motion.setHeading(h);
+			motion.setChangeHeading(20.0);
 			motion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 			speedHeadingController.setDesiredMotion(motion);
 			while (Math.abs(HeadingHelper.getChangeInHeading(h, reconing.getHeading().getHeading())) > 10)

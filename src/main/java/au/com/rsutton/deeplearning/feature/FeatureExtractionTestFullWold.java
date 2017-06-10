@@ -33,11 +33,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import au.com.rsutton.deeplearning.feature.FeatureSimulatorBase.Scan;
-import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 
 public class FeatureExtractionTestFullWold
@@ -64,13 +67,13 @@ public class FeatureExtractionTestFullWold
 
 	private void setupListener(RobotInterface robot)
 	{
-		robot.addMessageListener(new RobotListener()
+		robot.addMessageListener(new RobotLocationDeltaListener()
 		{
 
 			@Override
-			public void observed(RobotLocation robotLocation)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
 			{
-				evaluateScan(robotLocation.getObservations());
+				evaluateScan(robotLocation);
 
 			}
 		});
@@ -78,7 +81,7 @@ public class FeatureExtractionTestFullWold
 
 	List<Vector3D> pointsToDraw = new CopyOnWriteArrayList<>();
 
-	public DataSourceMap getHeadingMapDataSource(final ParticleFilterIfc pf, RobotInterface robot)
+	public DataSourceMap getHeadingMapDataSource(final RobotPoseSource pf, RobotInterface robot)
 	{
 		setupListener(robot);
 		return new DataSourceMap()
@@ -87,9 +90,10 @@ public class FeatureExtractionTestFullWold
 			@Override
 			public List<Point> getPoints()
 			{
-				Vector3D pos = pf.dumpAveragePosition();
+				DistanceXY pos = pf.getXyPosition();
 				List<Point> points = new LinkedList<>();
-				points.add(new Point((int) pos.getX(), (int) pos.getY()));
+				points.add(new Point((int) pos.getX().convert(DistanceUnit.CM),
+						(int) pos.getY().convert(DistanceUnit.CM)));
 				return points;
 			}
 
@@ -102,7 +106,7 @@ public class FeatureExtractionTestFullWold
 				// draw lidar observation lines
 				for (Vector3D obs : pointsToDraw)
 				{
-					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getAverageHeading()))
+					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading()))
 							.applyTo(obs);
 
 					graphics.drawRect((int) (pointOriginX + (vector.getX() * scale)),

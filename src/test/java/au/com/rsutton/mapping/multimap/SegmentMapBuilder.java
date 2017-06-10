@@ -1,5 +1,7 @@
 package au.com.rsutton.mapping.multimap;
 
+import java.util.List;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
@@ -8,19 +10,19 @@ import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.NavigatorControl;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 
-public class SegmentMapBuilder implements RobotListener
+public class SegmentMapBuilder implements RobotLocationDeltaListener
 {
 
 	public static final double REQUIRED_POINT_CERTAINTY = 0.90;
@@ -37,9 +39,9 @@ public class SegmentMapBuilder implements RobotListener
 
 	private MapDrawingWindow panel;
 
-	private double fixedX;
+	private Distance fixedX;
 
-	private double fixedY;
+	private Distance fixedY;
 
 	private double fixedHeading;
 
@@ -79,9 +81,9 @@ public class SegmentMapBuilder implements RobotListener
 			robot.publishUpdate();
 			Thread.sleep(3000);
 
-			this.fixedX = activeParticleFilter.dumpAveragePosition().getX();
-			this.fixedY = activeParticleFilter.dumpAveragePosition().getY();
-			this.fixedHeading = activeParticleFilter.getAverageHeading();
+			this.fixedX = activeParticleFilter.getXyPosition().getX();
+			this.fixedY = activeParticleFilter.getXyPosition().getY();
+			this.fixedHeading = activeParticleFilter.getHeading();
 
 			robot.addMessageListener(this);
 			Thread.sleep(20000);
@@ -100,7 +102,7 @@ public class SegmentMapBuilder implements RobotListener
 	}
 
 	@Override
-	public void observed(RobotLocation observation)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observation)
 	{
 		if (suspended)
 		{
@@ -108,13 +110,13 @@ public class SegmentMapBuilder implements RobotListener
 		}
 		double adjustedHeading = fixedHeading;
 
-		double cx = fixedX;
-		double cy = fixedY;
+		double cx = fixedX.convert(DistanceUnit.CM);
+		double cy = fixedY.convert(DistanceUnit.CM);
 		Particle particle = new Particle(cx, cy, adjustedHeading, 0, 0);
 		Vector3D pos = new Vector3D(cx, cy, 0);
 
 		boolean hasNewPoints = false;
-		for (ScanObservation obs : observation.getObservations())
+		for (ScanObservation obs : observation)
 		{
 
 			Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(adjustedHeading))
@@ -139,7 +141,7 @@ public class SegmentMapBuilder implements RobotListener
 				System.out.println("Rejecting very distant point");
 			}
 		}
-		if (!hasNewPoints && observation.getObservations().size() > 5 && hasFoundPoints)
+		if (!hasNewPoints && observation.size() > 5 && hasFoundPoints)
 		{
 			done = true;
 		}

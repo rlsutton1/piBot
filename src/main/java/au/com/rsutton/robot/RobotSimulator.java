@@ -13,15 +13,17 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.mapping.particleFilter.InitialWorldBuilder;
 import au.com.rsutton.mapping.particleFilter.Particle;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.robot.rover.LidarObservation;
@@ -30,17 +32,27 @@ import au.com.rsutton.ui.DataSourceMap;
 public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 {
 
+	public static final double REQUIRED_POINT_CERTAINTY = 0.75;
+
+	Logger logger = LogManager.getLogger();
+
 	Random random = new Random();
 	private ProbabilityMapIIFc map;
 
-	double x;
-	double y;
+	double x = 0;
+	double y = 0;
+
+	double totalDistanceTravelled = 0;
+
+	volatile double headingOffset = random.nextInt(360);
 
 	double heading;
 	private volatile boolean freeze;
 	private double rspeed;
-	private double targetHeading;
-	private List<RobotListener> listeners = new CopyOnWriteArrayList<>();
+	private List<RobotLocationDeltaListener> listeners = new CopyOnWriteArrayList<>();
+	boolean freezeSet = false;
+
+	private double requestedDeltaHeading;
 
 	public RobotSimulator(ProbabilityMapIIFc map)
 	{
@@ -49,15 +61,15 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		new Thread(this, "Robot").start();
 	}
 
-	public void move(double distance)
+	public double move(double distance)
 	{
 		if (freeze)
 		{
-			return;
+			return 0;
 		}
 		if (Math.abs(distance - 0.0) > 0.2)
 		{
-			distance -= Math.abs((distance * (random.nextGaussian() * 0.5)));
+			distance -= Math.abs(distance * (random.nextGaussian() * 0.5));
 		}
 
 		Vector3D unit = new Vector3D(0, distance, 0);
@@ -72,20 +84,26 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		{
 			x = nx;
 			y = ny;
+			totalDistanceTravelled += distance;
+
+			return distance;
 		} else
 		{
-			System.out.println("Avoiding wall");
+			logger.info("Avoiding wall");
+			return 0;
 		}
+
 	}
 
-	public void turn(double angle)
+	public double internalTurn(double angle)
 	{
 		if (freeze)
 		{
-			return;
+			return 0;
 		}
-		double noise = Math.abs((random.nextGaussian() * 0.5) * (1.0 / hz));
-		heading += angle + noise;
+		double noise = Math.abs((random.nextGaussian() * 1.5) * (1.0 / hz));
+		double delta = angle + noise;
+		heading += delta;
 		if (heading < 0)
 		{
 			heading += 360.0;
@@ -94,6 +112,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		{
 			heading -= 360.0;
 		}
+		return delta;
 
 	}
 
@@ -103,13 +122,10 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	 * @param msSinceLastScan
 	 * @return
 	 */
-	public RobotLocation getObservation(double fromPercentage, double toPercentage)
+	public List<ScanObservation> getObservation(double fromPercentage, double toPercentage)
 	{
 
-		// System.out.println("Robot x,y,angle " + x + " " + y + " " + heading);
-		RobotLocation observation = new RobotLocation();
-
-		List<LidarObservation> observations = new LinkedList<>();
+		List<ScanObservation> observations = new LinkedList<>();
 
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
@@ -122,8 +138,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		for (double h = from; h < to; h += stepSize + Math.abs((rand.nextGaussian() * stepNoise)))
 		{
 			double adjustedHeading = h - 180 + 45;
-			double distance = particle.simulateObservation(map, adjustedHeading, 1000,
-					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY);
+			double distance = particle.simulateObservation(map, adjustedHeading, 1000, REQUIRED_POINT_CERTAINTY);
 
 			if (Math.abs(distance) > 1 && Math.abs(distance) < 1000)
 			{
@@ -136,16 +151,10 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 		if (observations.isEmpty())
 		{
-			System.out.println("NO observations! " + from + " " + to);
+			logger.info("NO observations! " + from + " " + to);
 		}
-		// System.out.println("Observations " + observations.size());
 
-		observation.addObservations(observations);
-
-		observation.setDeadReaconingHeading(new Angle((float) heading, AngleUnits.DEGREES));
-		observation.setX(new Distance(x, DistanceUnit.CM));
-		observation.setY(new Distance(y, DistanceUnit.CM));
-		return observation;
+		return observations;
 	}
 
 	public void setLocation(int x, int y, int heading)
@@ -182,8 +191,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
-	boolean freezeSet = false;
-
 	@Override
 	public void freeze(boolean b)
 	{
@@ -199,9 +206,14 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	}
 
 	@Override
-	public void setHeading(double normalizeHeading)
+	public void turn(double delta)
 	{
-		targetHeading = normalizeHeading;
+		requestedDeltaHeading = HeadingHelper.normalizeHeading(delta);
+		if (requestedDeltaHeading > 180)
+		{
+			requestedDeltaHeading -= 360;
+		}
+		logger.info("Requested delta " + delta);
 
 	}
 
@@ -226,32 +238,36 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 		while (true)
 		{
+			double deltaDistance = 0;
+			double deltaTurn = 0;
 			if (!freeze)
 			{
-				move(rspeed / hz);
-				System.out.println(rspeed);
+				deltaDistance = move(rspeed / hz);
+				logger.info("speed " + rspeed);
+				logger.info("Delta distance " + deltaDistance);
 
-				double delta = HeadingHelper.getChangeInHeading(heading, targetHeading - 180);
+				double absDelta = Math.abs(requestedDeltaHeading);
+				double delta = Math.min(absDelta, 25.0 / hz) * Math.signum(requestedDeltaHeading);
 
-				double absDelta = Math.abs(delta);
-				delta = Math.min(absDelta, (25.0 / hz)) * Math.signum(delta);
-
-				turn(delta);
+				deltaTurn = internalTurn(delta);
 			}
-			long to = (long) (((lastScan) + (100.0 / hz)));
+			long to = (long) ((lastScan + (100.0 / hz)));
 			if (to > 100)
 			{
 				to = 100;
 			}
 
-			System.out.println(lastScan + " " + to);
+			logger.info(lastScan + " " + to);
 
-			RobotLocation observation = getObservation(lastScan, to);
+			List<ScanObservation> observations = getObservation(lastScan, to);
 			lastScan = to % 100;
 
-			for (RobotListener listener : listeners)
+			double headingDrift = Math.abs((random.nextGaussian() * 0.25) * (1.0 / hz));
+
+			for (RobotLocationDeltaListener listener : listeners)
 			{
-				listener.observed(observation);
+				listener.onMessage(new Angle(deltaTurn + headingDrift, AngleUnits.DEGREES),
+						new Distance(deltaDistance, DistanceUnit.CM), observations);
 			}
 			try
 			{
@@ -265,14 +281,14 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	}
 
 	@Override
-	public void addMessageListener(RobotListener listener)
+	public void addMessageListener(RobotLocationDeltaListener listener)
 	{
 		this.listeners.add(listener);
 
 	}
 
 	@Override
-	public void removeMessageListener(RobotListener listener)
+	public void removeMessageListener(RobotLocationDeltaListener listener)
 	{
 		this.listeners.remove(listener);
 

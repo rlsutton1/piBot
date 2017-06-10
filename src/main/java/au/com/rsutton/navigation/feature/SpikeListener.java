@@ -5,6 +5,6 @@ import java.util.List;
 public interface SpikeListener
 {
 
-	void discoveredSpikes(List<Spike> spike);
+	void discoveredSpikes(List<Feature> spike);
 
 }

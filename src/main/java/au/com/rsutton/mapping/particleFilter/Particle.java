@@ -9,6 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.robot.RobotSimulator;
 
 public class Particle
 {
@@ -103,7 +104,7 @@ public class Particle
 
 	}
 
-	public void addObservation(ProbabilityMapIIFc currentWorld, ParticleFilterObservationSet data, boolean isLost)
+	public void addObservation(ProbabilityMapIIFc currentWorld, List<ScanObservation> observations, boolean isLost)
 	{
 
 		// max error is 30cm, after that we vote negative
@@ -117,13 +118,12 @@ public class Particle
 
 		int maxDistance = 1000;
 
-		List<ScanObservation> observations = data.getObservations();
 		for (ScanObservation obs : observations)
 		{
 			double distance = obs.getDisctanceCm();
 			double angle = Math.toDegrees(obs.getAngleRadians());
 			double simDistance = simulateObservation(currentWorld, angle, maxDistance,
-					InitialWorldBuilder.REQUIRED_POINT_CERTAINTY);// +
+					RobotSimulator.REQUIRED_POINT_CERTAINTY);// +
 			// maxBadError);
 
 			if (simDistance < maxDistance)

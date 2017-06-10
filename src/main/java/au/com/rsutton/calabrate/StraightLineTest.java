@@ -60,7 +60,7 @@ public class StraightLineTest implements Runnable
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 200, TimeUnit.MILLISECONDS);
 
 		SetMotion motion = new SetMotion();
-		motion.setHeading(0d);
+		motion.setChangeHeading(0d);
 		motion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 		speedHeadingController.setDesiredMotion(motion);
 		Thread.sleep(20000);

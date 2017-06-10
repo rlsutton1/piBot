@@ -12,22 +12,19 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
-import com.google.common.util.concurrent.AtomicDouble;
-
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
 import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -42,9 +39,10 @@ public class ParticleFilterLiveTest
 	Angle lastheading;
 	volatile double speed;
 
-	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
+	// final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
 
 	RobotInterface robot = new RobotImple();
+	ParticleFilterImpl pf;
 
 	@Test
 	public void test() throws InterruptedException
@@ -56,8 +54,7 @@ public class ParticleFilterLiveTest
 		ui.addDataSource(world, new Color(255, 255, 255));
 
 		double headingNoise = 1.0; // degrees/second
-		final ParticleFilterImpl pf = new ParticleFilterImpl(world, 1000, 0.75, headingNoise, StartPosition.RANDOM,
-				robot, null);
+		pf = new ParticleFilterImpl(world, 1000, 0.75, headingNoise, StartPosition.RANDOM, robot, null);
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		setupDataSources(ui, pf);
@@ -91,15 +88,15 @@ public class ParticleFilterLiveTest
 			// speed -= 0.25;
 			// }
 			speed = Math.max(0.01, speed);
-			Vector3D ap = pf.dumpAveragePosition();
+			DistanceXY ap = pf.getXyPosition();
 
 			// if (!mapping)
 			{
 				if (std < 30)
 				{
 
-					pfX = (int) ap.getX();
-					pfY = (int) ap.getY();
+					pfX = (int) ap.getX().convert(DistanceUnit.CM);
+					pfY = (int) ap.getY().convert(DistanceUnit.CM);
 
 					if (initialX == null)
 					{
@@ -107,7 +104,7 @@ public class ParticleFilterLiveTest
 						initialY = pfY;
 					}
 
-					lastAngle = pf.getAverageHeading();
+					lastAngle = pf.getHeading();
 
 					System.out.println("XY " + pfX + " " + pfY);
 
@@ -155,7 +152,7 @@ public class ParticleFilterLiveTest
 					}
 					SetMotion motion = new SetMotion();
 
-					motion.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + da));
+					motion.setChangeHeading(da);
 
 					if (stop > 0)
 					{
@@ -168,7 +165,7 @@ public class ParticleFilterLiveTest
 				{
 					SetMotion motion = new SetMotion();
 
-					motion.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get() + 15));
+					motion.setChangeHeading(15.0);
 					motion.setFreeze(false);
 					motion.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 					motion.publish();
@@ -198,7 +195,7 @@ public class ParticleFilterLiveTest
 		}
 		SetMotion motion = new SetMotion();
 
-		motion.setHeading(HeadingHelper.normalizeHeading(currentDeadReconingHeading.get()));
+		motion.setChangeHeading(0.0);
 		motion.setFreeze(false);
 		motion.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 		motion.publish();
@@ -206,20 +203,8 @@ public class ParticleFilterLiveTest
 		Thread.sleep(1000);
 	}
 
-	private int lastDeadreconningHeading = 0;
-
 	private void setupRobotListener()
 	{
-		robot.addMessageListener(new RobotListener()
-		{
-
-			@Override
-			public void observed(RobotLocation observation)
-			{
-				lastDeadreconningHeading = (int) observation.getDeadReaconingHeading().getDegrees();
-
-			}
-		});
 
 	}
 
@@ -241,22 +226,6 @@ public class ParticleFilterLiveTest
 			public String getLabel()
 			{
 				return "StdDev";
-			}
-		});
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + currentDeadReconingHeading;
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "deadReconning Heading";
 			}
 		});
 
@@ -319,9 +288,10 @@ public class ParticleFilterLiveTest
 			@Override
 			public List<Point> getPoints()
 			{
-				Vector3D pos = pf.dumpAveragePosition();
+				DistanceXY pos = pf.getXyPosition();
 				List<Point> points = new LinkedList<>();
-				points.add(new Point((int) pos.getX(), (int) pos.getY()));
+				points.add(new Point((int) pos.getX().convert(DistanceUnit.CM),
+						(int) pos.getY().convert(DistanceUnit.CM)));
 				return points;
 
 			}
@@ -336,8 +306,7 @@ public class ParticleFilterLiveTest
 				graphics.setColor(new Color(255, 255, 255));
 
 				Vector3D line = new Vector3D(60 * scale, 0, 0);
-				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(lastDeadreconningHeading + 0))
-						.applyTo(line);
+				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading() + 0)).applyTo(line);
 
 				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
 						(int) (pointOriginY + line.getY()));
@@ -360,9 +329,9 @@ public class ParticleFilterLiveTest
 			{
 
 				// determine the route from the current possition
-				Vector3D pos = pf.dumpAveragePosition();
-				double x = pos.getX();
-				double y = pos.getY();
+				DistanceXY pos = pf.getXyPosition();
+				double x = pos.getX().convert(DistanceUnit.CM);
+				double y = pos.getY().convert(DistanceUnit.CM);
 
 				List<Point> points = new LinkedList<>();
 

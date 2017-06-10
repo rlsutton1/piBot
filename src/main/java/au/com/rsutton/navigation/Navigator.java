@@ -1,31 +1,33 @@
 package au.com.rsutton.navigation;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import com.google.common.util.concurrent.AtomicDouble;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.entryPoint.units.Time;
-import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.PiBotGraphSlamFeatureTracker;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -33,8 +35,7 @@ import au.com.rsutton.ui.MapDrawingWindow;
 public class Navigator implements Runnable, NavigatorControl
 {
 
-	private ProbabilityMapIIFc map;
-	private ParticleFilterIfc pf;
+	private RobotPoseSource pf;
 	private RoutePlanner routePlanner;
 	private RobotInterface robot;
 	private MapDrawingWindow ui;
@@ -47,7 +48,6 @@ public class Navigator implements Runnable, NavigatorControl
 	Integer initialY;
 	double lastAngle;
 	private boolean reachedDestination = false;
-	final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
 
 	/**
 	 * if target heading is null, any orientation will do
@@ -55,18 +55,23 @@ public class Navigator implements Runnable, NavigatorControl
 	private Double targetHeading;
 
 	double speed = 0;
+	private RobotPoseSource slam;
 
-	private Double initialHeading = null;
+	// private Double initialHeading = null;
 
-	public Navigator(ProbabilityMapIIFc map2, ParticleFilterIfc pf, RobotInterface robot)
+	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot)
 	{
 		ui = new MapDrawingWindow();
-		this.map = map2;
 		ui.addDataSource(map2, new Color(255, 255, 255));
+
+		slam = new PiBotGraphSlamFeatureTracker(ui, robot);
+		if (pf == null)
+		{
+			// if no pf provided, then use slam
+			pf = slam;
+		}
 		this.pf = pf;
 		setupDataSources(ui, pf);
-
-		new PiBotGraphSlamFeatureTracker(ui, pf, robot);
 
 		// FeatureExtractor extractor = new FeatureExtractorSpike(null);
 		// ui.addDataSource(extractor.getHeadingMapDataSource(pf, robot));
@@ -82,7 +87,7 @@ public class Navigator implements Runnable, NavigatorControl
 		routePlanner = new RoutePlanner(map2);
 		this.robot = robot;
 
-		obsticleAvoidance = new ObsticleAvoidance(robot);
+		obsticleAvoidance = new ObsticleAvoidance(robot, pf);
 		ui.addDataSource(obsticleAvoidance.getHeadingMapDataSource(pf, robot));
 
 		setupRoutePlanner();
@@ -93,6 +98,11 @@ public class Navigator implements Runnable, NavigatorControl
 
 		pool.scheduleWithFixedDelay(this, 500, 500, TimeUnit.MILLISECONDS);
 
+	}
+
+	public RobotPoseSource getSlam()
+	{
+		return slam;
 	}
 
 	volatile boolean isSuspended = false;
@@ -122,9 +132,9 @@ public class Navigator implements Runnable, NavigatorControl
 			if (std < 40)
 			{
 				// the partical filter is sufficently localized
-				Vector3D ap = pf.dumpAveragePosition();
-				pfX = (int) ap.getX();
-				pfY = (int) ap.getY();
+				DistanceXY ap = pf.getXyPosition();
+				pfX = (int) ap.getX().convert(DistanceUnit.CM);
+				pfY = (int) ap.getY().convert(DistanceUnit.CM);
 
 				if (initialX == null)
 				{
@@ -133,7 +143,7 @@ public class Navigator implements Runnable, NavigatorControl
 					initialX = pfX;
 					initialY = pfY;
 				}
-				lastAngle = pf.getAverageHeading();
+				lastAngle = pf.getHeading();
 
 				ExpansionPoint next = new ExpansionPoint(pfX, pfY);
 				if (routePlanner.hasPlannedRoute())
@@ -157,7 +167,7 @@ public class Navigator implements Runnable, NavigatorControl
 				System.out.println(next + " " + dx + " " + dy);
 
 				double da = 5;
-				if (Math.abs(dx) > 5 || Math.abs(dy) > 5)
+				if (Math.abs(dx) > 10 || Math.abs(dy) > 10)
 				{
 					// follow the route to the target
 
@@ -185,7 +195,7 @@ public class Navigator implements Runnable, NavigatorControl
 						// turn on the spot to set our heading
 						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
 						robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
-						robot.setHeading(da + currentDeadReconingHeading.get());
+						robot.turn(da);
 
 					} else
 					{
@@ -215,9 +225,6 @@ public class Navigator implements Runnable, NavigatorControl
 			robot.publishUpdate();
 		}
 
-		System.out
-				.println("******************************************************* Heading drift " + getHeadingDrift());
-
 	}
 
 	double setHeadingWithObsticleAvoidance(double desiredHeading, double desiredSpeed)
@@ -225,8 +232,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 		CourseCorrection corrected = obsticleAvoidance.getCorrectedHeading(desiredHeading, desiredSpeed);
 
-		robot.setHeading(HeadingHelper
-				.normalizeHeading(corrected.getCorrectedRelativeHeading() + currentDeadReconingHeading.get()));
+		robot.turn(corrected.getCorrectedRelativeHeading());
 
 		return corrected.getSpeed();
 
@@ -234,22 +240,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	private void setupRobotListener()
 	{
-		robot.addMessageListener(new RobotListener()
-		{
 
-			@Override
-			public void observed(RobotLocation robotLocation)
-			{
-				currentDeadReconingHeading.set(robotLocation.getDeadReaconingHeading().getDegrees());
-				if (initialHeading == null && pf.getStdDev() < 30)
-				{
-					initialHeading = HeadingHelper.getChangeInHeading(pf.getAverageHeading(),
-							currentDeadReconingHeading.get());
-				}
-
-			}
-
-		});
 	}
 
 	private void setupRoutePlanner()
@@ -263,9 +254,9 @@ public class Navigator implements Runnable, NavigatorControl
 			{
 
 				// determine the route from the current possition
-				Vector3D pos = pf.dumpAveragePosition();
-				double x = pos.getX();
-				double y = pos.getY();
+				DistanceXY pos = pf.getXyPosition();
+				double x = pos.getX().convert(DistanceUnit.CM);
+				double y = pos.getY().convert(DistanceUnit.CM);
 
 				List<Point> points = new LinkedList<>();
 				if (routePlanner.hasPlannedRoute())
@@ -293,10 +284,10 @@ public class Navigator implements Runnable, NavigatorControl
 		}, new Color(255, 255, 0));
 	}
 
-	private void setupDataSources(MapDrawingWindow ui, final ParticleFilterIfc pf)
+	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)
 	{
-		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
-		ui.addDataSource(pf.getHeadingMapDataSource());
+
+		pf.addDataSoures(ui);
 
 		ui.addStatisticSource(new DataSourceStatistic()
 		{
@@ -304,45 +295,13 @@ public class Navigator implements Runnable, NavigatorControl
 			@Override
 			public String getValue()
 			{
-				return "" + pf.getStdDev();
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "StdDev";
-			}
-		});
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + currentDeadReconingHeading;
+				return "" + pf.getHeading();
 			}
 
 			@Override
 			public String getLabel()
 			{
 				return "deadReconning Heading";
-			}
-		});
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + pf.getBestScanMatchScore() + " " + pf.getBestRawScore();
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "Best Match";
 			}
 		});
 
@@ -361,6 +320,8 @@ public class Navigator implements Runnable, NavigatorControl
 				return "Speed cm/s";
 			}
 		});
+
+		ui.addDataSource(getDeadReconningHeadingMapDataSource());
 
 	}
 
@@ -418,16 +379,36 @@ public class Navigator implements Runnable, NavigatorControl
 		isSuspended = false;
 	}
 
-	@Override
-	public double getHeadingDrift()
+	public DataSourceMap getDeadReconningHeadingMapDataSource()
 	{
-		if (initialHeading != null)
+		return new DataSourceMap()
 		{
-			return HeadingHelper.getChangeInHeading(
-					HeadingHelper.getChangeInHeading(currentDeadReconingHeading.get(), initialHeading),
-					pf.getAverageHeading());
-		}
-		return 0;
+
+			@Override
+			public List<Point> getPoints()
+			{
+				DistanceXY pos = pf.getXyPosition();
+				List<Point> points = new LinkedList<>();
+				points.add(new Point((int) pos.getX().convert(DistanceUnit.CM),
+						(int) pos.getY().convert(DistanceUnit.CM)));
+				return points;
+			}
+
+			@Override
+			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+			{
+				Graphics graphics = image.getGraphics();
+
+				// draw heading line
+				graphics.setColor(new Color(128, 128, 0));
+				Vector3D line = new Vector3D(60 * scale, 0, 0);
+				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading() + 90)).applyTo(line);
+
+				graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) (pointOriginX + line.getX()),
+						(int) (pointOriginY + line.getY()));
+
+			}
+		};
 	}
 
 }

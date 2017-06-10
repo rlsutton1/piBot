@@ -11,15 +11,18 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.hazelcast.RobotLocation;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.RobotListener;
+import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 
 public abstract class FeatureExtractor
 {
+
+	DistanceUnit distanceUnit = DistanceUnit.CM;
 
 	FeatureExtractor(SpikeListener listener, RobotInterface robot)
 	{
@@ -30,20 +33,20 @@ public abstract class FeatureExtractor
 	private void setupListener(RobotInterface robot)
 	{
 
-		robot.addMessageListener(new RobotListener()
+		robot.addMessageListener(new RobotLocationDeltaListener()
 		{
 
 			@Override
-			public void observed(RobotLocation robotLocation)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
 			{
-				evaluateScan(robotLocation.getObservations());
+				evaluateScan(robotLocation);
 
 			}
 
 		});
 	}
 
-	public DataSourceMap getHeadingMapDataSource(final ParticleFilterIfc pf)
+	public DataSourceMap getHeadingMapDataSource(final RobotPoseSource pf)
 	{
 
 		return new DataSourceMap()
@@ -52,9 +55,9 @@ public abstract class FeatureExtractor
 			@Override
 			public List<Point> getPoints()
 			{
-				Vector3D pos = pf.dumpAveragePosition();
+				DistanceXY pos = pf.getXyPosition();
 				List<Point> points = new LinkedList<>();
-				points.add(new Point((int) pos.getX(), (int) pos.getY()));
+				points.add(new Point((int) pos.getX().convert(distanceUnit), (int) pos.getY().convert(distanceUnit)));
 				return points;
 			}
 
@@ -64,19 +67,19 @@ public abstract class FeatureExtractor
 				Graphics graphics = image.getGraphics();
 
 				// draw lidar observation lines
-				for (Spike spike : currentSpikes)
+				for (Feature spike : currentSpikes)
 				{
 					graphics.setColor(new Color(255, 0, 0));
 					Vector3D obs = new Vector3D(spike.x, spike.y, 0);
 
-					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getAverageHeading()))
+					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading()))
 							.applyTo(obs);
 
 					int pointX = (int) (pointOriginX + (vector.getX() * scale));
 					int pointY = (int) (pointOriginY + (vector.getY() * scale));
 					graphics.drawRect(pointX, pointY, 5, 5);
 
-					double heading = pf.getAverageHeading();
+					double heading = pf.getHeading();
 					double direction = heading + spike.angle + 90;
 
 					Vector3D line1 = new Vector3D(0, 30, 0);
@@ -103,7 +106,7 @@ public abstract class FeatureExtractor
 	}
 
 	private List<ScanObservation> lastObs = new LinkedList<>();
-	protected List<Spike> currentSpikes = new LinkedList<>();
+	protected List<Feature> currentSpikes = new LinkedList<>();
 
 	SpikeListener listener;
 
@@ -112,7 +115,7 @@ public abstract class FeatureExtractor
 		for (ScanObservation obs : observations)
 		{
 			lastObs.add(obs);
-			List<Spike> spikes = detectSpike(lastObs);
+			List<Feature> spikes = detectSpike(lastObs);
 
 			if (listener != null)
 			{
@@ -157,5 +160,5 @@ public abstract class FeatureExtractor
 
 	}
 
-	abstract List<Spike> detectSpike(List<ScanObservation> lastObs2);
+	abstract List<Feature> detectSpike(List<ScanObservation> lastObs2);
 }

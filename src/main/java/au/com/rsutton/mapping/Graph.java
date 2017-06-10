@@ -13,15 +13,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import com.hazelcast.core.Message;
-import com.hazelcast.core.MessageListener;
-
+import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
-import au.com.rsutton.mapping.v2.Line;
+import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaHelper;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
+import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.robot.rover.AngleUnits;
 
-public class Graph extends JPanel implements MessageListener<RobotLocation>
+public class Graph extends JPanel implements RobotLocationDeltaListener
 {
 
 	/**
@@ -31,9 +33,10 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 
 	private MapAccessor map;
 
-	volatile int currentX = 0;
-	volatile int currentY = 0;
+	volatile double currentX = 0;
+	volatile double currentY = 0;
 
+	@Override
 	protected void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
@@ -59,53 +62,31 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 	public Graph()
 	{
 		map = new MapAccessor();
-		RobotLocation locationMessage = new RobotLocation();
-		locationMessage.addMessageListener(this);
+		new RobotLocationDeltaMessagePump(this);
 
 	}
-
-	// @Override
-	// public void run()
-	// {
-	// Random rand = new Random();
-	// double domain = 600;
-	// while (true)
-	// {
-	// this.repaint();
-	// map.addObservation(new ObservationImpl(rand.nextDouble() * domain,
-	// rand.nextDouble() * domain, rand.nextDouble()
-	// * (domain / 3), LocationStatus.OCCUPIED));
-	// try
-	// {
-	// Thread.sleep(100);
-	// } catch (InterruptedException e)
-	// {
-	// // TODO Auto-generated catch block
-	// e.printStackTrace();
-	// }
-	// }
-	//
-	// }
 
 	volatile Double lastHeading = null;
 
 	@Override
-	public void onMessage(Message<RobotLocation> message)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
 	{
-
-		RobotLocation robotLocation = message.getMessageObject();
 
 		try
 		{
 			List<XY> translatedXyData = new LinkedList<>();
 
 			List<XY> newPoints = new LinkedList<>(translatedXyData);
-			lastHeading = robotLocation.getDeadReaconingHeading().getDegrees();
 
-			currentX = (int) (robotLocation.getX().convert(DistanceUnit.CM) * 10d);
-			currentY = (int) (robotLocation.getY().convert(DistanceUnit.CM) * 10d);
+			lastHeading += deltaHeading.getDegrees();
+			DistanceXY position = RobotLocationDeltaHelper.applyDelta(deltaHeading, deltaDistance,
+					new Angle(lastHeading, AngleUnits.DEGREES), new Distance(currentX, DistanceUnit.CM),
+					new Distance(currentY, DistanceUnit.CM));
 
-			for (ScanObservation vector : robotLocation.getObservations())
+			currentX = position.getX().convert(DistanceUnit.CM) * 10d;
+			currentY = position.getY().convert(DistanceUnit.CM) * 10d;
+
+			for (ScanObservation vector : robotLocation)
 			{
 
 				XY xy = new XY(vector.getX() * 10, vector.getY() * 10);
@@ -114,31 +95,22 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 				translatedXyData.add(xy);
 				newPoints.add(xy);
 
-				map.addObservation(new ObservationImpl(xy.getX() + currentX, xy.getY() + currentY, 1,
-						LocationStatus.OCCUPIED));
+				map.addObservation(
+						new ObservationImpl(xy.getX() + currentX, xy.getY() + currentY, 1, LocationStatus.OCCUPIED));
 
 			}
-			List<Line> lines = new LinkedList<>();
-			renderMap(newPoints, lines);
+			renderMap(newPoints);
 		} catch (Exception e)
 		{
 			e.printStackTrace();
 		}
 		this.repaint();
 
-		// SetMotion message2 = new SetMotion();
-		// message2.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
-		// Time
-		// .perSecond()));
-		//
-		// lastHeading += 2;
-		// message2.setHeading(lastHeading);
-		// message2.publish();
 	}
 
 	AtomicReference<BufferedImage> currentImage = new AtomicReference<>();
 
-	void renderMap(List<XY> translatedXyData, List<Line> lines)
+	void renderMap(List<XY> translatedXyData)
 	{
 
 		BufferedImage image = new BufferedImage(600, 600, BufferedImage.TYPE_INT_RGB);
@@ -191,7 +163,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		{
 			for (int y = (int) -offset; y < offset; y += blockSize)
 			{
-				if (!map.isMapLocationClear(x + currentX, -y + currentY, blockSize / 2))
+				if (!map.isMapLocationClear((int) (x + currentX), (int) (-y + currentY), blockSize / 2))
 				{
 					int r = (int) Math.min(blockSize, (blockSize * scale) / 2);
 					g2.drawRect((int) ((x + offset) * scale) - r, (int) ((y + offset) * scale) - r, r * 2, r * 2);
@@ -209,21 +181,7 @@ public class Graph extends JPanel implements MessageListener<RobotLocation>
 		}
 
 		g2.setStroke(new BasicStroke(3));
-		if (lines != null)
-		{
-			g2.setColor(new Color(0, 255, 255));
-			for (Line line : lines)
-			{
-				double x1 = (line.getStart().getX() + offset) * scale;
-				double y1 = (-line.getStart().getY() + offset) * scale;
-				double x2 = (line.getEnd().getX() + offset) * scale;
-				double y2 = (-line.getEnd().getY() + offset) * scale;
-				// g2.draw(new Line2D.Double(x1, y1, x2, y2));
-				g2.drawLine((int) x1, (int) y1, (int) x2, (int) y2);
-				System.out.println("Plot line " + x1 + " " + y1 + " " + x2 + " " + y2 + " " + h + " " + w);
 
-			}
-		}
 		currentImage.set(image);
 	}
 

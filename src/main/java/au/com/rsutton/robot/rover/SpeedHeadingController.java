@@ -44,7 +44,7 @@ public class SpeedHeadingController implements Runnable
 
 	public void setDesiredMotion(SetMotion motion)
 	{
-		desiredHeading = motion.getHeading().intValue();
+		desiredHeading = (int) (actualHeading.getHeading() + motion.getChangeHeading());
 		desiredSpeed = motion.getSpeed();
 		freeze = motion.getFreeze();
 	}

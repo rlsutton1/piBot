@@ -18,9 +18,9 @@ public class FeatureExtractorCorner extends FeatureExtractor
 	}
 
 	@Override
-	List<Spike> detectSpike(List<ScanObservation> lastObs3)
+	List<Feature> detectSpike(List<ScanObservation> lastObs3)
 	{
-		List<Spike> ret = new LinkedList<>();
+		List<Feature> ret = new LinkedList<>();
 
 		List<ScanObservation> lastObs2 = resampleData(lastObs3, 5);
 		if (lastObs2.size() == 5)
@@ -52,9 +52,10 @@ public class FeatureExtractorCorner extends FeatureExtractor
 						double angleAwayFromWall = Math.toDegrees(Math.atan2(deltaY, deltaX));
 
 						// concave corner
-						ret.add(new Spike(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d1 + 90, angleAwayFromWall));
-						ret.add(new Spike(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d4 + 90,
-								angleAwayFromWall - 90));
+						ret.add(new Feature(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d1 + 90, angleAwayFromWall,
+								FeatureType.CONCAVE));
+						ret.add(new Feature(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d4 + 90,
+								angleAwayFromWall - 90, FeatureType.CONCAVE));
 					} else
 					{
 						int deltaY = lastObs2.get(2).getY() - lastObs2.get(3).getY();
@@ -63,10 +64,10 @@ public class FeatureExtractorCorner extends FeatureExtractor
 						double angleAwayFromWall = Math.toDegrees(Math.atan2(deltaY, deltaX));
 
 						// convex corner
-						ret.add(new Spike(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d1 - 90,
-								angleAwayFromWall + 90));
-						ret.add(new Spike(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d4 - 90,
-								angleAwayFromWall + 180));
+						ret.add(new Feature(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d1 - 90,
+								angleAwayFromWall + 90, FeatureType.CONVEX));
+						ret.add(new Feature(lastObs2.get(2).getX(), lastObs2.get(2).getY(), d4 - 90,
+								angleAwayFromWall + 180, FeatureType.CONVEX));
 
 					}
 				}

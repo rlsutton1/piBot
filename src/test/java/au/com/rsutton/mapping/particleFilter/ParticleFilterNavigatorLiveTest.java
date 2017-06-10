@@ -23,35 +23,36 @@ public class ParticleFilterNavigatorLiveTest
 	@Test
 	public void test() throws InterruptedException
 	{
-		boolean buildMap = false;
+		boolean buildMap = true;
 		StartPosition startPosition = StartPosition.RANDOM;
-		final ParticleFilterImpl pf;
+		Navigator navigator;
 		if (buildMap)
 		{
 			startPosition = StartPosition.ZERO;
 			createInitalMapForMapBuilder();
-			pf = new ParticleFilterImpl(map, 1000, 0.3, 0.3, startPosition, robot, null);
+			// pf = new ParticleFilterImpl(map, 1000, 5.8, 5.8, startPosition,
+			// robot, null);
+
+			// use slam instead of a particle filter
+			navigator = new Navigator(map, null, robot);
 		} else
 		{
-			pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition, robot, null);
+			final ParticleFilterImpl pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition, robot, null);
+			navigator = new Navigator(map, pf, robot);
 		}
-
-		NavigatorControl navigator = new Navigator(map, pf, robot);
 
 		if (buildMap)
 		{
-			buildMap(navigator, pf, map);
+			buildMap(navigator, navigator.getSlam(), map);
 		} else
 		{
 			navigateTo(navigator, 120, -260);
+			navigateTo(navigator, -130, 300);
 		}
-
-		double headingDrift = navigator.getHeadingDrift();
 
 		navigator.stop();
 
 		Thread.sleep(1000);
-		System.out.println("Heading drift " + headingDrift);
 
 	}
 
@@ -59,14 +60,14 @@ public class ParticleFilterNavigatorLiveTest
 	{
 		map = new ProbabilityMap(5);
 
-		new InitialWorldBuilder(map, robot);
+		// new InitialWorldBuilder(map, robot);
 
 	}
 
-	private void buildMap(NavigatorControl navigator, ParticleFilterIfc pf, ProbabilityMapIIFc map)
+	private void buildMap(NavigatorControl navigator, RobotPoseSource pf, ProbabilityMapIIFc map)
 			throws InterruptedException
 	{
-		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator);
+		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator, robot);
 		while (!mapBuilder.isComplete())
 		{
 			Thread.sleep(100);

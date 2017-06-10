@@ -5,14 +5,49 @@ public class DimensionXYTheta implements Dimension
 
 	double x;
 	double y;
-
-	// store theta as a vector pair
-	double thetaX;
-	double thetaY;
+	ComponentAngle theta = ComponentAngle.createComponentAngle(0);
 
 	public DimensionXYTheta()
 	{
 
+	}
+
+	public static class ComponentAngle
+	{
+		double cx;
+		double cy;
+
+		private ComponentAngle()
+		{
+
+		}
+
+		public static ComponentAngle createComponentAngleDelta(double robotAngle, double featureAngle)
+		{
+			ComponentAngle ct = new ComponentAngle();
+			ct.cx = Math.cos(Math.toRadians(featureAngle)) - Math.cos(Math.toRadians(robotAngle));
+			ct.cy = Math.sin(Math.toRadians(featureAngle)) - Math.sin(Math.toRadians(robotAngle));
+			return ct;
+		}
+
+		public static ComponentAngle createComponentAngle(double angle)
+		{
+			ComponentAngle ct = new ComponentAngle();
+			ct.cx = Math.cos(Math.toRadians(angle));
+			ct.cy = Math.sin(Math.toRadians(angle));
+			return ct;
+		}
+
+		public double getAngle()
+		{
+			return Math.toDegrees(Math.atan2(cy, cx));
+		}
+
+		@Override
+		public String toString()
+		{
+			return "ComponentAngle [cx=" + cx + ", cy=" + cy + " angle=" + getAngle() + "]";
+		}
 	}
 
 	/**
@@ -21,12 +56,12 @@ public class DimensionXYTheta implements Dimension
 	 * @param y
 	 * @param thetaRadians
 	 */
-	public DimensionXYTheta(double x, double y, double thetaDegrees)
+	public DimensionXYTheta(double x, double y, ComponentAngle thetaDegrees)
 	{
 		this.x = x;
 		this.y = y;
-		thetaX = Math.cos(Math.toRadians(thetaDegrees));
-		thetaY = Math.sin(Math.toRadians(thetaDegrees));
+		theta = thetaDegrees;
+		System.out.println("Create " + this.toString());
 	}
 
 	@Override
@@ -45,18 +80,15 @@ public class DimensionXYTheta implements Dimension
 		return y;
 	}
 
-	/**
-	 * 
-	 * @return theta in degrees
-	 */
-	public double getThetaDegrees()
+	public ComponentAngle getThetaDegrees()
 	{
-		return Math.toDegrees(Math.atan2(thetaY, thetaX));
+		return theta;
 	}
 
 	@Override
 	public double get(int i)
 	{
+		System.out.println("get " + this.toString());
 		if (i == 0)
 		{
 			return x;
@@ -67,12 +99,13 @@ public class DimensionXYTheta implements Dimension
 		}
 		if (i == 2)
 		{
-			return thetaX;
+			return theta.cx;
 		}
 		if (i == 3)
 		{
-			return thetaY;
+			return theta.cy;
 		}
+
 		throw new RuntimeException(i + " is not a valid dimension");
 	}
 
@@ -87,11 +120,12 @@ public class DimensionXYTheta implements Dimension
 			y = value;
 		} else if (i == 2)
 		{
-			thetaX = value;
+			theta.cx = value;
 		} else if (i == 3)
 		{
-			thetaY = value;
+			theta.cy = value;
 		} else
+
 		{
 			throw new RuntimeException(i + " is not a valid dimension");
 		}

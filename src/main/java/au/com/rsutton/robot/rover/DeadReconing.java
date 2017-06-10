@@ -12,19 +12,18 @@ public class DeadReconing
 
 	private static final double VEHICAL_WIDTH = 220;
 
-	private final static DistanceUnit MILLIMETERS = DistanceUnit.MM;
+	private static final DistanceUnit MILLIMETERS = DistanceUnit.MM;
 
-	double initialX = 0;
-	double initialY = 0;
-	Angle heading;
+	private double totalDistanceTravelled = 0;
+	private Angle heading;
 
-	double initialLeftWheelReading = 0;
-	double initialRightWheelReading = 0;
+	private double initialLeftWheelReading = 0;
+	private double initialRightWheelReading = 0;
 
-	double currentLeftWheelReading = 0;
-	double currentRightWheelReading = 0;
+	private double currentLeftWheelReading = 0;
+	private double currentRightWheelReading = 0;
 
-	final private Object sync = new Object();
+	private final Object sync = new Object();
 
 	private GyroProvider gyro;
 
@@ -58,8 +57,7 @@ public class DeadReconing
 				double t1 = initialLeftWheelReading - currentLeftWheelReading;
 				double t2 = initialRightWheelReading - currentRightWheelReading;
 
-				initialX += -Math.sin(heading.getRadians()) * ((t1 + t2) / 2.0d);
-				initialY += -Math.cos(heading.getRadians()) * ((t1 + t2) / 2.0d);
+				totalDistanceTravelled += (t1 + t2) / 2.0d;
 
 				initialLeftWheelReading = currentLeftWheelReading;
 				initialRightWheelReading = currentRightWheelReading;
@@ -108,22 +106,12 @@ public class DeadReconing
 
 	}
 
-	public Distance getX()
-	{
-
-		synchronized (sync)
-		{
-			return new Distance(initialX, MILLIMETERS);
-		}
-	}
-
-	public Distance getY()
+	public Distance getTotalDistanceTravelled()
 	{
 		synchronized (sync)
 		{
-			return new Distance(initialY, MILLIMETERS);
+			return new Distance(totalDistanceTravelled, MILLIMETERS);
 		}
-
 	}
 
 	public HeadingData getHeading()

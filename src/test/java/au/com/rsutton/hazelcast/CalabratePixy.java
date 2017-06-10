@@ -29,8 +29,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 	LinkedBlockingQueue<Collection<Coordinate>> queuedLaserData = new LinkedBlockingQueue<>();
 
 	@Test
-	public void gotoTarget() throws InstantiationException,
-			IllegalAccessException, InterruptedException
+	public void gotoTarget() throws InstantiationException, IllegalAccessException, InterruptedException
 	{
 
 		// drive robot to gather calabration data....
@@ -45,7 +44,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 			Thread.sleep(100);
 		}
 		int setHeading = heading;
-		message.setHeading((double) setHeading);
+		message.setChangeHeading(0.0);
 		for (int setDistance = 35; setDistance < 200; setDistance += 3)
 		{
 			while (!checkDistance(setDistance))
@@ -53,8 +52,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 				System.out.println("moving to " + setDistance);
 				while (!checkDistance(setDistance))
 				{
-					int speed = ((int) distance.convert(DistanceUnit.CM))
-							- setDistance;
+					int speed = ((int) distance.convert(DistanceUnit.CM)) - setDistance;
 
 					if (speed > 0)
 					{
@@ -63,14 +61,12 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 					{
 						speed = Math.max(-5, speed);
 					}
-					message.setSpeed(new Speed(new Distance(speed,
-							DistanceUnit.CM), Time.perSecond()));
+					message.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 					message.publish();
 
 					Thread.sleep(100);
 				}
-				message.setSpeed(new Speed(new Distance(0, DistanceUnit.CM),
-						Time.perSecond()));
+				message.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 				message.publish();
 
 				System.out.println("waiting for heading to settle");
@@ -89,19 +85,16 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 			int ctr = 0;
 			int points = 4;
 			int samples = 15;
-			while (queuedLaserData.size() < points * samples
-					&& ctr < (points * samples * 2))
+			while (queuedLaserData.size() < points * samples && ctr < (points * samples * 2))
 			{
 				Thread.sleep(250);
 				ctr++;
 			}
-			System.out.println("Analysing data (NOT) got "
-					+ queuedLaserData.size() + " points");
+			System.out.println("Analysing data (NOT) got " + queuedLaserData.size() + " points");
 			// TODO: analyse laser data
 
 			// add entry to data for the set distance
-			data.put(setDistance,
-					new LinkedHashMap<AverageValue, AverageValue>());
+			data.put(setDistance, new LinkedHashMap<AverageValue, AverageValue>());
 			Map<AverageValue, AverageValue> distanceSet = data.get(setDistance);
 
 			// get value sets from queue
@@ -128,8 +121,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 				}
 			}
 
-			for (Entry<Integer, Map<AverageValue, AverageValue>> vx : data
-					.entrySet())
+			for (Entry<Integer, Map<AverageValue, AverageValue>> vx : data.entrySet())
 			{
 				System.out.print("Distance: " + vx.getKey());
 				// add keys to a list and sort them
@@ -146,8 +138,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 					AverageValue avKey = new AverageValue();
 					avKey.add(key);
 					AverageValue value = vx.getValue().get(avKey);
-					System.out.print(",Xangle, " + key + ", Yangle, "
-							+ value.getValue());
+					System.out.print(",Xangle, " + key + ", Yangle, " + value.getValue());
 				}
 				System.out.println("");
 			}
@@ -175,8 +166,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 		public boolean equals(Object o)
 		{
 			AverageValue ot = (AverageValue) o;
-			return getValue() + 20 > ot.getValue()
-					&& getValue() - 20 < ot.getValue();
+			return getValue() + 20 > ot.getValue() && getValue() - 20 < ot.getValue();
 		}
 
 		void add(int v)
@@ -203,8 +193,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 		int dist = (int) distance.convert(DistanceUnit.CM);
 		int percentageOfSetDistance = (setDistance * 4) / 100;
 		percentageOfSetDistance = Math.min(2, percentageOfSetDistance);
-		return dist < setDistance + percentageOfSetDistance
-				&& dist > setDistance - percentageOfSetDistance;
+		return dist < setDistance + percentageOfSetDistance && dist > setDistance - percentageOfSetDistance;
 	}
 
 	@Override
@@ -214,8 +203,7 @@ public class CalabratePixy implements MessageListener<RobotLocation>
 
 		heading = (int) m.getDeadReaconingHeading().getDegrees();
 		distance = m.getClearSpaceAhead();
-		throw new RuntimeException(
-				"This code is broken, following line was commented out to allow compile");
+		throw new RuntimeException("This code is broken, following line was commented out to allow compile");
 		// queuedLaserData.add(m.getLaserData());
 
 	}

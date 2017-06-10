@@ -27,14 +27,14 @@ public class ScanMatcher extends JFrame
 	private MapUI graph = new MapUI();
 
 	ProbabilityMapIIFc world;
-	private ParticleFilterObservationSet observations;
+	private List<ScanObservation> observations;
 	private double compassAdjustment;
 
 	volatile double currentMatch = 0;
 
 	private AtomicReference<Pose> currentPose = new AtomicReference<>();
 
-	ScanMatcher(ProbabilityMap world, ParticleFilterObservationSet observations, double compassAdjustment)
+	ScanMatcher(ProbabilityMap world, List<ScanObservation> observations, double compassAdjustment)
 	{
 		this.world = world;
 		this.observations = observations;
@@ -74,7 +74,7 @@ public class ScanMatcher extends JFrame
 			{
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, currentPose.get().heading);
 				List<Point> points = new LinkedList<>();
-				for (ScanObservation obs : observations.getObservations())
+				for (ScanObservation obs : observations)
 				{
 					Vector3D pos = rotation.applyTo(obs.getVector());
 					points.add(new Point((int) pos.getX(), (int) pos.getY()));

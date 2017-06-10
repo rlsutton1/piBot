@@ -12,6 +12,7 @@ import au.com.rsutton.calabrate.CalabrateDeadReconning;
 import au.com.rsutton.calabrate.CalabrateLeftWheel;
 import au.com.rsutton.calabrate.CalabrateRightWheel;
 import au.com.rsutton.calabrate.CircleTest;
+import au.com.rsutton.calabrate.RoombaTest;
 import au.com.rsutton.calabrate.StraightLineTest;
 import au.com.rsutton.robot.rover.Rover;
 
@@ -37,6 +38,8 @@ public class Main
 		System.out.println("Press 5 to perform straight line test");
 
 		System.out.println("Press 6 to perform circle test");
+
+		System.out.println("Press 7 to perform roomba test");
 
 		int ch = br.read();
 		if (ch == '0')
@@ -64,7 +67,11 @@ public class Main
 		} else if (ch == '6')
 		{
 			new CircleTest();
+		} else if (ch == '7')
+		{
+			new RoombaTest();
 		}
+
 	}
 
 }

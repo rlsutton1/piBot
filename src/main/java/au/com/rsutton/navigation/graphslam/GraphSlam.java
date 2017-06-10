@@ -42,7 +42,7 @@ public class GraphSlam
 		dumpMatrix(getPositions());
 	}
 
-	public void setNewLocation(double newLocationRelativeToLastLocation, double certainty)
+	public void move(double newLocationRelativeToLastLocation, double certainty)
 	{
 
 		if (p.getRowDimension() > 1)
@@ -130,7 +130,7 @@ public class GraphSlam
 
 	}
 
-	public int add(double distanceToLandmark, double certainty)
+	public int addNode(double distanceToLandmark, double certainty)
 	{
 		omega = addCol(omega);
 		omega = addRow(omega);

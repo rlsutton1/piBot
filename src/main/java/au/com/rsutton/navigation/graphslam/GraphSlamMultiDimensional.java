@@ -25,6 +25,10 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 			slams[i] = new GraphSlam(initialPosition.get(i));
 		}
 
+		// set new location with 0 offset
+		setNewLocation(getNewDimensionInstance(), new DimensionCertainty(new double[] {
+				1, 1, 1, 1, 1, 1, 1, 1, 1 }));
+
 	}
 
 	public List<T> getPositions()
@@ -63,7 +67,7 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 	{
 		for (int i = 0; i < dimensions; i++)
 		{
-			slams[i].setNewLocation(newLocation.get(i), certainty.get(i));
+			slams[i].move(newLocation.get(i), certainty.get(i));
 		}
 	}
 
@@ -72,7 +76,7 @@ public class GraphSlamMultiDimensional<T extends Dimension>
 		int position = 0;
 		for (int i = 0; i < dimensions; i++)
 		{
-			position = slams[i].add(distanceToLandmark.get(i), certainty.get(i));
+			position = slams[i].addNode(distanceToLandmark.get(i), certainty.get(i));
 		}
 		return position;
 	}

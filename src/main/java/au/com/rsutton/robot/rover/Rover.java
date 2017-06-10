@@ -36,24 +36,26 @@ public class Rover implements Runnable, RobotLocationReporter
 
 	private WheelController rightWheel;
 	private WheelController leftWheel;
-	final private DeadReconing reconing;
-	final private SpeedHeadingController speedHeadingController;
+	private final DeadReconing reconing;
+	private final SpeedHeadingController speedHeadingController;
 	private RobotLocation previousLocation;
-	final DistanceUnit distUnit = DistanceUnit.MM;
-	final TimeUnit timeUnit = TimeUnit.SECONDS;
+	static final DistanceUnit distUnit = DistanceUnit.MM;
+	static final TimeUnit timeUnit = TimeUnit.SECONDS;
 	private long lastTime;
 	// final private Adafruit16PwmProvider provider;
 	// private CompassLSM303 compass;
 	// final private ADS1115GpioProvider ads;
-	final private Sonar forwardSonar;
+	private final Sonar forwardSonar;
 
 	private SetMotion lastData;
 
-	volatile private Distance clearSpaceAhead = new Distance(0, DistanceUnit.MM);
+	private volatile Distance clearSpaceAhead = new Distance(0, DistanceUnit.MM);
 
 	private GrovePiProvider grove;
 
 	Vector3D lidarTransposeOnRobotChasis = new Vector3D(0, 10, 0);
+
+	List<LidarObservation> currentObservations = new Vector<>();
 
 	public Rover() throws IOException, InterruptedException, BrokenBarrierException, UnsupportedBusNumberException
 	{
@@ -97,8 +99,6 @@ public class Rover implements Runnable, RobotLocationReporter
 		reconing = new DeadReconing(initialAngle, gyro);
 		previousLocation = new RobotLocation();
 		previousLocation.setDeadReaconingHeading(initialAngle);
-		previousLocation.setX(reconing.getX());
-		previousLocation.setY(reconing.getY());
 
 		// AdafruitPCA9685 pwm = new AdafruitPCA9685(); // 0x40 is the default
 		// // address
@@ -182,7 +182,6 @@ public class Rover implements Runnable, RobotLocationReporter
 		try
 		{
 
-			// System.out.println("run Rover");
 			getSpaceAhead();
 
 			reconing.updateLocation(rightWheel.getDistance(), leftWheel.getDistance());
@@ -192,8 +191,7 @@ public class Rover implements Runnable, RobotLocationReporter
 			// send location out on HazelCast
 			RobotLocation currentLocation = new RobotLocation();
 			currentLocation.setDeadReaconingHeading(new Angle(reconing.getHeading().getHeading(), AngleUnits.DEGREES));
-			currentLocation.setX(reconing.getX());
-			currentLocation.setY(reconing.getY());
+			currentLocation.setDistanceTravelled(reconing.getTotalDistanceTravelled());
 			currentLocation.setClearSpaceAhead(clearSpaceAhead);
 
 			List<LidarObservation> observations = new LinkedList<>();
@@ -211,7 +209,6 @@ public class Rover implements Runnable, RobotLocationReporter
 			previousLocation = currentLocation;
 		} catch (Exception e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.exit(0);
 		}
@@ -224,9 +221,8 @@ public class Rover implements Runnable, RobotLocationReporter
 
 		// use pythag to calculate distance between current location and
 		// previous location
-		double distance = Math
-				.sqrt(Math.pow(reconing.getX().convert(distUnit) - previousLocation.getX().convert(distUnit), 2)
-						+ (Math.pow(reconing.getY().convert(distUnit) - previousLocation.getY().convert(distUnit), 2)));
+		double distance = reconing.getTotalDistanceTravelled().convert(distUnit)
+				- previousLocation.getDistanceTravelled().convert(distUnit);
 
 		// scale up distance to a per second rate
 		distance = distance * (1000.0d / (now - lastTime));
@@ -235,7 +231,5 @@ public class Rover implements Runnable, RobotLocationReporter
 		lastTime = now;
 		return speed;
 	}
-
-	List<LidarObservation> currentObservations = new Vector<>();
 
 }

@@ -66,7 +66,7 @@ public class CalabrateDeadReconning implements Runnable
 			double h = HeadingHelper.normalizeHeading(i);
 
 			SetMotion motion = new SetMotion();
-			motion.setHeading(h);
+			motion.setChangeHeading(90.0);
 			motion.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 			speedHeadingController.setDesiredMotion(motion);
 			while (Math.abs(HeadingHelper.getChangeInHeading(h, reconing.getHeading().getHeading())) > 20)

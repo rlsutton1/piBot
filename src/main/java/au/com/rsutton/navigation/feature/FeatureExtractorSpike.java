@@ -17,9 +17,9 @@ public class FeatureExtractorSpike extends FeatureExtractor
 	}
 
 	@Override
-	List<Spike> detectSpike(List<ScanObservation> lastObs2)
+	List<Feature> detectSpike(List<ScanObservation> lastObs2)
 	{
-		List<Spike> ret = new LinkedList<>();
+		List<Feature> ret = new LinkedList<>();
 		if (lastObs2.size() > 5)
 		{
 			double d1 = lastObs2.get(0).getDisctanceCm();
@@ -75,7 +75,7 @@ public class FeatureExtractorSpike extends FeatureExtractor
 				{
 					double angle = Math.toDegrees(Math.atan2(deltaY, deltaX));
 
-					ret.add(new Spike(x, y, angle, angleAwayFromWall));
+					ret.add(new Feature(x, y, angle, angleAwayFromWall, FeatureType.CONVEX));
 				}
 			}
 			lastObs2.remove(0);
