@@ -49,7 +49,8 @@ public class Despecaler
 		{
 
 			inputMap.resetPoint(point.getX(), point.getY());
-			System.out.println("Removing point at " + point.getX() + "," + point.getY());
+			// System.out.println("Removing point at " + point.getX() + "," +
+			// point.getY());
 		}
 
 	}

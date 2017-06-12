@@ -17,7 +17,7 @@ public class FeatureExtractorSpike extends FeatureExtractor
 	}
 
 	@Override
-	List<Feature> detectSpike(List<ScanObservation> lastObs2)
+	List<Feature> detectFeature(List<ScanObservation> lastObs2)
 	{
 		List<Feature> ret = new LinkedList<>();
 		if (lastObs2.size() > 5)

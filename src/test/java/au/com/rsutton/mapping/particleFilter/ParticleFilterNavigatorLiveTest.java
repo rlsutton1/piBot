@@ -48,6 +48,15 @@ public class ParticleFilterNavigatorLiveTest
 		{
 			navigateTo(navigator, 120, -260);
 			navigateTo(navigator, -130, 300);
+
+			navigateTo(navigator, 120, -260);
+			navigateTo(navigator, -130, 300);
+
+			navigateTo(navigator, 120, -260);
+			navigateTo(navigator, -130, 300);
+
+			navigateTo(navigator, 120, -260);
+			navigateTo(navigator, -130, 300);
 		}
 
 		navigator.stop();

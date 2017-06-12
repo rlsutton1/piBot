@@ -40,12 +40,12 @@ public class ObsticleAvoidance
 
 	final List<LidarObservation> currentObservations = new CopyOnWriteArrayList<>();
 
-	double distanceForCorrection = 40;
-	double requiredObsticalClearance = 30;
+	double distanceForCorrection = 45;
+	double requiredObsticalClearance = 35;
 
 	ObsticleAvoidance(RobotInterface robot, RobotPoseSource pf)
 	{
-		scanBuffer = new MovingLidarObservationMultiBuffer(50, robot, pf);
+		scanBuffer = new MovingLidarObservationMultiBuffer(6, robot, pf);
 
 		robot.addMessageListener(new RobotLocationDeltaListener()
 		{

@@ -18,7 +18,7 @@ public class FeatureExtractorCorner extends FeatureExtractor
 	}
 
 	@Override
-	List<Feature> detectSpike(List<ScanObservation> lastObs3)
+	List<Feature> detectFeature(List<ScanObservation> lastObs3)
 	{
 		List<Feature> ret = new LinkedList<>();
 

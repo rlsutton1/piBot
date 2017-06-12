@@ -6,7 +6,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
-import au.com.rsutton.mapping.particleFilter.RobotPoseSourceDeadReconning;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.robot.RobotInterface;
 
@@ -21,7 +20,7 @@ public class MovingLidarObservationMultiBuffer
 
 	public MovingLidarObservationMultiBuffer(int maxBuffers, RobotInterface robot, RobotPoseSource pf)
 	{
-		this.poseSource = new RobotPoseSourceDeadReconning(robot);
+		this.poseSource = pf;// new RobotPoseSourceDeadReconning(robot);
 		MAX_BUFERS = maxBuffers;
 		currentBuffer.set(new MovingLidarObservationBuffer(poseSource));
 		buffers.add(currentBuffer.get());

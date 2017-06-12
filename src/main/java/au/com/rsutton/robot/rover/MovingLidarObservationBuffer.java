@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,6 +34,9 @@ public class MovingLidarObservationBuffer
 	public MovingLidarObservationBuffer(RobotPoseSource poseSource)
 	{
 		this.poseSource = poseSource;
+
+		LogLevelHelper.setLevel(logger, Level.ERROR);
+
 	}
 
 	public void addLidarObservation(List<ScanObservation> data)
@@ -56,7 +60,7 @@ public class MovingLidarObservationBuffer
 			Rotation frameRotation = new Rotation(RotationOrder.XYZ, 0, 0, heading);
 
 			DistanceXY frameTranslation = poseSource.getXyPosition().subtract(set.position);
-			logger.error("Frame translation {} {}", poseSource.getXyPosition(), frameTranslation);
+			logger.info("Frame translation {} {}", poseSource.getXyPosition(), frameTranslation);
 
 			for (ScanObservation observation : set.observations)
 			{

@@ -3,10 +3,18 @@ package au.com.rsutton.navigation.graphslam.v3;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.base.Preconditions;
+
+import au.com.rsutton.robot.rover.LogLevelHelper;
 
 public class GraphSlamV3<T extends GraphSlamNode>
 {
+
+	Logger logger = LogManager.getLogger();
 
 	List<T> nodes = new LinkedList<>();
 
@@ -16,6 +24,7 @@ public class GraphSlamV3<T extends GraphSlamNode>
 
 	public GraphSlamV3(GraphSlamNodeConstructor<T> ctor)
 	{
+		LogLevelHelper.setLevel(logger, Level.ERROR);
 		this.ctor = ctor;
 
 		currentPosition = this.ctor.construct("init", 0);
@@ -117,9 +126,11 @@ public class GraphSlamV3<T extends GraphSlamNode>
 			lastError = error;
 
 		}
-		System.out.println("Current Position " + currentPosition);
-		System.out.println("Rounds " + ctr);
-
+		logger.info("Current Position " + currentPosition);
+		if (ctr > 4)
+		{
+			logger.info("Rounds " + ctr);
+		}
 	}
 
 	private double updatePositions()
@@ -144,11 +155,11 @@ public class GraphSlamV3<T extends GraphSlamNode>
 			if (!node.isRoot())
 			{
 				node.adjustPosition(node.getCurrentError());
-				// System.out.println(node);
+				// logger.info(node);
 
 			}
 		}
-		// System.out.println("Total Error " + totalError);
+		// logger.info("Total Error " + totalError);
 		return totalError;
 	}
 
@@ -156,10 +167,10 @@ public class GraphSlamV3<T extends GraphSlamNode>
 	{
 		for (T node : nodes)
 		{
-			System.out.println(node);
+			logger.info(node);
 			for (GraphSlamConstraint constraint : node.getConstraints())
 			{
-				System.out.println("-->" + constraint);
+				logger.info("-->" + constraint);
 			}
 
 		}

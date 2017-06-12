@@ -262,7 +262,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 			List<ScanObservation> observations = getObservation(lastScan, to);
 			lastScan = to % 100;
 
-			double headingDrift = Math.abs((random.nextGaussian() * 0.25) * (1.0 / hz));
+			double headingDrift = Math.abs((random.nextGaussian() * 0.05) * (1.0 / hz));
 
 			for (RobotLocationDeltaListener listener : listeners)
 			{

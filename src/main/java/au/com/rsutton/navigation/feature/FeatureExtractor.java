@@ -23,6 +23,10 @@ public abstract class FeatureExtractor
 {
 
 	DistanceUnit distanceUnit = DistanceUnit.CM;
+	private List<ScanObservation> lastObs = new LinkedList<>();
+	protected List<Feature> currentFeatures = new LinkedList<>();
+
+	SpikeListener listener;
 
 	FeatureExtractor(SpikeListener listener, RobotInterface robot)
 	{
@@ -67,10 +71,10 @@ public abstract class FeatureExtractor
 				Graphics graphics = image.getGraphics();
 
 				// draw lidar observation lines
-				for (Feature spike : currentSpikes)
+				for (Feature feature : currentFeatures)
 				{
 					graphics.setColor(new Color(255, 0, 0));
-					Vector3D obs = new Vector3D(spike.x, spike.y, 0);
+					Vector3D obs = new Vector3D(feature.x, feature.y, 0);
 
 					Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading()))
 							.applyTo(obs);
@@ -80,14 +84,14 @@ public abstract class FeatureExtractor
 					graphics.drawRect(pointX, pointY, 5, 5);
 
 					double heading = pf.getHeading();
-					double direction = heading + spike.angle + 90;
+					double direction = heading + feature.angle + 90;
 
 					Vector3D line1 = new Vector3D(0, 30, 0);
 					line1 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(direction)).applyTo(line1);
 
 					graphics.drawLine(pointX, pointY, (int) (pointX + line1.getX()), (int) (pointY + line1.getY()));
 
-					direction = heading + spike.getAngleAwayFromWall() + 90;
+					direction = heading + feature.getAngleAwayFromWall() + 90;
 
 					Vector3D line = new Vector3D(0, 15, 0);
 					line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(direction)).applyTo(line);
@@ -98,30 +102,25 @@ public abstract class FeatureExtractor
 
 				}
 
-				currentSpikes.clear();
+				currentFeatures.clear();
 
 			}
 
 		};
 	}
 
-	private List<ScanObservation> lastObs = new LinkedList<>();
-	protected List<Feature> currentSpikes = new LinkedList<>();
-
-	SpikeListener listener;
-
 	private void evaluateScan(List<ScanObservation> observations)
 	{
 		for (ScanObservation obs : observations)
 		{
 			lastObs.add(obs);
-			List<Feature> spikes = detectSpike(lastObs);
+			List<Feature> spikes = detectFeature(lastObs);
 
 			if (listener != null)
 			{
 				listener.discoveredSpikes(spikes);
 			}
-			currentSpikes.addAll(spikes);
+			currentFeatures.addAll(spikes);
 
 		}
 
@@ -160,5 +159,5 @@ public abstract class FeatureExtractor
 
 	}
 
-	abstract List<Feature> detectSpike(List<ScanObservation> lastObs2);
+	abstract List<Feature> detectFeature(List<ScanObservation> lastObs2);
 }

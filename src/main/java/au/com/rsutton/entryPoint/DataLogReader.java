@@ -34,7 +34,7 @@ public class DataLogReader
 		long messageReferenceTime = 0;
 		try
 		{
-			fout = new FileInputStream("robotFlightRecord-gyro2.obj");
+			fout = new FileInputStream("robotFlightRecord-nav-long.obj");
 			oos = new ObjectInputStream(fout);
 			boolean canContinue = true;
 
@@ -64,8 +64,8 @@ public class DataLogReader
 				// absolute delay between events
 				// Thread.sleep(1000);
 
-				double change = HeadingHelper.getChangeInHeading(lastHeading, locationMessage.getDeadReaconingHeading()
-						.getDegrees());
+				double change = HeadingHelper.getChangeInHeading(lastHeading,
+						locationMessage.getDeadReaconingHeading().getDegrees());
 				System.out.println("'heading'," + change + "," + locationMessage.getTime());
 
 				lastHeading = locationMessage.getDeadReaconingHeading().getDegrees();

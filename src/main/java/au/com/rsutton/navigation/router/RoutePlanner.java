@@ -224,7 +224,7 @@ public class RoutePlanner
 			result = getRouteForLocation(x, y, i);
 			if (result != null)
 			{
-				return result;
+				break;
 			}
 		}
 		if (result == null)

@@ -9,6 +9,8 @@ import java.util.Set;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.navigation.graphslam.DimensionCertainty;
@@ -26,6 +28,8 @@ public class GraphSlamFeatureTracker
 	double stablizedX = 0;
 	double stablizedY = 0;
 
+	Logger logger = LogManager.getLogger();
+
 	public GraphSlamFeatureTracker()
 	{
 		DimensionCertainty certainty = new DimensionCertainty(new double[] {
@@ -41,17 +45,29 @@ public class GraphSlamFeatureTracker
 
 		currentLocation = slam.setNewLocation(dx, dy, dTheta, certainty);
 
-		stablizedX = (stablizedX * 0.9) + (currentLocation.getX() * 0.1);
-		stablizedY = (stablizedY * 0.9) + (currentLocation.getY() * 0.1);
+		if (Math.abs(stablizedX) - currentLocation.getX() > 5)
+		{
+			stablizedX = (stablizedX * 0.5) + (currentLocation.getX() * 0.5);
+		} else
+		{
+			stablizedX = currentLocation.getX();
+		}
+		if (Math.abs(stablizedY) - currentLocation.getY() > 5)
+		{
+			stablizedY = (stablizedY * 0.5) + (currentLocation.getY() * 0.5);
+		} else
+		{
+			stablizedY = currentLocation.getY();
+		}
 
 		slam.solve();
 
-		System.out.println(
+		logger.info(
 				"DUmping		 -------------------------------------------------------------------------------------------");
 		// slam.dumpPositionsY();
 		refreshFeatureMapFromSlam();
 
-		System.out.println("Current location " + currentLocation);
+		logger.info("Current location " + currentLocation);
 
 	}
 
@@ -125,8 +141,8 @@ public class GraphSlamFeatureTracker
 		Feature absoluteFeature = new Feature(absoluteXY.getX(), absoluteXY.getY(), absoluteTheta,
 				newObservation.angleAwayFromWall, newObservation.getFeatureType());
 
-		System.out.println("Raw      " + newObservation);
-		System.out.println("Absolute " + absoluteFeature);
+		logger.info("Raw      " + newObservation);
+		logger.info("Absolute " + absoluteFeature);
 
 		// create adjusted Spike to compensate for the relative heading
 
@@ -155,7 +171,7 @@ public class GraphSlamFeatureTracker
 				// reduce the certainty by the number of features matched.
 				certaintiy = certaintiy / (matchedFeatures * 2.0);
 
-				System.out.println("Updating feature " + matched.getValue());
+				logger.info("Updating feature " + matched.getValue());
 				// TODO: apportion certainty to quality of match
 				update(matched.getValue(), dx, dy, dTheta, certaintiy * certaintyModifier);
 
@@ -178,7 +194,7 @@ public class GraphSlamFeatureTracker
 				{
 
 					double certaintiy = Math.max(1.0 - ((distance) / maxMatchDistance), .01);
-					System.out.println("Adding new Feature");
+					logger.info("Adding new Feature");
 					featureMap.put(absoluteFeature, addNewFeature(dx, dy, dTheta, certaintiy * certaintyModifier));
 				}
 			}

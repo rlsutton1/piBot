@@ -70,7 +70,7 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 
 				position = result.getVector(DistanceUnit.CM);
 
-				logger.info("Slam position " + deltaDistance + " " + position);
+				logger.error("Slam position " + deltaDistance + " " + position);
 				updatePosition();
 			}
 		});
@@ -82,6 +82,8 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 	{
 
 		updatePosition();
+		if (!features.isEmpty())
+			logger.error("Spikes found " + features.size());
 
 		tracker.addObservations(features, heading);
 
@@ -100,12 +102,13 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 		double dx = position.getX() - lastX;
 		double dy = position.getY() - lastY;
 		double dt = HeadingHelper.getChangeInHeading(heading, lastHeading);
-		if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || Math.abs(dt) > 3)
+		if (Math.abs(dx) > 5 || Math.abs(dy) > 5 || Math.abs(dt) > 3)
 		{
 			lastX = position.getX();
 			lastY = position.getY();
 			lastHeading = heading;
-			tracker.setNewLocation(dx, dy, dt, 0.1);
+			tracker.setNewLocation(dx, dy, dt, 0.9);
+			logger.warn("Updating postion");
 		}
 	}
 
@@ -170,7 +173,7 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 	public DistanceXY getXyPosition()
 	{
 		DimensionWrapperXYTheta slamLocation = tracker.getCurrentLocation();
-		return new DistanceXY(slamLocation.getX(), slamLocation.getY(), DistanceUnit.CM);
+		return new DistanceXY(tracker.stablizedX, tracker.stablizedY, DistanceUnit.CM);
 	}
 
 	/**
