@@ -71,29 +71,29 @@ public class GraphSlamFeatureTracker
 
 	}
 
-	public void addObservations(List<Feature> spikes, double heading)
+	public void addObservations(List<Feature> features, double heading)
 	{
 		double matches = 1;
-		for (Feature spike : spikes)
+		for (Feature feature : features)
 		{
-			Feature offsetSpike = new Feature(spike.x, spike.y, spike.angle, spike.getAngleAwayFromWall(),
-					spike.getFeatureType());
-			if (checkForMatch(offsetSpike, heading, 40))
+			Feature offsetFeature = new Feature(feature.x, feature.y, feature.angle, feature.getAngleAwayFromWall(),
+					feature.getFeatureType());
+			if (checkForMatch(offsetFeature, heading, 40))
 			{
 				matches++;
 			}
 		}
 
-		for (Feature spike : spikes)
+		for (Feature feature : features)
 		{
-			double dx = stablizedX - spike.x;
-			double dy = stablizedY - spike.y;
+			double dx = stablizedX - feature.x;
+			double dy = stablizedY - feature.y;
 			double distance = Math.sqrt((dx * dx) + (dy * dy));
 			if (distance > 75)
 			{
-				Feature offsetSpike = new Feature(spike.x, spike.y, spike.angle, spike.getAngleAwayFromWall(),
-						spike.getFeatureType());
-				addObservation(offsetSpike, heading, matches / 5.0);
+				Feature offsetFeature = new Feature(feature.x, feature.y, feature.angle, feature.getAngleAwayFromWall(),
+						feature.getFeatureType());
+				addObservation(offsetFeature, heading, matches / 5.0);
 			}
 		}
 
