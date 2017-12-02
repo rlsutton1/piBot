@@ -13,7 +13,7 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
-import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.robot.lidar.LidarObservation;
 
 public class RobotSimulatorTest
 {

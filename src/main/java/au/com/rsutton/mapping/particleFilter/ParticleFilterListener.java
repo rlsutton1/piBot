@@ -3,7 +3,7 @@ package au.com.rsutton.mapping.particleFilter;
 import java.util.List;
 
 import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.units.Angle;
 
 public interface ParticleFilterListener
 {

@@ -14,16 +14,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.navigation.correction.HeadingCorrector;
 import au.com.rsutton.navigation.graphslam.v3.DimensionWrapperXYTheta;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMap, RobotPoseSource
 {
@@ -42,8 +43,8 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 	public PiBotGraphSlamFeatureTracker(MapDrawingWindow ui, RobotInterface robot)
 	{
 
-		new FeatureExtractorSpike(this, robot);
-
+		// new FeatureExtractorSpikev2(this, robot);
+		//
 		new FeatureExtractorCorner(this, robot);
 
 		tracker.setNewLocation(0, 0, 0, 0.1);
@@ -56,14 +57,20 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 
 	void setupRobotListener(RobotInterface robot)
 	{
+		HeadingCorrector corrector = new HeadingCorrector();
+
 		robot.addMessageListener(new RobotLocationDeltaListener()
 		{
 
 			@Override
 			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
 			{
-				logger.info("Delta heading " + deltaHeading.getDegrees());
+				corrector.onMessage(deltaHeading, deltaDistance, robotLocation);
+				logger.error("Delta heading " + deltaHeading.getDegrees());
 				heading += deltaHeading.getDegrees();
+
+				heading = corrector.getHeading();
+
 				DistanceXY result = RobotLocationDeltaHelper.applyDelta(deltaHeading, deltaDistance,
 						new Angle(heading, AngleUnits.DEGREES), new Distance(position.getX(), DistanceUnit.CM),
 						new Distance(position.getY(), DistanceUnit.CM));
@@ -108,7 +115,7 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 			lastY = position.getY();
 			lastHeading = heading;
 			tracker.setNewLocation(dx, dy, dt, 0.9);
-			logger.warn("Updating postion");
+			logger.error("Updating postion " + dx + " " + dy);
 		}
 	}
 

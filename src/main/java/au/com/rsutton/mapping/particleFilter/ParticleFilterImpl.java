@@ -19,19 +19,19 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.AngleUnits;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class ParticleFilterImpl implements ParticleFilterIfc
 {

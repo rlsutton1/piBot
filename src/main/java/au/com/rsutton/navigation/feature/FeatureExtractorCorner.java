@@ -37,9 +37,9 @@ public class FeatureExtractorCorner extends FeatureExtractor
 
 				// check for 2 reasonably straight lines and a strong change in
 				// angle
-				boolean hasPlane1 = Math.abs(HeadingHelper.getChangeInHeading(d2, d1)) < 30;
-				boolean hasPlane2 = Math.abs(HeadingHelper.getChangeInHeading(d3, d4)) < 30;
-				boolean hasAngle = Math.abs(HeadingHelper.getChangeInHeading(d2, d3)) > 60;
+				boolean hasPlane1 = Math.abs(HeadingHelper.getChangeInHeading(d2, d1)) < 20;
+				boolean hasPlane2 = Math.abs(HeadingHelper.getChangeInHeading(d3, d4)) < 20;
+				boolean hasAngle = Math.abs(HeadingHelper.getChangeInHeading(d2, d3)) > 70;
 
 				if (hasPlane1 && hasPlane2 && hasAngle)
 				{

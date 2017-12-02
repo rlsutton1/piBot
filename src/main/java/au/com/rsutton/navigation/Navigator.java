@@ -15,10 +15,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -31,6 +27,10 @@ import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class Navigator implements Runnable, NavigatorControl
 {

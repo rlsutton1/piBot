@@ -3,11 +3,11 @@ package au.com.rsutton.hazelcast;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.entryPoint.units.Distance;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
-import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.robot.lidar.LidarObservation;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
 
 public class RobotLocation extends MessageBase<RobotLocation> implements ParticleFilterObservationSet
 {

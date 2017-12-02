@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.rover;
+package au.com.rsutton.units;
 
 import java.io.Serializable;
 

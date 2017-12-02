@@ -33,15 +33,15 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import au.com.rsutton.deeplearning.feature.FeatureSimulatorBase.Scan;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class FeatureExtractionTestFullWold
 {

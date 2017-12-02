@@ -3,15 +3,15 @@ package au.com.rsutton.mapping.particleFilter;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class RobotImple implements RobotInterface
 {

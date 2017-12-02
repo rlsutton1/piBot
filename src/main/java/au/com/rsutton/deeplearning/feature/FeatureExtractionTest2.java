@@ -119,6 +119,10 @@ public class FeatureExtractionTest2
 		return new RecordReader()
 		{
 
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
 			int pos = 0;
 
 			@Override
@@ -303,6 +307,11 @@ public class FeatureExtractionTest2
 	{
 		return new Writable()
 		{
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
 
 			@Override
 			public String toString()

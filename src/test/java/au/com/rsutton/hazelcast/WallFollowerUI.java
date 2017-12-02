@@ -6,7 +6,7 @@ import java.util.Collection;
 
 import javax.swing.JFrame;
 
-import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.robot.lidar.LidarObservation;
 
 public class WallFollowerUI extends JFrame
 {

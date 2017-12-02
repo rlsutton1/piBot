@@ -13,10 +13,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
@@ -25,11 +21,15 @@ import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.rover.Angle;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class ParticleFilterLiveTest
 {

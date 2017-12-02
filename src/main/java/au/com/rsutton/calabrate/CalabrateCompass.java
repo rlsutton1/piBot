@@ -9,21 +9,20 @@ import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.i2c.I2cSettings;
 import au.com.rsutton.robot.rover.WheelController;
-import au.com.rsutton.robot.rover.WheelFactory;
+import au.com.rsutton.robot.rover5.WheelControllerRover5;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class CalabrateCompass
 {
 
 	private GrovePiProvider grove;
 	private CompassLSM303 compass;
-	private WheelController rightWheel;
-	private WheelController leftWheel;
+	private WheelController wheels;
 
 	public CalabrateCompass() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{
@@ -35,18 +34,15 @@ public class CalabrateCompass
 
 		compass = new CompassLSM303(config);
 
-		rightWheel = WheelFactory.setupRightWheel(grove, config);
-
-		leftWheel = WheelFactory.setupLeftWheel(grove, config);
+		wheels = new WheelControllerRover5(grove, config);
 
 		compass.startCalabration();
-		rightWheel.setSpeed(new Speed(new Distance(100, DistanceUnit.CM), Time.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(-100, DistanceUnit.CM), Time.perSecond()));
+		wheels.setSpeed(new Speed(new Distance(100, DistanceUnit.CM), Time.perSecond()),
+				new Speed(new Distance(-100, DistanceUnit.CM), Time.perSecond()));
 		Thread.sleep(15000);
 
 		compass.finishcalabration();
-		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+		wheels.setSpeed(Speed.ZERO, Speed.ZERO);
 
 		compass.saveConfig();
 

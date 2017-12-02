@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.lidar;
+package au.com.rsutton.robot.lidar.LidarLite;
 
 import java.io.IOException;
 
@@ -55,7 +55,7 @@ public class LidarLite
 		// 10Hz
 		// while 0x13 corresponds to 100Hz. Minimum value is 0x02 for proper
 		// operation.
-		lidarDevice.write(LIDAR_INTERVAL_REGISTER, (byte) 0x13);
+		lidarDevice.write(LIDAR_INTERVAL_REGISTER, (byte) 0x0a);
 		// Set register 0x04 to 0x20 to look at "NON-default" value of velocity
 		// scale
 		// If you set bit 0 of 0x04 to "1" then the mode pin will be low when

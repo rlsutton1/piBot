@@ -4,6 +4,9 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
+
 public class AngleTest
 {
 

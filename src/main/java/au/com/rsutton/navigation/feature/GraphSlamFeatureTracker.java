@@ -28,6 +28,8 @@ public class GraphSlamFeatureTracker
 	double stablizedX = 0;
 	double stablizedY = 0;
 
+	private final static int MAX_MATCH_DISTANCE = 80;
+
 	Logger logger = LogManager.getLogger();
 
 	public GraphSlamFeatureTracker()
@@ -45,20 +47,10 @@ public class GraphSlamFeatureTracker
 
 		currentLocation = slam.setNewLocation(dx, dy, dTheta, certainty);
 
-		if (Math.abs(stablizedX) - currentLocation.getX() > 5)
-		{
-			stablizedX = (stablizedX * 0.5) + (currentLocation.getX() * 0.5);
-		} else
-		{
-			stablizedX = currentLocation.getX();
-		}
-		if (Math.abs(stablizedY) - currentLocation.getY() > 5)
-		{
-			stablizedY = (stablizedY * 0.5) + (currentLocation.getY() * 0.5);
-		} else
-		{
-			stablizedY = currentLocation.getY();
-		}
+		stablizedX += dx;
+		stablizedY += dy;
+		stablizedX = (stablizedX * 0.99) + (currentLocation.getX() * 0.01);
+		stablizedY = (stablizedY * 0.99) + (currentLocation.getY() * 0.01);
 
 		slam.solve();
 
@@ -78,7 +70,7 @@ public class GraphSlamFeatureTracker
 		{
 			Feature offsetFeature = new Feature(feature.x, feature.y, feature.angle, feature.getAngleAwayFromWall(),
 					feature.getFeatureType());
-			if (checkForMatch(offsetFeature, heading, 40))
+			if (checkForMatch(offsetFeature, heading, MAX_MATCH_DISTANCE))
 			{
 				matches++;
 			}
@@ -153,7 +145,7 @@ public class GraphSlamFeatureTracker
 		double x = absoluteFeature.x;
 		double y = absoluteFeature.y;
 
-		double maxMatchDistance = 50;
+		double maxMatchDistance = MAX_MATCH_DISTANCE;
 		Map<Feature, DimensionWrapperXYTheta> nearFeatures = findFeaturesNear(absoluteFeature, maxMatchDistance, 40);
 		System.out
 				.println("-------------------------------------------------------------------------------------------");
@@ -169,7 +161,7 @@ public class GraphSlamFeatureTracker
 				double certaintiy = Math.max(1.0 - ((distance) / maxMatchDistance), .01);
 
 				// reduce the certainty by the number of features matched.
-				certaintiy = certaintiy / (matchedFeatures * 2.0);
+				certaintiy = certaintiy / (Math.pow(4, matchedFeatures));
 
 				logger.info("Updating feature " + matched.getValue());
 				// TODO: apportion certainty to quality of match

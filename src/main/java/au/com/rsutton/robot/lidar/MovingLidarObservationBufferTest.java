@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.rover;
+package au.com.rsutton.robot.lidar;
 
 import static org.junit.Assert.assertTrue;
 
@@ -8,11 +8,11 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.DistanceUnit;
 
 public class MovingLidarObservationBufferTest
 {

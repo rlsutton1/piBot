@@ -6,6 +6,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
+
 public class SpeedTest
 {
 

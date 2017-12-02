@@ -20,7 +20,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import au.com.rsutton.calabrate.EdgeHelper;
 import au.com.rsutton.calabrate.Line;
 import au.com.rsutton.calabrate.LineHelper;
-import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.robot.lidar.LidarObservation;
 
 public class WallFollowerGraph extends JPanel
 {

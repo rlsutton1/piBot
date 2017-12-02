@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.rover;
+package au.com.rsutton.robot.lidar;
 
 import java.util.LinkedList;
 import java.util.List;

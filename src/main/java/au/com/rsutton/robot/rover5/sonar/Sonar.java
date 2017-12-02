@@ -1,7 +1,7 @@
-package au.com.rsutton.entryPoint.sonar;
+package au.com.rsutton.robot.rover5.sonar;
 
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class Sonar
 {

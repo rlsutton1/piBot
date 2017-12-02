@@ -1,4 +1,4 @@
-package au.com.rsutton.entryPoint.quadrature;
+package au.com.rsutton.robot.rover5.quadrature;
 
 import com.pi4j.io.gpio.PinState;
 

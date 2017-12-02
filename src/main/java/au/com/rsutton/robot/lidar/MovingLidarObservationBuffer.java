@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.rover;
+package au.com.rsutton.robot.lidar;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -10,10 +10,11 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.robot.rover.LogLevelHelper;
+import au.com.rsutton.units.DistanceUnit;
 
 public class MovingLidarObservationBuffer
 {

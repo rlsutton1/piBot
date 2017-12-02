@@ -4,9 +4,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.robot.rover.Angle;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class RobotLocationDeltaHelper
 {
@@ -32,7 +32,7 @@ public class RobotLocationDeltaHelper
 		double directionOfTravel = currentHeading.getDegrees() + deltaHeading.getDegrees();
 
 		Vector3D travel = new Vector3D(0, deltaDistance.convert(DistanceUnit.MM), 0);
-		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, directionOfTravel);
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(directionOfTravel));
 
 		Vector3D location = new Vector3D(currentX.convert(DistanceUnit.MM), currentY.convert(DistanceUnit.MM), 0);
 

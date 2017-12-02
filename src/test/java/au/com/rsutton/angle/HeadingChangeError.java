@@ -5,8 +5,8 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.AngleUnits;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
 
 public class HeadingChangeError
 {

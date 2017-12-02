@@ -16,10 +16,10 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.pi4j.gpio.extension.pixy.Coordinate;
 
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class CalabratePixy implements MessageListener<RobotLocation>
 {

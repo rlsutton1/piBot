@@ -1,4 +1,4 @@
-package au.com.rsutton.entryPoint.units;
+package au.com.rsutton.units;
 
 import java.io.Serializable;
 
@@ -8,12 +8,13 @@ public class Distance implements Serializable
 {
 
 	private static final long serialVersionUID = -3878188969665027416L;
+	public static final Distance ZERO = new Distance(0, DistanceUnit.MM);
 	final private double value;
 	final private DistanceUnit units = DistanceUnit.MM;
 
 	public Distance(double value, DistanceUnit units)
 	{
-		this.value =  units.convert(value, DistanceUnit.MM);
+		this.value = units.convert(value, DistanceUnit.MM);
 	}
 
 	@Override
@@ -37,8 +38,7 @@ public class Distance implements Serializable
 		if (getClass() != obj.getClass())
 			return false;
 		Distance other = (Distance) obj;
-		if (Double.doubleToLongBits(value) != Double
-				.doubleToLongBits(other.value))
+		if (Double.doubleToLongBits(value) != Double.doubleToLongBits(other.value))
 			return false;
 		return true;
 	}
@@ -46,8 +46,7 @@ public class Distance implements Serializable
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(Distance.class).add("value", value)
-				.add("units", units).toString();
+		return Objects.toStringHelper(Distance.class).add("value", value).add("units", units).toString();
 	}
 
 	public double convert(DistanceUnit unit)
@@ -59,6 +58,6 @@ public class Distance implements Serializable
 
 	public Distance add(Distance distanceBetween)
 	{
-		return new Distance(distanceBetween.convert(units)+value,units);
+		return new Distance(distanceBetween.convert(units) + value, units);
 	}
 }

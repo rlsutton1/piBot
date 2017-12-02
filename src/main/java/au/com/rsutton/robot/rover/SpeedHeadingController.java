@@ -1,6 +1,5 @@
 package au.com.rsutton.robot.rover;
 
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -8,11 +7,11 @@ import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.controllers.Pid;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class SpeedHeadingController implements Runnable
 {
@@ -22,17 +21,15 @@ public class SpeedHeadingController implements Runnable
 	DistanceUnit distUnit = DistanceUnit.MM;
 
 	Speed desiredSpeed = new Speed(new Distance(0, distUnit), Time.perSecond());
-	private WheelController leftWheel;
-	private WheelController rightWheel;
+	private WheelController wheels;
 	private int desiredHeading;
 	private HeadingData actualHeading;
 	volatile boolean freeze = false;
 
-	public SpeedHeadingController(WheelController leftWheel, WheelController rightWheel, float intialHeading)
-			throws IOException, InterruptedException
+	public SpeedHeadingController(WheelController wheels, float intialHeading)
+
 	{
-		this.leftWheel = leftWheel;
-		this.rightWheel = rightWheel;
+		this.wheels = wheels;
 		desiredHeading = (int) intialHeading;
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
 	}
@@ -89,8 +86,7 @@ public class SpeedHeadingController implements Runnable
 				Speed leftSpeed = new Speed(new Distance(left, distUnit), Time.perSecond());
 				Speed rightSpeed = new Speed(new Distance(right, distUnit), Time.perSecond());
 
-				leftWheel.setSpeed(leftSpeed);
-				rightWheel.setSpeed(rightSpeed);
+				wheels.setSpeed(leftSpeed, rightSpeed);
 
 			} else
 			{
@@ -100,8 +96,8 @@ public class SpeedHeadingController implements Runnable
 				// direction,
 				// so stop;
 				Speed speed = new Speed(new Distance(0, distUnit), Time.perSecond());
-				leftWheel.setSpeed(speed);
-				rightWheel.setSpeed(speed);
+
+				wheels.setSpeed(speed, speed);
 				pid = null;
 			}
 		} catch (Exception e)

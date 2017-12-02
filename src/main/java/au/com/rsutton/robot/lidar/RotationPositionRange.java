@@ -2,8 +2,8 @@ package au.com.rsutton.robot.lidar;
 
 public class RotationPositionRange
 {
-	long rotationPosition;
-	long range;
+	public long rotationPosition;
+	public long range;
 
 	public RotationPositionRange(long rotationPosition, long range)
 	{

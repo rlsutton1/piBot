@@ -6,12 +6,12 @@ import com.pi4j.gpio.extension.lsm303.CompassLSM303;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.robot.rover.WheelController;
-import au.com.rsutton.robot.rover.WheelFactory;
+import au.com.rsutton.robot.rover5.WheelControllerRover5;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class GrovePiTest
 {
@@ -47,20 +47,20 @@ public class GrovePiTest
 		GrovePiProvider grovePiProvider = new GrovePiProvider(1, 04);
 
 		// WheelController left = setupLeftWheel(grovePiProvider);
-		WheelController right = WheelFactory.setupRightWheel(grovePiProvider, config);
+		WheelController wheels = new WheelControllerRover5(grovePiProvider, config);
 
 		for (int i = -100; i < 100; i += 1)
 		{
 			// left.setSpeed(new Speed(new Distance(i, DistanceUnit.MM), Time
 			// .perSecond()));
-			right.setSpeed(new Speed(new Distance(i, DistanceUnit.MM), Time.perSecond()));
+			wheels.setSpeed(Speed.ZERO, new Speed(new Distance(i, DistanceUnit.MM), Time.perSecond()));
 			Thread.sleep(1000);
 			System.out.println("Setting speed -> " + i);
 		}
 		// left.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time
 		// .perSecond()));
 
-		right.setSpeed(new Speed(new Distance(0, DistanceUnit.MM), Time.perSecond()));
+		wheels.setSpeed(Speed.ZERO, Speed.ZERO);
 	}
 
 	public static void singleTest() throws IOException, InterruptedException, UnsupportedBusNumberException

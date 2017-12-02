@@ -4,8 +4,10 @@ import com.pi4j.gpio.extension.adafruit.GyroProvider;
 import com.pi4j.gpio.extension.lsm303.HeadingData;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class DeadReconing
 {
@@ -37,7 +39,7 @@ public class DeadReconing
 		this.gyro = gyro;
 	}
 
-	public void updateLocation(Distance leftDistance, Distance rightDistance)
+	public void updateLocation(WheelController wheels)
 	{
 
 		try
@@ -45,14 +47,9 @@ public class DeadReconing
 
 			synchronized (sync)
 			{
-				if (leftDistance != null)
-				{
-					currentLeftWheelReading = leftDistance.convert(MILLIMETERS);
-				}
-				if (rightDistance != null)
-				{
-					currentRightWheelReading = rightDistance.convert(MILLIMETERS);
-				}
+				currentLeftWheelReading = wheels.getDistanceLeftWheel().convert(MILLIMETERS);
+
+				currentRightWheelReading = wheels.getDistanceRightWheel().convert(MILLIMETERS);
 
 				double t1 = initialLeftWheelReading - currentLeftWheelReading;
 				double t2 = initialRightWheelReading - currentRightWheelReading;

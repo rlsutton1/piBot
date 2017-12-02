@@ -1,4 +1,4 @@
-package au.com.rsutton.entryPoint.units;
+package au.com.rsutton.units;
 
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +8,7 @@ import com.google.common.base.Objects;
 public class Speed implements Serializable
 {
 	private static final long serialVersionUID = 2482623954296599283L;
+	public static final Speed ZERO = new Speed(Distance.ZERO, Time.perSecond());
 	Time time;
 	Distance distance;
 
@@ -21,16 +22,15 @@ public class Speed implements Serializable
 	public boolean equals(Object o)
 	{
 		Speed d = (Speed) o;
-		return this.getSpeed(DistanceUnit.MM, TimeUnit.MILLISECONDS) == d
-				.getSpeed(DistanceUnit.MM, TimeUnit.MILLISECONDS);
+		return this.getSpeed(DistanceUnit.MM, TimeUnit.MILLISECONDS) == d.getSpeed(DistanceUnit.MM,
+				TimeUnit.MILLISECONDS);
 
 	}
 
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(Speed.class).add("distance", distance)
-				.add("time", time).toString();
+		return Objects.toStringHelper(Speed.class).add("distance", distance).add("time", time).toString();
 	}
 
 	public double getSpeed(DistanceUnit distanceU, TimeUnit timeU)

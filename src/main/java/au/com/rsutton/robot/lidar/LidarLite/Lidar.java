@@ -1,8 +1,7 @@
-package au.com.rsutton.robot.lidar;
+package au.com.rsutton.robot.lidar.LidarLite;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,8 @@ import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.SynchronizedDeviceWrapper;
-import au.com.rsutton.robot.rover.LidarObservation;
+import au.com.rsutton.robot.lidar.LidarObservation;
+import au.com.rsutton.robot.lidar.RotationPositionRange;
 
 public class Lidar implements Runnable
 {
@@ -125,7 +125,6 @@ public class Lidar implements Runnable
 	public void run()
 	{
 
-		setupBlindMap();
 		int lastReading = 0;
 		boolean stop = false;
 		while (!stop)
@@ -141,7 +140,7 @@ public class Lidar implements Runnable
 					}
 				}
 				lastReading = reading;
-				Thread.sleep(5);
+				Thread.sleep(4);
 			} catch (IOException | InterruptedException e)
 			{
 				e.printStackTrace();
@@ -196,44 +195,4 @@ public class Lidar implements Runnable
 
 	}
 
-	/**
-	 * the lidar starts fully blind, once each angle has reporting more than 5
-	 * different distance readings, that angle is unblinded.
-	 * 
-	 * this allows the lidar system to automatically detect parts of the robot
-	 * that it sees and not report them... a bit like you dont normally see your
-	 * own nose even though your eyes can clearly see it all the time.
-	 * 
-	 * @param angle
-	 * @param range
-	 * @return
-	 */
-	private boolean blind(double angle, long range)
-	{
-		int blindAngle = (int) (angle / 360);
-		int blindDistance = (int) (range / 10);
-
-		Set<Integer> blindSet = blindMap.get(blindAngle);
-		if (blindSet != null)
-		{
-			blindSet.add(blindDistance);
-			if (blindSet.size() > 8)
-			{
-				blindMap.remove(blindAngle);
-			} else
-			{
-				return true;
-			}
-		}
-		return false;
-
-	}
-
-	void setupBlindMap()
-	{
-		for (int i = 0; i < 360; i++)
-		{
-			blindMap.put(i, new HashSet<>());
-		}
-	}
 }

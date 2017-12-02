@@ -14,16 +14,16 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.robot.rover.Angle;
-import au.com.rsutton.robot.rover.LidarObservation;
-import au.com.rsutton.robot.rover.MovingLidarObservationMultiBuffer;
+import au.com.rsutton.robot.lidar.LidarObservation;
+import au.com.rsutton.robot.lidar.MovingLidarObservationMultiBuffer;
 import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class ObsticleAvoidance
 {
@@ -45,7 +45,7 @@ public class ObsticleAvoidance
 
 	ObsticleAvoidance(RobotInterface robot, RobotPoseSource pf)
 	{
-		scanBuffer = new MovingLidarObservationMultiBuffer(6, robot, pf);
+		scanBuffer = new MovingLidarObservationMultiBuffer(8, robot, pf);
 
 		robot.addMessageListener(new RobotLocationDeltaListener()
 		{

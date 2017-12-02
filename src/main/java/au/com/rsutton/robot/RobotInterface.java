@@ -1,7 +1,7 @@
 package au.com.rsutton.robot;
 
-import au.com.rsutton.entryPoint.units.Speed;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.units.Speed;
 
 public interface RobotInterface
 {

@@ -1,4 +1,4 @@
-package au.com.rsutton.entryPoint.units;
+package au.com.rsutton.units;
 
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;

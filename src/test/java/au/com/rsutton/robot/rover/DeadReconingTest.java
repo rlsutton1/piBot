@@ -5,8 +5,11 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
 
 public class DeadReconingTest
 {
@@ -18,7 +21,7 @@ public class DeadReconingTest
 
 		Distance leftDistance = new Distance(50, DistanceUnit.CM);
 		Distance rightDistance = new Distance(25, DistanceUnit.CM);
-		dr.updateLocation(leftDistance, rightDistance);
+		dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 		assertTrue(dr.getHeading().getHeading() < 0 || dr.getHeading().getHeading() > 180);
 
@@ -35,7 +38,7 @@ public class DeadReconingTest
 		{
 			Distance leftDistance = new Distance((i * 20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 10), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance);
+			dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 			double heading = dr.getHeading().getHeading();
 
@@ -58,7 +61,7 @@ public class DeadReconingTest
 		{
 			Distance leftDistance = new Distance((i * 10), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance);
+			dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 			double heading = dr.getHeading().getHeading();
 
@@ -81,7 +84,7 @@ public class DeadReconingTest
 		{
 			Distance leftDistance = new Distance((i * 0), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance);
+			dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 			double heading = dr.getHeading().getHeading();
 
@@ -104,7 +107,7 @@ public class DeadReconingTest
 		{
 			Distance leftDistance = new Distance((i * 20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 0), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance);
+			dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 			double heading = dr.getHeading().getHeading();
 
@@ -114,6 +117,32 @@ public class DeadReconingTest
 
 			assertTrue(change < -55 && change > -60);
 		}
+	}
+
+	WheelController getWheelController(final Distance leftDistance, final Distance rightDistance)
+	{
+		return new WheelController()
+		{
+
+			@Override
+			public void setSpeed(Speed leftSpeed, Speed rightSpeed)
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public Distance getDistanceRightWheel()
+			{
+				return rightDistance;
+			}
+
+			@Override
+			public Distance getDistanceLeftWheel()
+			{
+				return leftDistance;
+			}
+		};
 	}
 
 	@Test
@@ -127,7 +156,7 @@ public class DeadReconingTest
 		{
 			Distance leftDistance = new Distance((i * 20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * -20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance);
+			dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 			double heading = dr.getHeading().getHeading();
 
@@ -150,7 +179,7 @@ public class DeadReconingTest
 		{
 			Distance leftDistance = new Distance((i * -20), DistanceUnit.CM);
 			Distance rightDistance = new Distance((i * 20), DistanceUnit.CM);
-			dr.updateLocation(leftDistance, rightDistance);
+			dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 			double heading = dr.getHeading().getHeading();
 
@@ -169,7 +198,7 @@ public class DeadReconingTest
 
 		Distance leftDistance = new Distance(25, DistanceUnit.CM);
 		Distance rightDistance = new Distance(50, DistanceUnit.CM);
-		dr.updateLocation(leftDistance, rightDistance);
+		dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 		assertTrue(dr.getHeading().getHeading() > 0 && dr.getHeading().getHeading() < 180);
 
@@ -182,7 +211,7 @@ public class DeadReconingTest
 
 		Distance leftDistance = new Distance(-25, DistanceUnit.CM);
 		Distance rightDistance = new Distance(0, DistanceUnit.CM);
-		dr.updateLocation(leftDistance, rightDistance);
+		dr.updateLocation(getWheelController(leftDistance, rightDistance));
 
 		assertTrue(dr.getHeading().getHeading() > 0 && dr.getHeading().getHeading() < 180);
 

@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
-import au.com.rsutton.entryPoint.units.Time;
+import au.com.rsutton.units.Time;
 
 public class TimeTest
 {

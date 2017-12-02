@@ -2,7 +2,7 @@ package au.com.rsutton.entryPoint.trig;
 
 import com.google.common.base.Objects;
 
-import au.com.rsutton.entryPoint.units.Distance;
+import au.com.rsutton.units.Distance;
 
 public class Point
 {

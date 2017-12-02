@@ -21,21 +21,24 @@ import com.pi4j.io.gpio.PinMode;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.entryPoint.sonar.Sonar;
-import au.com.rsutton.entryPoint.units.Distance;
-import au.com.rsutton.entryPoint.units.DistanceUnit;
-import au.com.rsutton.entryPoint.units.Speed;
-import au.com.rsutton.entryPoint.units.Time;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.i2c.I2cSettings;
-import au.com.rsutton.robot.lidar.Spinner;
+import au.com.rsutton.robot.lidar.LidarObservation;
+import au.com.rsutton.robot.lidar.LidarLite.Spinner;
+import au.com.rsutton.robot.rover5.WheelControllerRover5;
+import au.com.rsutton.robot.rover5.sonar.Sonar;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class Rover implements Runnable, RobotLocationReporter
 {
 
-	private WheelController rightWheel;
-	private WheelController leftWheel;
+	private WheelController wheels;
 	private final DeadReconing reconing;
 	private final SpeedHeadingController speedHeadingController;
 	private RobotLocation previousLocation;
@@ -70,12 +73,10 @@ public class Rover implements Runnable, RobotLocationReporter
 
 		GyroProvider gyro = new GyroProvider(I2cSettings.busNumber, GyroProvider.Addr);
 
-		rightWheel = WheelFactory.setupRightWheel(grove, config);
+		wheels = new WheelControllerRover5(grove, config);
 
-		leftWheel = WheelFactory.setupLeftWheel(grove, config);
-
-		rightWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
-		leftWheel.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+		wheels.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()),
+				new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
 		// provider = new Adafruit16PwmProvider(I2cSettings.busNumber, 0x40);
 		// provider.setPWMFreq(30);
@@ -131,7 +132,7 @@ public class Rover implements Runnable, RobotLocationReporter
 		getSpaceAhead();
 		// pixy.getCurrentData();
 
-		speedHeadingController = new SpeedHeadingController(rightWheel, leftWheel, 0);
+		speedHeadingController = new SpeedHeadingController(wheels, 0);
 
 		// listen for motion commands thru Hazelcast
 		SetMotion message = new SetMotion();
@@ -184,7 +185,7 @@ public class Rover implements Runnable, RobotLocationReporter
 
 			getSpaceAhead();
 
-			reconing.updateLocation(rightWheel.getDistance(), leftWheel.getDistance());
+			reconing.updateLocation(wheels);
 
 			speedHeadingController.setActualHeading(reconing.getHeading());
 
@@ -213,23 +214,6 @@ public class Rover implements Runnable, RobotLocationReporter
 			System.exit(0);
 		}
 
-	}
-
-	private Speed calculateSpeed()
-	{
-		long now = System.currentTimeMillis();
-
-		// use pythag to calculate distance between current location and
-		// previous location
-		double distance = reconing.getTotalDistanceTravelled().convert(distUnit)
-				- previousLocation.getDistanceTravelled().convert(distUnit);
-
-		// scale up distance to a per second rate
-		distance = distance * (1000.0d / (now - lastTime));
-
-		Speed speed = new Speed(new Distance(distance, distUnit), Time.perSecond());
-		lastTime = now;
-		return speed;
 	}
 
 }

@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.lidar;
+package au.com.rsutton.robot.lidar.LidarLite;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

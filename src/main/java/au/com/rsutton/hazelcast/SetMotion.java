@@ -2,7 +2,7 @@ package au.com.rsutton.hazelcast;
 
 import com.google.common.base.Objects;
 
-import au.com.rsutton.entryPoint.units.Speed;
+import au.com.rsutton.units.Speed;
 
 public class SetMotion extends MessageBase<SetMotion>
 {

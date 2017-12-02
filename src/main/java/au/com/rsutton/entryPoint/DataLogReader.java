@@ -42,7 +42,7 @@ public class DataLogReader
 
 			while (canContinue == true && stop == false)
 			{
-				RobotLocation locationMessage = (RobotLocation) ((Message) oos.readObject()).getMessageObject();
+				RobotLocation locationMessage = (RobotLocation) ((Message<?>) oos.readObject()).getMessageObject();
 				if (locationMessage == null)
 				{
 					canContinue = false;

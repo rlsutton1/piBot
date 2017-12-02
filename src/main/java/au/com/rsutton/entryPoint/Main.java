@@ -4,16 +4,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.TimeUnit;
 
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalOutput;
+import com.pi4j.io.gpio.RaspiPin;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
-import au.com.rsutton.calabrate.CalabrateCompass;
-import au.com.rsutton.calabrate.CalabrateDeadReconning;
-import au.com.rsutton.calabrate.CalabrateLeftWheel;
-import au.com.rsutton.calabrate.CalabrateRightWheel;
-import au.com.rsutton.calabrate.CircleTest;
-import au.com.rsutton.calabrate.RoombaTest;
-import au.com.rsutton.calabrate.StraightLineTest;
 import au.com.rsutton.robot.rover.Rover;
 
 public class Main
@@ -23,6 +21,8 @@ public class Main
 	public static void main(String[] args)
 			throws InterruptedException, IOException, BrokenBarrierException, UnsupportedBusNumberException
 	{
+
+		configureGpioForGrove();
 
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
@@ -41,37 +41,50 @@ public class Main
 
 		System.out.println("Press 7 to perform roomba test");
 
-		int ch = br.read();
-		if (ch == '0')
+		// int ch = br.read();
+		// if (ch == '0')
+		// {
+		new Rover();
+		while (true)
 		{
-			new Rover();
-			while (true)
-			{
-				Thread.sleep(1000);
-			}
-		} else if (ch == '1')
-		{
-			new CalabrateCompass();
-		} else if (ch == '2')
-		{
-			new CalabrateDeadReconning();
-		} else if (ch == '3')
-		{
-			new CalabrateRightWheel();
-		} else if (ch == '4')
-		{
-			new CalabrateLeftWheel();
-		} else if (ch == '5')
-		{
-			new StraightLineTest();
-		} else if (ch == '6')
-		{
-			new CircleTest();
-		} else if (ch == '7')
-		{
-			new RoombaTest();
+			Thread.sleep(1000);
 		}
+		// } else if (ch == '1')
+		// {
+		// new CalabrateCompass();
+		// } else if (ch == '2')
+		// {
+		// new CalabrateDeadReconning();
+		// } else if (ch == '3')
+		// {
+		// new CalabrateRightWheel();
+		// } else if (ch == '4')
+		// {
+		// new CalabrateLeftWheel();
+		// } else if (ch == '5')
+		// {
+		// new StraightLineTest();
+		// } else if (ch == '6')
+		// {
+		// new CircleTest();
+		// } else if (ch == '7')
+		// {
+		// new RoombaTest();
+		// }
 
+	}
+
+	private static void configureGpioForGrove() throws InterruptedException
+	{
+		// the grove continuously resets if GPIO_10 is low
+
+		final GpioController gpio = GpioFactory.getInstance();
+
+		GpioPinDigitalOutput myLed1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_10);
+
+		myLed1.high();
+
+		TimeUnit.SECONDS.sleep(1);
 	}
 
 }
