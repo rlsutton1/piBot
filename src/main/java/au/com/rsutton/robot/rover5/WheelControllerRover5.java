@@ -10,11 +10,11 @@ import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.RaspiPin;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.robot.rover.WheelController;
+import au.com.rsutton.robot.roomba.DifferentialDriveController;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.Speed;
 
-public class WheelControllerRover5 implements WheelController
+public class WheelControllerRover5 implements DifferentialDriveController
 {
 
 	private Rover5SingleWheelControllerImpl right;
@@ -57,6 +57,13 @@ public class WheelControllerRover5 implements WheelController
 	public Distance getDistanceRightWheel()
 	{
 		return right.getDistance();
+	}
+
+	@Override
+	public double getDistanceBetweenWheels()
+	{
+		return 220;
+
 	}
 
 }

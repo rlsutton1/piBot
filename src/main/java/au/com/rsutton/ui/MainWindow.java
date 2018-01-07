@@ -34,7 +34,6 @@ public class MainWindow extends JFrame implements MessageListener<RobotLocation>
 	private JTextField heading;
 	private JLabel xLocationLabel;
 	private JLabel headingLabel;
-	private JLabel spaceLabel;
 	private Graph graph;
 
 	public static void main(String[] args) throws InterruptedException, IOException
@@ -61,12 +60,9 @@ public class MainWindow extends JFrame implements MessageListener<RobotLocation>
 		xLocationLabel.setPreferredSize(new Dimension(80, 30));
 		headingLabel = new JLabel("H: 0");
 		headingLabel.setPreferredSize(new Dimension(80, 30));
-		spaceLabel = new JLabel("S: 0");
-		spaceLabel.setPreferredSize(new Dimension(80, 30));
 
 		telemetryPanel.add(xLocationLabel);
 		telemetryPanel.add(headingLabel);
-		telemetryPanel.add(spaceLabel);
 		this.add(telemetryPanel);
 
 		RobotLocation locationMessage = new RobotLocation();
@@ -232,9 +228,5 @@ public class MainWindow extends JFrame implements MessageListener<RobotLocation>
 
 		xLocationLabel.setText("Distance:" + (int) m.getDistanceTravelled().convert(DistanceUnit.CM) + "cm");
 		headingLabel.setText("H:" + (int) m.getDeadReaconingHeading().getDegrees());
-		if (m.getClearSpaceAhead() != null)
-		{
-			spaceLabel.setText("S:" + (int) m.getClearSpaceAhead().convert(DistanceUnit.CM) + "cm");
-		}
 	}
 }

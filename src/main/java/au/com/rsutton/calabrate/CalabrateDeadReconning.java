@@ -14,9 +14,9 @@ import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.i2c.I2cSettings;
-import au.com.rsutton.robot.rover.DeadReconing;
+import au.com.rsutton.robot.roomba.DifferentialDriveController;
+import au.com.rsutton.robot.rover.DifferentialDriveDeadReconing;
 import au.com.rsutton.robot.rover.SpeedHeadingController;
-import au.com.rsutton.robot.rover.WheelController;
 import au.com.rsutton.robot.rover5.WheelControllerRover5;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -29,8 +29,8 @@ public class CalabrateDeadReconning implements Runnable
 {
 
 	private GrovePiProvider grove;
-	private WheelController wheels;
-	private DeadReconing reconing;
+	private DifferentialDriveController wheels;
+	private DifferentialDriveDeadReconing reconing;
 	private SpeedHeadingController speedHeadingController;
 
 	public CalabrateDeadReconning() throws IOException, InterruptedException, UnsupportedBusNumberException
@@ -46,7 +46,7 @@ public class CalabrateDeadReconning implements Runnable
 		GyroProvider gyro = new GyroProvider(I2cSettings.busNumber, GyroProvider.Addr);
 
 		Angle initialAngle = new Angle(0, AngleUnits.DEGREES);
-		reconing = new DeadReconing(initialAngle, gyro);
+		reconing = new DifferentialDriveDeadReconing(initialAngle, wheels);
 
 		while (!gyro.isCalabrated())
 		{
@@ -83,7 +83,7 @@ public class CalabrateDeadReconning implements Runnable
 		try
 		{
 
-			reconing.updateLocation(wheels);
+			reconing.updateLocation();
 
 			speedHeadingController.setActualHeading(reconing.getHeading());
 

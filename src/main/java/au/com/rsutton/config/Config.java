@@ -26,8 +26,7 @@ public class Config
 
 	public void save() throws FileNotFoundException, IOException
 	{
-		properties.store(new BufferedOutputStream(new FileOutputStream(file)),
-				"");
+		properties.store(new BufferedOutputStream(new FileOutputStream(file)), "");
 	}
 
 	public Double loadSetting(String key, Double value)
@@ -35,7 +34,7 @@ public class Config
 		String storedValue = (String) properties.get(key);
 		if (storedValue == null)
 		{
-			storeSetting(key,value);
+			storeSetting(key, value);
 			return value;
 		}
 		try
@@ -54,7 +53,7 @@ public class Config
 		String storedValue = (String) properties.get(key);
 		if (storedValue == null)
 		{
-			storeSetting(key,value);
+			storeSetting(key, value);
 			return value;
 		}
 		try
@@ -71,9 +70,17 @@ public class Config
 	public void storeSetting(String key, Object value)
 	{
 		properties.put(key, value.toString());
+
+		try
+		{
+			save();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
-	String loadSetting(String key, String value)
+	public String loadSetting(String key, String value)
 	{
 		String storedValue = (String) properties.get(key);
 		if (storedValue == null)

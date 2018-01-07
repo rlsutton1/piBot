@@ -1,9 +1,9 @@
-package au.com.rsutton.robot.rover;
+package au.com.rsutton.robot.roomba;
 
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.Speed;
 
-public interface WheelController
+public interface DifferentialDriveController
 {
 
 	void setSpeed(Speed leftSpeed, Speed rightSpeed);
@@ -11,5 +11,7 @@ public interface WheelController
 	Distance getDistanceLeftWheel();
 
 	Distance getDistanceRightWheel();
+
+	double getDistanceBetweenWheels();
 
 }

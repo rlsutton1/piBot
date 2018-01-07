@@ -6,7 +6,7 @@ import com.pi4j.gpio.extension.lsm303.CompassLSM303;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.robot.rover.WheelController;
+import au.com.rsutton.robot.roomba.DifferentialDriveController;
 import au.com.rsutton.robot.rover5.WheelControllerRover5;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
@@ -47,7 +47,7 @@ public class GrovePiTest
 		GrovePiProvider grovePiProvider = new GrovePiProvider(1, 04);
 
 		// WheelController left = setupLeftWheel(grovePiProvider);
-		WheelController wheels = new WheelControllerRover5(grovePiProvider, config);
+		DifferentialDriveController wheels = new WheelControllerRover5(grovePiProvider, config);
 
 		for (int i = -100; i < 100; i += 1)
 		{

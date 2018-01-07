@@ -45,7 +45,7 @@ public class ObsticleAvoidance
 
 	ObsticleAvoidance(RobotInterface robot, RobotPoseSource pf)
 	{
-		scanBuffer = new MovingLidarObservationMultiBuffer(8, robot, pf);
+		scanBuffer = new MovingLidarObservationMultiBuffer(1, robot, pf);
 
 		robot.addMessageListener(new RobotLocationDeltaListener()
 		{

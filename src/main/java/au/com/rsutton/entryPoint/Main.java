@@ -1,25 +1,27 @@
 package au.com.rsutton.entryPoint;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeUnit;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
 import com.pi4j.io.gpio.RaspiPin;
-import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
-import au.com.rsutton.robot.rover.Rover;
+import au.com.rsutton.config.Config;
+import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.robot.roomba.RoombaRobot;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class Main
 {
 	boolean distanceOk = true;
 
-	public static void main(String[] args)
-			throws InterruptedException, IOException, BrokenBarrierException, UnsupportedBusNumberException
+	public static void main(String[] args) throws Exception
 	{
 
 		configureGpioForGrove();
@@ -27,11 +29,11 @@ public class Main
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
 		System.out.println("Press 0 to start the rover\n");
-		System.out.println("Press 1 to calabrate compass");
+		System.out.println("Press 1 test right turn");
 
-		System.out.println("Press 2 to calabrate dead reconning");
+		System.out.println("Press 2 test left turn");
 
-		System.out.println("Press 3 to calabrate right wheel");
+		System.out.println("Press 3 test straight");
 
 		System.out.println("Press 4 to calabrate left wheel");
 
@@ -41,10 +43,56 @@ public class Main
 
 		System.out.println("Press 7 to perform roomba test");
 
-		// int ch = br.read();
+		int ch = br.read();
 		// if (ch == '0')
 		// {
-		new Rover();
+
+		Config config = new Config();
+		RoombaRobot robot = new RoombaRobot();
+		robot.configure(config);
+		if (ch == '1')
+		{
+			SetMotion setMotion = new SetMotion();
+			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
+			setMotion.setChangeHeading(-90d);
+			setMotion.publish();
+
+			TimeUnit.SECONDS.sleep(3);
+			setMotion.setFreeze(true);
+			setMotion.publish();
+			TimeUnit.SECONDS.sleep(1);
+			robot.shutdown();
+			return;
+		}
+		if (ch == '2')
+		{
+			SetMotion setMotion = new SetMotion();
+			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
+			setMotion.setChangeHeading(90d);
+			setMotion.publish();
+
+			TimeUnit.SECONDS.sleep(3);
+			setMotion.setFreeze(true);
+			setMotion.publish();
+			TimeUnit.SECONDS.sleep(1);
+			robot.shutdown();
+			return;
+		}
+		if (ch == '3')
+		{
+			SetMotion setMotion = new SetMotion();
+			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
+			setMotion.setChangeHeading(0d);
+			setMotion.publish();
+
+			TimeUnit.SECONDS.sleep(3);
+			setMotion.setFreeze(true);
+			setMotion.publish();
+			TimeUnit.SECONDS.sleep(1);
+			robot.shutdown();
+			return;
+		}
+
 		while (true)
 		{
 			Thread.sleep(1000);

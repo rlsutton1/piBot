@@ -17,7 +17,6 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 
 	private Distance distanceTravelled;
 
-	private Distance clearSpaceAhead;
 	private long time = System.currentTimeMillis();
 	private List<LidarObservation> observations;
 
@@ -43,17 +42,6 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 	public Angle getDeadReaconingHeading()
 	{
 		return deadReaconingHeading;
-	}
-
-	public void setClearSpaceAhead(Distance clearSpaceAhead)
-	{
-		this.clearSpaceAhead = clearSpaceAhead;
-
-	}
-
-	public Distance getClearSpaceAhead()
-	{
-		return clearSpaceAhead;
 	}
 
 	public long getTime()

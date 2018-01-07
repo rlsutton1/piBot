@@ -130,7 +130,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
 		Random rand = new Random();
-		double stepSize = 2.4;
+		double stepSize = 1.9;
 		double stepNoise = 1.2;
 
 		int from = (int) (fromPercentage * (360.0 / 100.0));
@@ -229,7 +229,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	}
 
-	double hz = 10.0;
+	double hz = 6.0;
 
 	@Override
 	public void run()
@@ -259,7 +259,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 			logger.info(lastScan + " " + to);
 
-			List<ScanObservation> observations = getObservation(lastScan, to);
+			List<ScanObservation> observations = getObservation(0, 100);
 			lastScan = to % 100;
 
 			double headingDrift = Math.abs((random.nextGaussian() * 0.05) * (1.0 / hz));

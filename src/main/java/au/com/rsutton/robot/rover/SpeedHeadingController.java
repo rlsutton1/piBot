@@ -8,6 +8,7 @@ import com.pi4j.gpio.extension.lsm303.HeadingData;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.entryPoint.controllers.Pid;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.robot.roomba.DifferentialDriveController;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
@@ -21,12 +22,12 @@ public class SpeedHeadingController implements Runnable
 	DistanceUnit distUnit = DistanceUnit.MM;
 
 	Speed desiredSpeed = new Speed(new Distance(0, distUnit), Time.perSecond());
-	private WheelController wheels;
+	private DifferentialDriveController wheels;
 	private int desiredHeading;
 	private HeadingData actualHeading;
 	volatile boolean freeze = false;
 
-	public SpeedHeadingController(WheelController wheels, float intialHeading)
+	public SpeedHeadingController(DifferentialDriveController wheels, float intialHeading)
 
 	{
 		this.wheels = wheels;

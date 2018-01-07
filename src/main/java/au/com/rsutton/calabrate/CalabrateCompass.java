@@ -10,7 +10,7 @@ import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.i2c.I2cSettings;
-import au.com.rsutton.robot.rover.WheelController;
+import au.com.rsutton.robot.roomba.DifferentialDriveController;
 import au.com.rsutton.robot.rover5.WheelControllerRover5;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
@@ -22,7 +22,7 @@ public class CalabrateCompass
 
 	private GrovePiProvider grove;
 	private CompassLSM303 compass;
-	private WheelController wheels;
+	private DifferentialDriveController wheels;
 
 	public CalabrateCompass() throws IOException, InterruptedException, UnsupportedBusNumberException
 	{

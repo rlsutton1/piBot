@@ -66,7 +66,7 @@ public class Graph extends JPanel implements RobotLocationDeltaListener
 
 	}
 
-	volatile Double lastHeading = null;
+	volatile Double lastHeading = 0d;
 
 	@Override
 	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)

@@ -113,6 +113,12 @@
 			<version>2.8.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>RPLidar4J</groupId>
+			<artifactId>RPLidar4J</artifactId>
+			<version>0.8.0</version>
+		</dependency>
+
 		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j 
 			-DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
 	</dependencies>

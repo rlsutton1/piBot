@@ -9,9 +9,9 @@ import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.i2c.I2cSettings;
-import au.com.rsutton.robot.rover.DeadReconing;
+import au.com.rsutton.robot.roomba.DeadReconing;
+import au.com.rsutton.robot.roomba.DifferentialDriveController;
 import au.com.rsutton.robot.rover.SpeedHeadingController;
-import au.com.rsutton.robot.rover.WheelController;
 import au.com.rsutton.robot.rover5.WheelControllerRover5;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
@@ -22,7 +22,7 @@ public class CalabrateRightWheel implements Runnable
 {
 
 	private GrovePiProvider grove;
-	private WheelController wheels;
+	private DifferentialDriveController wheels;
 	private DeadReconing reconing;
 	private SpeedHeadingController speedHeadingController;
 
@@ -54,7 +54,7 @@ public class CalabrateRightWheel implements Runnable
 		try
 		{
 
-			reconing.updateLocation(wheels);
+			reconing.updateLocation();
 			speedHeadingController.setActualHeading(reconing.getHeading());
 
 		} catch (Exception e)

@@ -15,6 +15,11 @@ public class Angle implements Serializable
 	AngleUnits internalUnits = AngleUnits.DEGREES;
 	double angle = 0;
 
+	public Angle()
+	{
+
+	}
+
 	public Angle(double angle, AngleUnits units)
 	{
 		Preconditions.checkArgument(Double.NaN != angle, "Nan angle");
