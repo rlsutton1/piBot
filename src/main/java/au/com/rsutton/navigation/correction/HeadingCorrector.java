@@ -43,7 +43,8 @@ public class HeadingCorrector
 	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
 	{
 		logger.error("Delta heading " + deltaHeading.getDegrees());
-		heading += deltaHeading.getDegrees();
+		heading += HeadingHelper.getChangeInHeading(deltaHeading.getDegrees(), 0);
+
 		DistanceXY result = RobotLocationDeltaHelper.applyDelta(deltaHeading, deltaDistance,
 				new Angle(heading, AngleUnits.DEGREES), new Distance(position.getX(), DistanceUnit.CM),
 				new Distance(position.getY(), DistanceUnit.CM));

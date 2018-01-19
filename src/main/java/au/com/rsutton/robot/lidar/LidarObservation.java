@@ -8,7 +8,7 @@ import au.com.rsutton.hazelcast.HcTopic;
 import au.com.rsutton.hazelcast.MessageBase;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 
-public class LidarObservation extends MessageBase<LidarObservation> implements Serializable,ScanObservation
+public class LidarObservation extends MessageBase<LidarObservation> implements Serializable, ScanObservation
 {
 
 	/**
@@ -16,7 +16,6 @@ public class LidarObservation extends MessageBase<LidarObservation> implements S
 	 */
 	private static final long serialVersionUID = 1L;
 	private Vector3D vector;
-	private boolean isStartOfScan = false;
 	private Double angleRadians;
 
 	public LidarObservation()
@@ -24,38 +23,37 @@ public class LidarObservation extends MessageBase<LidarObservation> implements S
 		super(HcTopic.LIDAR_OBSERVATION);
 	}
 
-	public LidarObservation(Vector3D vector, boolean isStartOfScan)
+	public LidarObservation(Vector3D vector)
 	{
 		super(HcTopic.LIDAR_OBSERVATION);
 		this.vector = vector;
-		this.isStartOfScan = isStartOfScan;
 	}
 
+	@Override
 	public int getX()
 	{
 		return (int) vector.getX();
 	}
 
+	@Override
 	public int getY()
 	{
 		return (int) vector.getY();
 	}
 
+	@Override
 	public Vector3D getVector()
 	{
 		return vector;
 	}
 
+	@Override
 	public double getDisctanceCm()
 	{
 		return Vector3D.distance(Vector3D.ZERO, vector);
 	}
 
-	public boolean isStartOfScan()
-	{
-		return isStartOfScan;
-	}
-
+	@Override
 	public double getAngleRadians()
 	{
 		if (angleRadians == null)

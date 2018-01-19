@@ -75,7 +75,7 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 				// translate and rotation for the lidar's position on the robot
 				result = lidarTranslation.add(lidarRotation.applyTo(result));
 
-				observations.add(new LidarObservation(result, isStartOfScan));
+				observations.add(new LidarObservation(result));
 				if (isStartOfScan)
 				{
 					isStartOfScan = false;

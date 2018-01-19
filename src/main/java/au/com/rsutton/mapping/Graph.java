@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaHelper;
@@ -78,13 +79,15 @@ public class Graph extends JPanel implements RobotLocationDeltaListener
 
 			List<XY> newPoints = new LinkedList<>(translatedXyData);
 
-			lastHeading += deltaHeading.getDegrees();
+			lastHeading += HeadingHelper.getChangeInHeading(0, deltaHeading.getDegrees());
 			DistanceXY position = RobotLocationDeltaHelper.applyDelta(deltaHeading, deltaDistance,
 					new Angle(lastHeading, AngleUnits.DEGREES), new Distance(currentX, DistanceUnit.CM),
 					new Distance(currentY, DistanceUnit.CM));
 
-			currentX = position.getX().convert(DistanceUnit.CM) * 10d;
-			currentY = position.getY().convert(DistanceUnit.CM) * 10d;
+			currentX = position.getX().convert(DistanceUnit.CM);
+			currentY = position.getY().convert(DistanceUnit.CM);
+
+			System.out.println("XY " + currentX + " " + currentY + " " + lastHeading + " " + deltaHeading.getDegrees());
 
 			for (ScanObservation vector : robotLocation)
 			{

@@ -62,8 +62,14 @@ public class MapDrawingWindow extends JFrame implements Runnable
 	{
 		while (true)
 		{
-			graph.render(0, 0, 0.5);
-			this.repaint();
+			try
+			{
+				graph.render(0, 0, 0.5);
+				this.repaint();
+			} catch (Exception e)
+			{
+				e.printStackTrace();
+			}
 
 			try
 			{

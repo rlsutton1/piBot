@@ -67,7 +67,7 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 			{
 				corrector.onMessage(deltaHeading, deltaDistance, robotLocation);
 				logger.error("Delta heading " + deltaHeading.getDegrees());
-				heading += deltaHeading.getDegrees();
+				heading += HeadingHelper.getChangeInHeading(deltaHeading.getDegrees(), 0);
 
 				heading = corrector.getHeading();
 

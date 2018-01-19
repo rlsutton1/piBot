@@ -32,8 +32,6 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 
 	void drawLine(double x1, double y1, double x2, double y2, Occupancy occupancy, double certainty, int radius);
 
-	double[][] createShiftMatrix(double xShiftAmount, double yShiftAmount);
-
 	void dumpWorld();
 
 	void dumpTextWorld();
@@ -50,6 +48,7 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 
 	int getBlockSize();
 
+	@Override
 	List<Point> getOccupiedPoints();
 
 }

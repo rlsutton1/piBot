@@ -4,12 +4,15 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -19,11 +22,15 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
+import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.lidar.LidarObservation;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
@@ -36,7 +43,7 @@ import au.com.rsutton.units.DistanceUnit;
 public class ParticleFilterImpl implements ParticleFilterIfc
 {
 
-	private static final double MINIMUM_MEANINGFUL_RATING = 0.001;
+	private static final double MINIMUM_MEANINGFUL_RATING = 0.0001;
 	private final List<Particle> particles = new CopyOnWriteArrayList<>();
 	private volatile int particleQty;
 	private volatile double averageHeading;
@@ -48,8 +55,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	private final double distanceNoise;
 	private double stablisedHeading = 0;
 	private ParticleFilterListener listener;
-	private int lastSignum;
-	private double lastObservationAngle;
 
 	DistanceUnit distanceUnit = DistanceUnit.CM;
 
@@ -85,6 +90,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		robot.addMessageListener(observer);
 	}
 
+	ReentrantLock lock = new ReentrantLock();
+
 	private RobotLocationDeltaListener getObserver()
 	{
 		return new RobotLocationDeltaListener()
@@ -92,32 +99,55 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 			@Override
 			public void onMessage(final Angle deltaHeading, final Distance deltaDistance,
-					List<ScanObservation> robotLocation)
+					List<ScanObservation> observations)
 			{
 
 				if (suspended)
 				{
 					return;
 				}
-				addObservation(robotLocation);
-
-				moveParticles(new ParticleUpdate()
+				if (lock.tryLock())
 				{
 
-					@Override
-					public double getDeltaHeading()
+					try
 					{
+						addObservation(resampleObservations(observations));
 
-						return deltaHeading.getDegrees();
+						moveParticles(new ParticleUpdate()
+						{
+
+							@Override
+							public double getDeltaHeading()
+							{
+
+								double degrees = deltaHeading.getDegrees();
+								new DataLogValue("Move Particles DH(1)", "" + degrees).publish();
+								if (degrees > 180)
+								{
+									degrees = 360 - degrees;
+
+								} else
+								{
+									degrees = degrees * -1.0;
+								}
+
+								new DataLogValue("Move Particles DH", "" + degrees).publish();
+
+								return degrees;
+							}
+
+							@Override
+							public double getMoveDistance()
+							{
+								return deltaDistance.convert(DistanceUnit.CM);
+							}
+						});
+					} finally
+					{
+						lock.unlock();
 					}
 
-					@Override
-					public double getMoveDistance()
-					{
-						return deltaDistance.convert(DistanceUnit.CM);
-					}
-				});
-
+				}
 			}
 
 		};
@@ -157,49 +187,85 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	public synchronized void addObservation(List<ScanObservation> robotLocation)
+	public synchronized void addObservation(List<ScanObservation> observationList)
 	{
 
 		if (stop || suspended)
 		{
 			return;
 		}
-		lastObservation.set(robotLocation);
+		lastObservation.set(observationList);
 
 		double stdDev = getStdDev();
 		boolean isLost = stdDev > 100;
 
 		particles.parallelStream().forEach(e -> {
-			e.addObservation(map, robotLocation, isLost);
+			e.addObservation(map, observationList, isLost);
 		});
 
 		// adjust the number of particles in the particle filter based on
 		// how well localised it is
-		int newParticleCount = Math.max(500, (int) (7 * stdDev));
+		int newParticleCount = Math.max(500, (int) (20 * stdDev));
 
-		if (!robotLocation.isEmpty())
-		{
-			double currentObservationAngle = robotLocation.iterator().next().getAngleRadians();
-
-			int signum = (int) Math.signum(currentObservationAngle - lastObservationAngle);
-
-			lastObservationAngle = currentObservationAngle;
-
-			lastSignum = signum;
-		}
 		resample(newParticleCount);
 
 	}
 
+	/**
+	 * Resemble the observations by adding them to an occupancy grid, then
+	 * rebuilding the scans from the occupancy grid, thus eliminating scans that
+	 * are very close together - this is a problem that occurs when approaching
+	 * walls, the nearest wall becomes over represented to the particle filter.
+	 * 
+	 * @param observationList
+	 * @return
+	 */
+	List<ScanObservation> resampleObservations(List<ScanObservation> observationList)
+	{
+		List<ScanObservation> result = new LinkedList<>();
+
+		int resolution = 5;
+
+		SparseArray array = Dynamic2dSparseArrayFactory.getDynamic2dSparseArray(0.0);
+		for (ScanObservation obs : observationList)
+		{
+			// 5cm resolution
+			int x = obs.getX() / resolution;
+			int y = obs.getY() / resolution;
+			array.set(x, y, 1);
+		}
+
+		int maxX = array.getMaxX();
+		int maxY = array.getMaxY();
+		for (int x = array.getMinX(); x <= maxX; x++)
+		{
+			for (int y = array.getMinY(); y <= maxY; y++)
+			{
+				if (array.get(x, y) > 0.9)
+				{
+					result.add(new LidarObservation(new Vector3D(x * resolution, y * resolution, 0)));
+				}
+
+			}
+		}
+
+		return result;
+	}
+
 	public void moveParticles(ParticleUpdate update)
 	{
-		System.out.println("Delta move " + update.getDeltaHeading() + " " + update.getMoveDistance());
+		System.out.println("Delta heading " + update.getDeltaHeading() + " Delta move " + update.getMoveDistance());
+		if (update.getDeltaHeading() > 180 || update.getDeltaHeading() < -180)
+		{
+			System.out.println("What hte this is crazy");
+		}
 		for (Particle particle : particles)
 		{
 			particle.move(update);
 		}
 
 		stablisedHeading += update.getDeltaHeading();
+		stablisedHeading = HeadingHelper.normalizeHeading(stablisedHeading);
 	}
 
 	protected synchronized void resample(int newParticleCount)
@@ -209,7 +275,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		Random rand = new Random();
 		List<Particle> newSet = new LinkedList<>();
-		int pos = 0;
+
 		double next = 0.0;
 		double totalRating = 0;
 		double maxRating = 0;
@@ -242,30 +308,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			}
 		} else
 		{
-			Particle selectedParticle = null;
-
-			List<Particle> working = new LinkedList<>();
-			working.addAll(particles);
-
-			while (!working.isEmpty() && newSet.size() < newParticleCount)
-			{
-				next += rand.nextDouble() * 2.0;// 50/50 chance of the same or
-												// next
-												// being picked if they are
-												// both
-												// rated 1.0
-				while (next > 0.0)
-				{
-					selectedParticle = working.get(pos);
-
-					next -= selectedParticle.getRescaledRating();
-					pos++;
-					pos %= working.size();
-
-				}
-				// System.out.println(selectedParticle.getRating());
-				newSet.add(new Particle(selectedParticle));
-			}
+			selectNewParticlesV2(newParticleCount, rand, newSet);
 		}
 		bestScanMatchScore = bestRatingSoFar;
 		bestRawScore = bestRawSoFar;
@@ -273,7 +316,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		if (bestScanMatchScore < MINIMUM_MEANINGFUL_RATING && getStdDev() > 60)
 		{
 			// there is no useful data, re-seed the particle filter
-			createRandomStart();
+			// createRandomStart();
 		} else
 		{
 			particles.clear();
@@ -281,12 +324,96 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 		particleQty = newParticleCount;
 
+		new DataLogValue("PF-particle count", "" + particleQty).publish();
+
 		System.out.println("Resample took " + timer.elapsed(TimeUnit.MILLISECONDS));
 
 		if (listener != null)
 		{
 			listener.update(getXyPosition(), new Angle(stablisedHeading, AngleUnits.DEGREES), getStdDev(),
 					lastObservation.get());
+		}
+
+	}
+
+	private void selectNewParticles(int newParticleCount, Random rand, List<Particle> newSet, double next)
+	{
+		// this is where all the time is going
+		int pos = 0;
+
+		Particle selectedParticle = null;
+
+		List<Particle> working = new LinkedList<>();
+		working.addAll(particles);
+
+		while (!working.isEmpty() && newSet.size() < newParticleCount)
+		{
+			next += rand.nextDouble() * 2.0;// 50/50 chance of the same or
+											// next
+											// being picked if they are
+											// both
+											// rated 1.0
+			while (next > 0.0)
+			{
+				selectedParticle = working.get(pos);
+
+				next -= selectedParticle.getRescaledRating();
+				pos++;
+				pos %= working.size();
+
+			}
+			// System.out.println(selectedParticle.getRating());
+			newSet.add(new Particle(selectedParticle));
+		}
+	}
+
+	class ParticleRef implements Comparable<Double>
+	{
+		Particle particle;
+		Double value;
+
+		ParticleRef(Particle particle, double value)
+		{
+			this.particle = particle;
+			this.value = value;
+		}
+
+		@Override
+		public int compareTo(Double arg0)
+		{
+			return value.compareTo(arg0);
+		}
+	}
+
+	private void selectNewParticlesV2(int newParticleCount, Random rand, List<Particle> newSet)
+	{
+
+		List<ParticleRef> working = new ArrayList<>(particles.size());
+
+		double pos = 0;
+		for (Particle particle : particles)
+		{
+			working.add(new ParticleRef(particle, pos));
+			pos += particle.getRescaledRating();
+		}
+
+		Particle selectedParticle = null;
+		int size = working.size();
+		for (int i = 0; i < newParticleCount; i++)
+		{
+			double key = rand.nextDouble() * pos;
+			int rawIdx = Collections.binarySearch(working, key);
+			int idx = rawIdx;
+
+			if (idx < 0)
+			{
+				idx = Math.abs(idx) - 2;
+			} else
+			{
+				idx = idx - 1;
+			}
+			selectedParticle = working.get(idx).particle;
+			newSet.add(new Particle(selectedParticle));
 		}
 
 	}
@@ -306,7 +433,9 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		// particles then we probably should keep all our particles
 		if (particlesToRemove.size() + 100 < particles.size())
 		{
-			System.out.println("removing " + particlesToRemove.size() + " useless particles");
+			String message = "removing " + particlesToRemove.size() + " useless particles";
+			System.out.println(message);
+			new DataLogValue("PF-useless particles", "" + particlesToRemove.size()).publish();
 			// strip particles with ratings that are below the minimum threshold
 			particles.removeAll(particlesToRemove);
 
@@ -391,7 +520,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		averageHeading = h;
 
 		stablisedHeading = stablisedHeading
-				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.5);
+				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.1);
 
 		return new DistanceXY((x / particles.size()), (y / particles.size()), DistanceUnit.CM);
 

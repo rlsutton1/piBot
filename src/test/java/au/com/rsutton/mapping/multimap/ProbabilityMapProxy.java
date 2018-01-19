@@ -55,12 +55,6 @@ public class ProbabilityMapProxy implements ProbabilityMapIIFc
 	}
 
 	@Override
-	public double[][] createShiftMatrix(double xShiftAmount, double yShiftAmount)
-	{
-		return map.createShiftMatrix(xShiftAmount, yShiftAmount);
-	}
-
-	@Override
 	public void dumpWorld()
 	{
 		map.dumpWorld();

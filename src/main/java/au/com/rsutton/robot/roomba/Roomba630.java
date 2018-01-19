@@ -7,6 +7,8 @@ import com.maschel.roomba.RoombaJSSC;
 import com.maschel.roomba.RoombaJSSCSerial;
 
 import au.com.rsutton.config.Config;
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -47,13 +49,6 @@ public class Roomba630 implements Runnable
 			// get
 			// available
 
-			// Make roomba ready for communication & control (safe mode)
-			roomba.startup();
-			TimeUnit.SECONDS.sleep(1);
-			roomba.safeMode();
-			TimeUnit.SECONDS.sleep(1);
-			roomba.leds(true, true, true, true, 100, 100);
-
 			Runtime.getRuntime().addShutdownHook(new Thread()
 			{
 				@Override
@@ -62,6 +57,32 @@ public class Roomba630 implements Runnable
 					shutdown();
 				}
 			});
+
+			// Make roomba ready for communication & control (safe mode)
+			roomba.start();
+			TimeUnit.SECONDS.sleep(1);
+
+			// check battery
+
+			int batteryCharge = 0;
+			while (batteryCharge < 12000)
+			{
+				roomba.updateSensors();
+				batteryCharge = roomba.batteryVoltage();
+				System.out.println("Battery charge/capacity/voltage/temperature " + roomba.batteryCharge() + " "
+						+ roomba.batteryCapacity() + " " + roomba.batteryVoltage() + " " + roomba.batteryTemperature());
+				if (batteryCharge < 500)
+				{
+					System.out.println("Battery is too low to start (less than 500mah");
+					TimeUnit.SECONDS.sleep(1);
+				}
+
+			}
+
+			roomba.safeMode();
+			TimeUnit.SECONDS.sleep(1);
+			roomba.leds(true, true, true, true, 100, 100);
+
 		}
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 100, TimeUnit.MILLISECONDS);
 
@@ -79,12 +100,15 @@ public class Roomba630 implements Runnable
 		}
 	}
 
+	Double totalDistanceTraveled;
+	Double totalAngleTurned;
+
 	Distance getDistanceTraveled()
 	{
 		synchronized (sync)
 		{
 
-			return new Distance(roomba.distanceTraveled(), DistanceUnit.MM);
+			return new Distance(totalDistanceTraveled, DistanceUnit.MM);
 		}
 	}
 
@@ -92,7 +116,8 @@ public class Roomba630 implements Runnable
 	{
 		synchronized (sync)
 		{
-			return new Angle(roomba.angleTurned(), AngleUnits.DEGREES);
+
+			return new Angle(totalAngleTurned, AngleUnits.DEGREES);
 		}
 	}
 
@@ -118,12 +143,32 @@ public class Roomba630 implements Runnable
 			synchronized (sync)
 			{
 				batteryStats++;
+
+				roomba.updateSensors();
+
+				updateAngleTurned();
+
+				updateDistanceTraveled();
+
+				if (roomba.bumpLeft() || roomba.bumpRight())
+				{
+					roomba.drive(0, 0);
+				}
 				if (batteryStats % 10 == 0)
 				{
-					roomba.updateSensors();
+
+					new DataLogValue("Roomba-Battery V", "" + roomba.batteryVoltage()).publish();
+					new DataLogValue("Roomba-Battery %", "" + ((roomba.batteryVoltage() - 12000) / 7000d)).publish();
+
 					System.out.println("Battery charge/capacity/voltage/temperature " + roomba.batteryCharge() + " "
 							+ roomba.batteryCapacity() + " " + roomba.batteryVoltage() + " "
 							+ roomba.batteryTemperature());
+
+					if (roomba.batteryVoltage() < 12000)
+					{
+						System.out.println("Battery is flat");
+						System.exit(-1);
+					}
 				}
 			}
 
@@ -132,6 +177,46 @@ public class Roomba630 implements Runnable
 			e.printStackTrace();
 		}
 
+	}
+
+	private void updateDistanceTraveled()
+	{
+		// I don't under stand why the roomba returns negative
+		// distance
+		// traveled values when travelling forwards
+		int distanceTraveled = -roomba.distanceTraveled() * 10;
+		if (totalDistanceTraveled == null)
+		{
+			totalDistanceTraveled = (double) distanceTraveled;
+		} else
+		{
+			totalDistanceTraveled += distanceTraveled;
+		}
+
+		new DataLogValue("Roomba-Distance Traveled", "" + distanceTraveled).publish();
+		if (distanceTraveled != 0)
+		{
+			System.out.println("Distance Traveled: " + distanceTraveled);
+		}
+	}
+
+	private void updateAngleTurned()
+	{
+		int angleTurned = roomba.angleTurned() * 3;
+		if (totalAngleTurned == null)
+		{
+			totalAngleTurned = (double) angleTurned;
+		} else
+		{
+			totalAngleTurned += angleTurned;
+		}
+
+		new DataLogValue("Roomba-Angle turned", "" + angleTurned).publish();
+		if (angleTurned != 0)
+		{
+
+			System.out.println("Angle turned: " + angleTurned);
+		}
 	}
 
 	public void setMotion(SetMotion command)
@@ -145,24 +230,42 @@ public class Roomba630 implements Runnable
 
 				roomba.driveDirect(0, 0);
 			}
+			new DataLogValue("Roomba-Speed", "0").publish();
 		} else
 		{
 			Double changeInHeading = command.getChangeHeading();
+			changeInHeading = HeadingHelper.normalizeHeading(changeInHeading);
+			if (changeInHeading > 180)
+			{
+				changeInHeading = -360 + changeInHeading;
+			}
 
 			int speed = (int) command.getSpeed().getSpeed(distUnit, timeUnit);
 
 			int radius = STRAIGHT;
 			if (changeInHeading > 1.0)
 			{
-				radius = (int) (2000.0 * ((90.0 - Math.min(90d, changeInHeading)) / 90.0));
+				radius = (int) (2000.0 * ((45.0 - Math.min(44d, changeInHeading)) / 45.0));
 			} else if (changeInHeading < -1.0)
 			{
-				radius = (int) (2000.0 * ((-90.0 - Math.max(-90d, changeInHeading)) / 90.0));
+				radius = (int) (2000.0 * ((-45.0 - Math.max(-44d, changeInHeading)) / 45.0));
 			}
-			System.out.println("Set radius to " + radius + " for " + changeInHeading);
+			new DataLogValue("Roomba-Radius", "" + radius).publish();
+			new DataLogValue("Roomba-Speed", "" + speed).publish();
+			new DataLogValue("Roomba-Requested angle change", "" + changeInHeading).publish();
+
+			System.out.println("Set radius to " + radius + " for " + changeInHeading + " speed " + speed);
 			synchronized (sync)
 			{
-				roomba.drive(speed, radius);
+				if (!roomba.bumpLeft() && !roomba.bumpRight())
+				{
+					roomba.drive(speed, radius);
+				} else
+				{
+
+					roomba.drive(0, 0);
+					System.out.println("Stopping due to bumper");
+				}
 			}
 		}
 	}

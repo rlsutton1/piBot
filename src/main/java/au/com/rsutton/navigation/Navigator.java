@@ -15,6 +15,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -64,10 +65,11 @@ public class Navigator implements Runnable, NavigatorControl
 		ui = new MapDrawingWindow();
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
-		slam = new PiBotGraphSlamFeatureTracker(ui, robot);
+		//
 		if (pf == null)
 		{
 			// if no pf provided, then use slam
+			slam = new PiBotGraphSlamFeatureTracker(ui, robot);
 			pf = slam;
 		}
 		this.pf = pf;
@@ -125,7 +127,7 @@ public class Navigator implements Runnable, NavigatorControl
 				robot.publishUpdate();
 				return;
 			}
-			speed = 15;
+			speed = 30;
 
 			double std = pf.getStdDev();
 
@@ -167,7 +169,7 @@ public class Navigator implements Runnable, NavigatorControl
 				System.out.println(next + " " + dx + " " + dy);
 
 				double da = 5;
-				if (Math.abs(dx) > 10 || Math.abs(dy) > 10)
+				if (Math.abs(dx) > 20 || Math.abs(dy) > 20)
 				{
 					// follow the route to the target
 
@@ -180,7 +182,7 @@ public class Navigator implements Runnable, NavigatorControl
 					{
 						// turning more than 35 degrees, stop while we do it.
 						System.out.println("Setting speed to 0");
-						speed *= 0.0;
+						speed = 10;
 					}
 					speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da), speed);
 					robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
@@ -194,7 +196,7 @@ public class Navigator implements Runnable, NavigatorControl
 					{
 						// turn on the spot to set our heading
 						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
-						robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+						robot.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
 						robot.turn(da);
 
 					} else
@@ -211,10 +213,10 @@ public class Navigator implements Runnable, NavigatorControl
 
 			} else
 			{
-				// particle filter isn't localised, just wander trusting our
-				// obsticalAvoidance to keep us from crashing
+				// particle filter isn't localised, just turn on the spot
 				speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0), 10);
-				robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
+				robot.turn(0);
+				robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
 			}
 		} catch (Exception e)
@@ -232,7 +234,10 @@ public class Navigator implements Runnable, NavigatorControl
 
 		CourseCorrection corrected = obsticleAvoidance.getCorrectedHeading(desiredHeading, desiredSpeed);
 
-		robot.turn(corrected.getCorrectedRelativeHeading());
+		Double correctedRelativeHeading = corrected.getCorrectedRelativeHeading();
+
+		new DataLogValue("Heading : corrected", "" + desiredHeading + " : " + correctedRelativeHeading).publish();
+		robot.turn(360 - correctedRelativeHeading);
 
 		return corrected.getSpeed();
 

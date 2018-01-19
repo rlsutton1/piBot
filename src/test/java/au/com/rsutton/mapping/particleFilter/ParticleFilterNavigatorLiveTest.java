@@ -23,7 +23,10 @@ public class ParticleFilterNavigatorLiveTest
 	@Test
 	public void test() throws InterruptedException
 	{
-		boolean buildMap = true;
+
+		new DataWindow();
+
+		boolean buildMap = false;
 		StartPosition startPosition = StartPosition.RANDOM;
 		Navigator navigator;
 		if (buildMap)
@@ -37,7 +40,8 @@ public class ParticleFilterNavigatorLiveTest
 			navigator = new Navigator(map, null, robot);
 		} else
 		{
-			final ParticleFilterImpl pf = new ParticleFilterImpl(map, 1000, 1, 1, startPosition, robot, null);
+			final ParticleFilterImpl pf = new ParticleFilterImpl(KitchenMapBuilder.buildKitchenMapMatcher(), 5000, 2, 1,
+					startPosition, robot, null);
 			navigator = new Navigator(map, pf, robot);
 		}
 

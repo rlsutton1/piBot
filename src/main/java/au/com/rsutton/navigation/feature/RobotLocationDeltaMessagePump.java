@@ -1,8 +1,13 @@
 package au.com.rsutton.navigation.feature;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -16,6 +21,8 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 	private Distance lastDistance = null;
 	private RobotLocationDeltaListener listener;
 
+	Logger logger = LogManager.getLogger();
+
 	public RobotLocationDeltaMessagePump(RobotLocationDeltaListener listener)
 	{
 		this.listener = listener;
@@ -26,27 +33,61 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 	@Override
 	public void onMessage(Message<RobotLocation> message)
 	{
-		RobotLocation robotLocation = message.getMessageObject();
-
-		Angle angle = robotLocation.getDeadReaconingHeading();
-		if (lastHeading == null)
+		try
 		{
-			lastHeading = angle.getDegrees();
-		}
-		if (lastDistance == null)
+			RobotLocation robotLocation = message.getMessageObject();
+			onMessage(robotLocation);
+		} catch (Exception e)
 		{
-			lastDistance = robotLocation.getDistanceTravelled();
+			logger.error(e, e);
 		}
+	}
 
-		double deltaHeading = angle.getDegrees() - lastHeading;
-		double deltaDistance = lastDistance.convert(DistanceUnit.MM)
-				- robotLocation.getDistanceTravelled().convert(DistanceUnit.MM);
+	public void onMessage(RobotLocation robotLocation)
+	{
+		try
+		{
+			if (robotLocation.getTime() > System.currentTimeMillis() - 250)
+			{
 
-		lastHeading = angle.getDegrees();
-		lastDistance = robotLocation.getDistanceTravelled();
+				Angle angle = robotLocation.getDeadReaconingHeading();
+				if (lastHeading == null)
+				{
+					lastHeading = angle.getDegrees();
+				}
+				if (lastDistance == null)
+				{
+					lastDistance = robotLocation.getDistanceTravelled();
+				}
 
-		listener.onMessage(new Angle(deltaHeading, AngleUnits.DEGREES), new Distance(deltaDistance, DistanceUnit.MM),
-				robotLocation.getObservations());
+				double deltaHeading = HeadingHelper.getChangeInHeading(angle.getDegrees(), lastHeading);
+				double deltaDistance = robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)
+						- lastDistance.convert(DistanceUnit.MM);
+
+				lastHeading = angle.getDegrees();
+				lastDistance = robotLocation.getDistanceTravelled();
+
+				logger.error("raw angle: " + angle.getDegrees() + " delta: " + deltaHeading);
+				logger.error("raw diatance: " + robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)
+						+ " delta: " + deltaDistance);
+
+				new DataLogValue("Message Pump-raw angle", "" + angle.getDegrees()).publish();
+				new DataLogValue("Message Pump-delta angle", "" + deltaHeading).publish();
+				new DataLogValue("Message Pump-raw distance",
+						"" + robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)).publish();
+				new DataLogValue("Message Pump-delta distance", "" + deltaDistance).publish();
+
+				listener.onMessage(new Angle(deltaHeading, AngleUnits.DEGREES),
+						new Distance(deltaDistance, DistanceUnit.MM), robotLocation.getObservations());
+				logger.warn("Recieved and dispatched RobotLocation");
+			} else
+			{
+				logger.error("Discarded old RobotLocation message");
+			}
+		} catch (Exception e)
+		{
+			logger.error(e, e);
+		}
 
 	}
 

@@ -9,7 +9,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.robot.RobotSimulator;
 
 public class Particle
 {
@@ -22,9 +21,8 @@ public class Particle
 	Random rand = new Random();
 
 	List<ScanReference> scanReferences = new LinkedList<>();
-	private double squaredError = 0;
-	private double observationCount = 0;
 	private double rescaledRating;
+	private double rating;
 
 	public Particle(double x, double y, double heading, double distanceNoise, double headingNoise)
 	{
@@ -43,6 +41,8 @@ public class Particle
 		this.heading = selectedParticle.heading;
 		this.distanceNoise = selectedParticle.distanceNoise;
 		this.headingNoise = selectedParticle.headingNoise;
+
+		addNoise(1);
 
 		// inherit scanReferences from the selectedParticle
 		scanReferences.addAll(selectedParticle.scanReferences);
@@ -107,43 +107,32 @@ public class Particle
 	public void addObservation(ProbabilityMapIIFc currentWorld, List<ScanObservation> observations, boolean isLost)
 	{
 
-		// max error is 30cm, after that we vote negative
-		// error of 0 is a 1 vote
-		// error or 30 is a 0 vote
-		// error of 100 is a -3 vote
-		double maxGoodError = 100.0;
-		double maxGoodVote = 1.0;
-		// double maxBadError = 100.0 - maxGoodError;
-		// double maxBadVote = 3.0;
-
-		int maxDistance = 1000;
-
 		for (ScanObservation obs : observations)
 		{
-			double distance = obs.getDisctanceCm();
-			double angle = Math.toDegrees(obs.getAngleRadians());
-			double simDistance = simulateObservation(currentWorld, angle, maxDistance,
-					RobotSimulator.REQUIRED_POINT_CERTAINTY);// +
-			// maxBadError);
+			double rating = scoreObservation(currentWorld, obs);
 
-			if (simDistance < maxDistance)
-			{
-				// subtract world block size as this is the error caused by the
-				// world block size, but stay > 0
-				double error = Math.abs(simDistance - distance);
-
-				squaredError += Math.pow(error, 2);
-				observationCount++;
-			} else if (isLost)
-			{
-				// a penalty for an unscanned area
-
-				// without this the particle filter localises out side of the
-				// map when it's lost
-				squaredError += Math.pow(maxDistance, 2);
-			}
-
+			this.rating += rating;
 		}
+
+	}
+
+	/**
+	 * scans upto maxDistance, returning the distance of the strongest match
+	 * 
+	 * @param currentWorld
+	 * @param angle
+	 * @param maxDistance
+	 * @param occupancyThreshold
+	 * @return
+	 */
+	public double scoreObservation(ProbabilityMapIIFc currentWorld, ScanObservation observation)
+	{
+
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0.0, 0.0, Math.toRadians(heading));
+		Vector3D vector = rotation.applyTo(observation.getVector());
+		Vector3D location = new Vector3D(x, y, 0).add(vector);
+
+		return currentWorld.get(location.getX(), location.getY());
 
 	}
 
@@ -210,13 +199,7 @@ public class Particle
 	public double getRating()
 	{
 
-		if (Math.abs(0 - observationCount) < 0.001)
-		{
-			return 0;
-		}
-		double t = 1.0 / (Math.sqrt(squaredError) + 1.0);
-
-		return t;
+		return rating;
 
 	}
 

@@ -11,8 +11,6 @@ public interface ScanObservation
 
 	Vector3D getVector();
 
-	boolean isStartOfScan();
-
 	int getY();
 
 	int getX();

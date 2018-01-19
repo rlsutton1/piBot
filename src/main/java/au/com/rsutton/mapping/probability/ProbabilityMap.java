@@ -10,6 +10,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.base.Preconditions;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.DataSourcePoint;
 
@@ -17,7 +18,7 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 {
 
 	private int blockSize;
-	final private Dynamic2dSparseArray world;
+	final private SparseArray world;
 
 	public ProbabilityMap(int blockSize)
 	{
@@ -224,8 +225,7 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#createShiftMatrix(
 	 * double, double)
 	 */
-	@Override
-	public double[][] createShiftMatrix(double xShiftAmount, double yShiftAmount)
+	private double[][] createShiftMatrix(double xShiftAmount, double yShiftAmount)
 	{
 		// System.out.println("xs: " + xShiftAmount + " ys: " + yShiftAmount);
 		int shiftMatrixSize = 3;

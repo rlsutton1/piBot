@@ -68,8 +68,7 @@ public class MovingLidarObservationBuffer
 				Vector3D worldFrame = observation.getVector();
 
 				result.add(new LidarObservation(
-						frameRotation.applyTo(worldFrame).subtract(frameTranslation.getVector(DistanceUnit.CM)),
-						false));
+						frameRotation.applyTo(worldFrame).subtract(frameTranslation.getVector(DistanceUnit.CM))));
 			}
 
 		}

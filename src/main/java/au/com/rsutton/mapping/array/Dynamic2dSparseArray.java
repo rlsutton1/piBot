@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.array;
 
-public class Dynamic2dSparseArray
+public class Dynamic2dSparseArray implements SparseArray
 {
 
 	private int cellSize;
@@ -32,17 +32,29 @@ public class Dynamic2dSparseArray
 
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#getDefaultValue()
+	 */
+	@Override
 	public double getDefaultValue()
 	{
 		return defaultValue;
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#get(int, int)
+	 */
+	@Override
 	public double get(int x, int y)
 	{
 		Sparse2dSegment map = maps[(int) Math.max(0, Math.signum(x))][(int) Math.max(0, Math.signum(y))];
 		return map.get(Math.abs(x), Math.abs(y));
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#set(int, int, double)
+	 */
+	@Override
 	public void set(int x, int y, double value)
 	{
 		minX = Math.min(minX, x);
@@ -55,21 +67,37 @@ public class Dynamic2dSparseArray
 
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#getMinY()
+	 */
+	@Override
 	public int getMinY()
 	{
 		return minY;
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#getMaxY()
+	 */
+	@Override
 	public int getMaxY()
 	{
 		return maxY;
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#getMaxX()
+	 */
+	@Override
 	public int getMaxX()
 	{
 		return maxX;
 	}
 
+	/* (non-Javadoc)
+	 * @see au.com.rsutton.mapping.array.SparseArray#getMinX()
+	 */
+	@Override
 	public int getMinX()
 	{
 		return minX;

@@ -84,13 +84,6 @@ public class MovingLidarObservationBufferTest
 		{
 
 			@Override
-			public boolean isStartOfScan()
-			{
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
 			public int getY()
 			{
 				return 10;

@@ -40,7 +40,7 @@ public class FullWorldFeatureSimulator extends FeatureSimulatorBase
 	{
 		super(ACUTE_CORNER, dataSetSize);
 
-		KitchenMapBuilder.buildKitchenMap(world);
+		KitchenMapBuilder.buildKitchenMap(world, 2);
 		long ctr = 0;
 		while (cache.size() < dataSetSize)
 		{

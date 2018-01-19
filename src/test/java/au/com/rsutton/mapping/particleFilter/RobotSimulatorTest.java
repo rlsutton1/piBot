@@ -74,7 +74,7 @@ public class RobotSimulatorTest
 				Vector3D unit = new Vector3D(0, 1, 0).scalarMultiply(distance);
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(h));
 				Vector3D distanceVector = rotation.applyTo(unit);
-				observations.add(new LidarObservation(distanceVector, true));
+				observations.add(new LidarObservation(distanceVector));
 			}
 		}
 

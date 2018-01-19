@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.particleFilter.Despecaler;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
@@ -22,7 +23,7 @@ public class RoutePlanner
 
 	int blockSize = 5;
 
-	private Dynamic2dSparseArray route;
+	private SparseArray route;
 
 	private int targetX;
 

@@ -17,10 +17,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
 import au.com.rsutton.robot.lidar.LidarObservation;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.Angle;
@@ -29,7 +31,7 @@ import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
 
-public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
+public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, RobotLocationDeltaListener
 {
 
 	public static final double REQUIRED_POINT_CERTAINTY = 0.75;
@@ -54,9 +56,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 	private double requestedDeltaHeading;
 
+	private RobotLocationDeltaMessagePump messsagePump;
+
 	public RobotSimulator(ProbabilityMapIIFc map)
 	{
 		this.map = map;
+
+		messsagePump = new RobotLocationDeltaMessagePump(this);
 
 		new Thread(this, "Robot").start();
 	}
@@ -122,10 +128,10 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	 * @param msSinceLastScan
 	 * @return
 	 */
-	public List<ScanObservation> getObservation(double fromPercentage, double toPercentage)
+	public List<LidarObservation> getObservation(double fromPercentage, double toPercentage)
 	{
 
-		List<ScanObservation> observations = new LinkedList<>();
+		List<LidarObservation> observations = new LinkedList<>();
 
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
@@ -145,7 +151,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 				Vector3D unit = new Vector3D(0, 1, 0).scalarMultiply(distance);
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(adjustedHeading));
 				Vector3D distanceVector = rotation.applyTo(unit);
-				observations.add(new LidarObservation(distanceVector, true));
+				observations.add(new LidarObservation(distanceVector));
 			}
 		}
 
@@ -259,16 +265,17 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 
 			logger.info(lastScan + " " + to);
 
-			List<ScanObservation> observations = getObservation(0, 100);
+			List<LidarObservation> observations = getObservation(0, 100);
 			lastScan = to % 100;
 
 			double headingDrift = Math.abs((random.nextGaussian() * 0.05) * (1.0 / hz));
 
-			for (RobotLocationDeltaListener listener : listeners)
-			{
-				listener.onMessage(new Angle(deltaTurn + headingDrift, AngleUnits.DEGREES),
-						new Distance(deltaDistance, DistanceUnit.CM), observations);
-			}
+			RobotLocation message = new RobotLocation();
+			message.setDeadReaconingHeading(new Angle(heading, AngleUnits.DEGREES));
+			message.setDistanceTravelled(new Distance(totalDistanceTravelled, DistanceUnit.CM));
+			message.setObservations(observations);
+			messsagePump.onMessage(message);
+
 			try
 			{
 				Thread.sleep((long) (1000.0 / hz));
@@ -291,6 +298,17 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable
 	public void removeMessageListener(RobotLocationDeltaListener listener)
 	{
 		this.listeners.remove(listener);
+
+	}
+
+	@Override
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+	{
+		for (RobotLocationDeltaListener listener : listeners)
+		{
+
+			listener.onMessage(deltaHeading, deltaDistance, robotLocation);
+		}
 
 	}
 

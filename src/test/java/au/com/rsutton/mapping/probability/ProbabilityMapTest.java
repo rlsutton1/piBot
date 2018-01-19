@@ -8,25 +8,6 @@ public class ProbabilityMapTest
 {
 
 	@Test
-	public void testShiftMatrix()
-	{
-		ProbabilityMapIIFc pm = new ProbabilityMap(1);
-		System.out.println("pm 0,0");
-		pm.createShiftMatrix(0.0, 0.0);
-		System.out.println("pm 0.5,0");
-		pm.createShiftMatrix(0.5, 0.0);
-		System.out.println("pm -0.5,0");
-		pm.createShiftMatrix(-0.5, 0.0);
-		System.out.println("pm 0,-0.5");
-		pm.createShiftMatrix(0.0, -0.5);
-		System.out.println("pm 0,0.5");
-		pm.createShiftMatrix(0.0, 0.5);
-		System.out.println("pm 0.5,0.5");
-		pm.createShiftMatrix(0.5, 0.5);
-
-	}
-
-	@Test
 	public void test()
 	{
 		int worldSize = 50;
