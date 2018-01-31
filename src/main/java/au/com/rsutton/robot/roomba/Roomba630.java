@@ -184,7 +184,7 @@ public class Roomba630 implements Runnable
 		// I don't under stand why the roomba returns negative
 		// distance
 		// traveled values when travelling forwards
-		int distanceTraveled = -roomba.distanceTraveled() * 10;
+		int distanceTraveled = -roomba.distanceTraveled();
 		if (totalDistanceTraveled == null)
 		{
 			totalDistanceTraveled = (double) distanceTraveled;
@@ -202,7 +202,7 @@ public class Roomba630 implements Runnable
 
 	private void updateAngleTurned()
 	{
-		int angleTurned = roomba.angleTurned() * 3;
+		int angleTurned = roomba.angleTurned();
 		if (totalAngleTurned == null)
 		{
 			totalAngleTurned = (double) angleTurned;
@@ -246,9 +246,16 @@ public class Roomba630 implements Runnable
 			if (changeInHeading > 1.0)
 			{
 				radius = (int) (2000.0 * ((45.0 - Math.min(44d, changeInHeading)) / 45.0));
+
+				// 1 is a really tight anti clock wise turn, but 0 is a straight
+				// line
+				radius = Math.max(1, radius);
 			} else if (changeInHeading < -1.0)
 			{
 				radius = (int) (2000.0 * ((-45.0 - Math.max(-44d, changeInHeading)) / 45.0));
+				// -1 is a really tight clock wise turn, but 0 is a
+				// straight line
+				radius = Math.min(-1, radius);
 			}
 			new DataLogValue("Roomba-Radius", "" + radius).publish();
 			new DataLogValue("Roomba-Speed", "" + speed).publish();

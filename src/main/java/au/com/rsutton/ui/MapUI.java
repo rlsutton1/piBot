@@ -37,8 +37,25 @@ public class MapUI extends JPanel
 	public void render(double xOffset, double yOffset, double scale)
 	{
 
-		double xOff = (xOffset * scale) + 350;
-		double yOff = (yOffset * scale) + 350;
+		double totalX = 0;
+		double totalY = 0;
+		double ctr2 = 0;
+		for (DataSourceMap source : sources)
+		{
+			for (Point point : source.getPoints())
+			{
+				totalX += point.getX();
+				totalY += point.getY();
+				ctr2++;
+
+			}
+		}
+
+		double xCenter = totalX / ctr2;
+		double yCenter = totalY / ctr2;
+
+		double xOff = (((xOffset - xCenter) * scale)) + 350;
+		double yOff = (((yOffset - yCenter) * scale)) + 350;
 		BufferedImage image = new BufferedImage(700, 700, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g2 = image.createGraphics();
 		g2.setColor(new Color(255, 255, 255));
@@ -47,7 +64,8 @@ public class MapUI extends JPanel
 		{
 			for (Point point : source.getPoints())
 			{
-				source.drawPoint(image, xOff + (point.getX() * scale), (yOff + point.getY() * scale), scale);
+				source.drawPoint(image, xOff + ((point.getX()) * scale), (yOff + point.getY() * scale), scale,
+						point.getX(), point.getY());
 			}
 		}
 

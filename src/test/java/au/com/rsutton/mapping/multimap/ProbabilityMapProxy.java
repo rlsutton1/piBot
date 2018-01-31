@@ -125,4 +125,11 @@ public class ProbabilityMapProxy implements ProbabilityMapIIFc
 	{
 		return map.toString();
 	}
+
+	@Override
+	public void erase()
+	{
+		map.erase();
+
+	}
 }

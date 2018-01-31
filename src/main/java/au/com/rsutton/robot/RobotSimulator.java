@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
@@ -101,15 +102,15 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 	}
 
-	public double internalTurn(double angle)
+	public void internalTurn(double angle)
 	{
 		if (freeze)
 		{
-			return 0;
+			return;
 		}
 		double noise = Math.abs((random.nextGaussian() * 1.5) * (1.0 / hz));
 		double delta = angle + noise;
-		heading += delta;
+		heading -= delta;
 		if (heading < 0)
 		{
 			heading += 360.0;
@@ -118,7 +119,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 		{
 			heading -= 360.0;
 		}
-		return delta;
 
 	}
 
@@ -180,7 +180,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale, double originalX,
+			double originalY)
 	{
 		Graphics graphics = image.getGraphics();
 
@@ -214,6 +215,9 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	@Override
 	public void turn(double delta)
 	{
+
+		new DataLogValue("Simulator-Requested angle change", "" + delta).publish();
+
 		requestedDeltaHeading = HeadingHelper.normalizeHeading(delta);
 		if (requestedDeltaHeading > 180)
 		{
@@ -245,7 +249,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 		while (true)
 		{
 			double deltaDistance = 0;
-			double deltaTurn = 0;
 			if (!freeze)
 			{
 				deltaDistance = move(rspeed / hz);
@@ -255,7 +258,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 				double absDelta = Math.abs(requestedDeltaHeading);
 				double delta = Math.min(absDelta, 25.0 / hz) * Math.signum(requestedDeltaHeading);
 
-				deltaTurn = internalTurn(delta);
+				internalTurn(delta);
 			}
 			long to = (long) ((lastScan + (100.0 / hz)));
 			if (to > 100)
@@ -268,11 +271,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			List<LidarObservation> observations = getObservation(0, 100);
 			lastScan = to % 100;
 
-			double headingDrift = Math.abs((random.nextGaussian() * 0.05) * (1.0 / hz));
-
 			RobotLocation message = new RobotLocation();
-			message.setDeadReaconingHeading(new Angle(heading, AngleUnits.DEGREES));
+			message.setDeadReaconingHeading(new Angle(360 - heading, AngleUnits.DEGREES));
 			message.setDistanceTravelled(new Distance(totalDistanceTravelled, DistanceUnit.CM));
+			new DataLogValue("Simulator-Distance Traveled", "" + totalDistanceTravelled).publish();
+
+			new DataLogValue("Simulator-Angle turned", "" + heading).publish();
+
 			message.setObservations(observations);
 			messsagePump.onMessage(message);
 

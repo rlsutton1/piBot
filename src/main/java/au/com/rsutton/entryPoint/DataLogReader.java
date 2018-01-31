@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import com.hazelcast.core.Message;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.RobotLocation;
 
 public class DataLogReader
@@ -34,7 +35,7 @@ public class DataLogReader
 		long messageReferenceTime = 0;
 		try
 		{
-			fout = new FileInputStream("robotFlightRecord-nav-long.obj");
+			fout = new FileInputStream("robotFlightRecord-1516399920364.obj");
 			oos = new ObjectInputStream(fout);
 			boolean canContinue = true;
 
@@ -42,36 +43,55 @@ public class DataLogReader
 
 			while (canContinue == true && stop == false)
 			{
-				RobotLocation locationMessage = (RobotLocation) ((Message<?>) oos.readObject()).getMessageObject();
-				if (locationMessage == null)
-				{
-					canContinue = false;
-					break;
-				}
-				messageTime = locationMessage.getTime();
+				Message<?> messageObject = (Message<?>) oos.readObject();
+				messageTime = messageObject.getPublishTime();
 				if (messageReferenceTime == 0)
 				{
 					messageReferenceTime = messageTime;
 				}
 				long eventOffset = messageTime - messageReferenceTime;
-				// eventOffset *= 5;
+				eventOffset *= 1.0;
 				long delay = eventOffset - (System.currentTimeMillis() - referenceTime);
 				if (delay > 10)
 				{
 					Thread.sleep(delay);
 				}
 
-				// absolute delay between events
-				// Thread.sleep(1000);
+				if (messageObject.getMessageObject() instanceof RobotLocation)
+				{
+					RobotLocation locationMessage = (RobotLocation) messageObject.getMessageObject();
+					if (locationMessage == null)
+					{
+						canContinue = false;
+						break;
+					}
 
-				double change = HeadingHelper.getChangeInHeading(lastHeading,
-						locationMessage.getDeadReaconingHeading().getDegrees());
-				System.out.println("'heading'," + change + "," + locationMessage.getTime());
+					double change = HeadingHelper.getChangeInHeading(lastHeading,
+							locationMessage.getDeadReaconingHeading().getDegrees());
+					System.out.println("'heading'," + change + "," + locationMessage.getTime());
 
-				lastHeading = locationMessage.getDeadReaconingHeading().getDegrees();
+					lastHeading = locationMessage.getDeadReaconingHeading().getDegrees();
 
-				locationMessage.setTopic();
-				locationMessage.publish();
+					locationMessage.setTime(System.currentTimeMillis());
+
+					locationMessage.setTopic();
+					locationMessage.publish();
+				}
+
+				if (messageObject.getMessageObject() instanceof DataLogValue)
+				{
+					DataLogValue locationMessage = (DataLogValue) messageObject.getMessageObject();
+					if (locationMessage == null)
+					{
+						canContinue = false;
+						break;
+					}
+
+					locationMessage.setTime(System.currentTimeMillis());
+
+					locationMessage.publish();
+				}
+
 			}
 
 		} catch (IOException | ClassNotFoundException | InterruptedException e)

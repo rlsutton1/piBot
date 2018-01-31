@@ -1,5 +1,9 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 
 public class Pose
@@ -57,6 +61,14 @@ public class Pose
 	public double getHeading()
 	{
 		return heading;
+	}
+
+	public Vector3D applyTo(Vector3D vector)
+	{
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
+		Vector3D delta = new Vector3D(x, y, 0);
+
+		return rotation.applyTo(vector).add(delta);
 	}
 
 }

@@ -51,4 +51,6 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 	@Override
 	List<Point> getOccupiedPoints();
 
+	void erase();
+
 }

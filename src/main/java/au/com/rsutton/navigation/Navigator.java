@@ -62,7 +62,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot)
 	{
-		ui = new MapDrawingWindow();
+		ui = new MapDrawingWindow("Navigator");
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
 		//
@@ -127,11 +127,11 @@ public class Navigator implements Runnable, NavigatorControl
 				robot.publishUpdate();
 				return;
 			}
-			speed = 30;
+			speed = 20;
 
 			double std = pf.getStdDev();
 
-			if (std < 40)
+			if (std < 60)
 			{
 				// the partical filter is sufficently localized
 				DistanceXY ap = pf.getXyPosition();
@@ -158,7 +158,8 @@ public class Navigator implements Runnable, NavigatorControl
 					for (int i = 0; i < 25; i++)
 						next = routePlanner.getRouteForLocation(next.getX(), next.getY());
 				}
-				if (routePlanner.getDistanceToTarget(pfX, pfY) < 20)
+				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
+				if (distanceToTarget < 20)
 				{
 					// slow down we've almost reached our goal
 					speed = 5;
@@ -169,7 +170,7 @@ public class Navigator implements Runnable, NavigatorControl
 				System.out.println(next + " " + dx + " " + dy);
 
 				double da = 5;
-				if (Math.abs(dx) > 20 || Math.abs(dy) > 20)
+				if (distanceToTarget > 20)
 				{
 					// follow the route to the target
 
@@ -195,7 +196,7 @@ public class Navigator implements Runnable, NavigatorControl
 							&& Math.abs(HeadingHelper.getChangeInHeading(lastAngle, targetHeading)) > 5)
 					{
 						// turn on the spot to set our heading
-						da = HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
+						da = -HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
 						robot.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
 						robot.turn(da);
 
@@ -291,8 +292,6 @@ public class Navigator implements Runnable, NavigatorControl
 
 	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)
 	{
-
-		pf.addDataSoures(ui);
 
 		ui.addStatisticSource(new DataSourceStatistic()
 		{
@@ -400,7 +399,8 @@ public class Navigator implements Runnable, NavigatorControl
 			}
 
 			@Override
-			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale,
+					double originalX, double originalY)
 			{
 				Graphics graphics = image.getGraphics();
 
@@ -414,6 +414,12 @@ public class Navigator implements Runnable, NavigatorControl
 
 			}
 		};
+	}
+
+	@Override
+	public ExpansionPoint getRouteForLocation(int x, int y)
+	{
+		return routePlanner.getRouteForLocation(x, y);
 	}
 
 }

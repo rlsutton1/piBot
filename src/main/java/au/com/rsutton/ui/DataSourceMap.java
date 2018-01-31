@@ -9,7 +9,7 @@ public interface DataSourceMap
 
 	List<Point> getPoints();
 
-	void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale);
-
+	void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale, double originalX,
+			double originalY);
 
 }

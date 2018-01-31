@@ -20,6 +20,7 @@ import au.com.rsutton.navigation.correction.HeadingCorrector;
 import au.com.rsutton.navigation.graphslam.v3.DimensionWrapperXYTheta;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -128,7 +129,8 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 	}
 
 	@Override
-	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale, double originalX,
+			double originalY)
 	{
 		Graphics graphics = image.getGraphics();
 		//
@@ -196,14 +198,36 @@ public class PiBotGraphSlamFeatureTracker implements SpikeListener, DataSourceMa
 	}
 
 	@Override
-	public void addDataSoures(MapDrawingWindow ui)
+	public void shutdown()
 	{
-
 	}
 
 	@Override
-	public void shutdown()
+	public DataSourcePoint getParticlePointSource()
 	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public DataSourceMap getHeadingMapDataSource()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Double getBestScanMatchScore()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Double getBestRawScore()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

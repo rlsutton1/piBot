@@ -17,17 +17,6 @@ public class KitchenMapBuilder
 
 	}
 
-	public static ProbabilityMap buildKitchenMapMatcher()
-	{
-
-		ProbabilityMap pfmatch = new ProbabilityMap(5);
-
-		buildKitchenMap(pfmatch, 25);
-
-		return pfmatch;
-
-	}
-
 	public static void buildKitchenMap(ProbabilityMapIIFc world, int radius)
 	{
 		// table leg

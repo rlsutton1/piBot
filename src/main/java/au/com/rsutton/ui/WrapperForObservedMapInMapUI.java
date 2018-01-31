@@ -4,8 +4,10 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
@@ -19,26 +21,31 @@ public class WrapperForObservedMapInMapUI implements DataSourceMap
 		this.world = world;
 	}
 
+	Map<Point, Double> pointValues = new HashMap<>();
+
 	@Override
 	public List<Point> getPoints()
 	{
 		List<Point> points = new LinkedList<>();
-		for (int y = world.getMinY() - 3; y <= world.getMaxY(); y += 3)
+		for (int y = world.getMinY() - 30; y <= world.getMaxY() + 30; y += 3)
 		{
-			for (int x = world.getMinX() - 3; x <= world.getMaxX(); x += 3)
+			for (int x = world.getMinX() - 30; x <= world.getMaxX() + 30; x += 3)
 			{
-				points.add(new Point(x, y));
+				Point point = new Point(x, y);
+				points.add(point);
+
 			}
 		}
 		return points;
 	}
 
 	@Override
-	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale, double originalX,
+			double originalY)
 	{
 		Graphics graphics = image.getGraphics();
 
-		double value = world.get((pointOriginX - 350) / scale, (pointOriginY - 350) / scale);
+		double value = world.get(originalX, originalY);
 
 		Color color = new Color((int) (value * 255), (int) (value * 255), (int) (value * 255));
 

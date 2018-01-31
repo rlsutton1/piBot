@@ -6,6 +6,8 @@ import java.awt.FlowLayout;
 
 import javax.swing.JFrame;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class MapDrawingWindow extends JFrame implements Runnable
 {
 
@@ -19,8 +21,14 @@ public class MapDrawingWindow extends JFrame implements Runnable
 	//
 	// }
 
-	public MapDrawingWindow()
+	volatile boolean stop = false;
+
+	public MapDrawingWindow(String string)
 	{
+		if (StringUtils.isNotBlank(string))
+		{
+			setTitle(string);
+		}
 		this.setBounds(0, 0, 850, 900);
 
 		FlowLayout experimentLayout = new FlowLayout();
@@ -32,11 +40,16 @@ public class MapDrawingWindow extends JFrame implements Runnable
 		this.add(graph);
 
 		setSize(700, 700);
-		setLocation(200, 200);
+		setLocation(500, 200);
 		setVisible(true);
 
 		new Thread(this, "ui").start();
 
+	}
+
+	public MapDrawingWindow()
+	{
+		this("");
 	}
 
 	public void addDataSource(DataSourcePoint map, Color color)
@@ -85,6 +98,12 @@ public class MapDrawingWindow extends JFrame implements Runnable
 	{
 		graph.addDataSource(dataSourcePaintRegion);
 
+	}
+
+	public void destroy()
+	{
+		stop = true;
+		dispose();
 	}
 
 }

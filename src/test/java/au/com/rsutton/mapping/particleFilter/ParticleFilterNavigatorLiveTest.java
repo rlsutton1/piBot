@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
-import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.router.RouteOption;
@@ -26,42 +25,25 @@ public class ParticleFilterNavigatorLiveTest
 
 		new DataWindow();
 
-		boolean buildMap = false;
 		StartPosition startPosition = StartPosition.RANDOM;
 		Navigator navigator;
-		if (buildMap)
-		{
-			startPosition = StartPosition.ZERO;
-			createInitalMapForMapBuilder();
-			// pf = new ParticleFilterImpl(map, 1000, 5.8, 5.8, startPosition,
-			// robot, null);
+		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 5000, 2, 1, startPosition, robot, null);
+		navigator = new Navigator(map, pf, robot);
 
-			// use slam instead of a particle filter
-			navigator = new Navigator(map, null, robot);
-		} else
-		{
-			final ParticleFilterImpl pf = new ParticleFilterImpl(KitchenMapBuilder.buildKitchenMapMatcher(), 5000, 2, 1,
-					startPosition, robot, null);
-			navigator = new Navigator(map, pf, robot);
-		}
+		new SubMapBuilder().buildMap(robot);
+		navigateTo(navigator, 120, -260);
+		new SubMapBuilder().buildMap(robot);
 
-		if (buildMap)
-		{
-			buildMap(navigator, navigator.getSlam(), map);
-		} else
-		{
-			navigateTo(navigator, 120, -260);
-			navigateTo(navigator, -130, 300);
+		navigateTo(navigator, -130, 300);
 
-			navigateTo(navigator, 120, -260);
-			navigateTo(navigator, -130, 300);
+		navigateTo(navigator, 120, -260);
+		navigateTo(navigator, -130, 300);
 
-			navigateTo(navigator, 120, -260);
-			navigateTo(navigator, -130, 300);
+		navigateTo(navigator, 120, -260);
+		navigateTo(navigator, -130, 300);
 
-			navigateTo(navigator, 120, -260);
-			navigateTo(navigator, -130, 300);
-		}
+		navigateTo(navigator, 120, -260);
+		navigateTo(navigator, -130, 300);
 
 		navigator.stop();
 
@@ -74,17 +56,6 @@ public class ParticleFilterNavigatorLiveTest
 		map = new ProbabilityMap(5);
 
 		// new InitialWorldBuilder(map, robot);
-
-	}
-
-	private void buildMap(NavigatorControl navigator, RobotPoseSource pf, ProbabilityMapIIFc map)
-			throws InterruptedException
-	{
-		MapBuilder mapBuilder = new MapBuilder(map, pf, navigator, robot);
-		while (!mapBuilder.isComplete())
-		{
-			Thread.sleep(100);
-		}
 
 	}
 

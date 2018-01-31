@@ -66,7 +66,8 @@ public abstract class FeatureExtractor
 			}
 
 			@Override
-			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale,
+					double originalX, double originalY)
 			{
 				Graphics graphics = image.getGraphics();
 

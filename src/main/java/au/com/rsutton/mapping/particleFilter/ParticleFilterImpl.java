@@ -26,6 +26,7 @@ import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
 import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.Occupancy;
+import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
@@ -65,6 +66,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	private RobotInterface robot;
 	private ProbabilityMapIIFc map;
 	private RobotLocationDeltaListener observer;
+	private MapDrawingWindow ui;
 
 	public ParticleFilterImpl(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition, RobotInterface robot, Pose pose)
@@ -72,7 +74,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		this.headingNoise = headingNoise;
 		this.distanceNoise = distanceNoise;
 		this.robot = robot;
-		this.map = map;
+		this.map = buildMatchingMap(map);
 		particleQty = particles;
 		if (startPosition == StartPosition.RANDOM)
 		{
@@ -88,6 +90,39 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		observer = getObserver();
 
 		robot.addMessageListener(observer);
+
+		ui = new MapDrawingWindow("Particle Filter");
+		addDataSoures(ui);
+		ui.addDataSource(map, new Color(255, 255, 255));
+	}
+
+	ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
+	{
+		ProbabilityMap matchMap = new ProbabilityMap(5);
+		matchMap.setDefaultValue(0.0);
+		matchMap.erase();
+		int radius = 25;
+
+		int minX = source.getMinX();
+		int maxX = source.getMaxX();
+		int minY = source.getMinY();
+		int maxY = source.getMaxY();
+
+		for (int x = minX; x < maxX + 1; x++)
+		{
+			for (int y = minY; y < maxY + 1; y++)
+			{
+				double value = source.get(x, y);
+
+				if (value > 0.5)
+				{
+					matchMap.updatePoint(x, y, Occupancy.OCCUPIED, 1, radius);
+				}
+
+			}
+		}
+
+		return matchMap;
 	}
 
 	ReentrantLock lock = new ReentrantLock();
@@ -286,6 +321,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			totalRating += selectedParticle.getRating();
 			maxRating = Math.max(maxRating, selectedParticle.getRating());
 		}
+
+		new DataLogValue("PF best:", "" + maxRating).publish();
 
 		for (Particle selectedParticle : particles)
 		{
@@ -607,7 +644,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			}
 
 			@Override
-			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale)
+			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale,
+					double originalX, double originalY)
 			{
 				Graphics graphics = image.getGraphics();
 
@@ -691,6 +729,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	{
 		stop = true;
 		robot.removeMessageListener(observer);
+		ui.destroy();
 
 	}
 
@@ -706,8 +745,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		suspended = false;
 	}
 
-	@Override
-	public void addDataSoures(MapDrawingWindow ui)
+	private void addDataSoures(MapDrawingWindow ui)
 	{
 		ui.addDataSource(getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(getHeadingMapDataSource());
@@ -745,6 +783,13 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 				return "StdDev";
 			}
 		});
+
+	}
+
+	@Override
+	public void removeListener(ParticleFilterListener listener)
+	{
+		listener = null;
 
 	}
 }

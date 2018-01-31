@@ -1,29 +1,44 @@
 package au.com.rsutton.mapping.multimap;
 
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.util.LinkedList;
 import java.util.List;
 
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
-import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.Angle;
 
-public class ParticleFilterProxy implements ParticleFilterIfc
+public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterListener
 {
 
 	private ParticleFilterIfc pf;
+	private List<ParticleFilterListener> listeners = new LinkedList<>();
 
-	ParticleFilterProxy(ParticleFilterIfc pf)
+	public ParticleFilterProxy(ParticleFilterIfc pf)
 	{
 		this.pf = pf;
+		if (pf != null)
+		{
+			pf.addListener(this);
+		}
 	}
 
-	void changeParticleFilter(ParticleFilterIfc pf)
+	public void changeParticleFilter(ParticleFilterIfc pf)
 	{
+		if (this.pf != null)
+		{
+			this.pf.shutdown();
+			pf.removeListener(this);
+		}
 		this.pf = pf;
+		pf.addListener(this);
 	}
 
 	@Override
@@ -41,19 +56,44 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	@Override
 	public void addListener(ParticleFilterListener listener)
 	{
-		pf.addListener(listener);
+		listeners.add(listener);
 	}
 
 	@Override
 	public DataSourcePoint getParticlePointSource()
 	{
-		return pf.getParticlePointSource();
+		return new DataSourcePoint()
+		{
+
+			@Override
+			public List<Point> getOccupiedPoints()
+			{
+				return pf.getParticlePointSource().getOccupiedPoints();
+			}
+		};
 	}
 
 	@Override
 	public DataSourceMap getHeadingMapDataSource()
 	{
-		return pf.getHeadingMapDataSource();
+		return new DataSourceMap()
+		{
+
+			@Override
+			public List<Point> getPoints()
+			{
+				return pf.getHeadingMapDataSource().getPoints();
+			}
+
+			@Override
+			public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale,
+					double originalX, double originalY)
+			{
+				pf.getHeadingMapDataSource().drawPoint(image, pointOriginX, pointOriginY, scale, originalX, originalY);
+
+			}
+		};
+
 	}
 
 	@Override
@@ -106,9 +146,22 @@ public class ParticleFilterProxy implements ParticleFilterIfc
 	}
 
 	@Override
-	public void addDataSoures(MapDrawingWindow ui)
+	public void update(DistanceXY averagePosition, Angle averageHeading, double stdDev,
+			List<ScanObservation> particleFilterObservationSet)
 	{
-		pf.addDataSoures(ui);
+		for (ParticleFilterListener listener : listeners)
+		{
+			listener.update(averagePosition, averageHeading, stdDev, particleFilterObservationSet);
+
+		}
+
+	}
+
+	@Override
+	public void removeListener(ParticleFilterListener listener)
+	{
+		listeners.remove(listener);
+
 	}
 
 }

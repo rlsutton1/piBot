@@ -1,28 +1,34 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.junit.Test;
 
 import com.google.common.base.Stopwatch;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.mapping.KitchenMapBuilder;
+import au.com.rsutton.mapping.XY;
+import au.com.rsutton.mapping.multimap.ParticleFilterProxy;
 import au.com.rsutton.mapping.probability.Occupancy;
+import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
+import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
-import au.com.rsutton.units.Angle;
-import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
 public class MapBuilder
@@ -32,103 +38,294 @@ public class MapBuilder
 
 	private MapDrawingWindow panel;
 
-	ProbabilityMapIIFc world;
+	ProbabilityMapIIFc world = new ProbabilityMap(5);
 
 	private NavigatorControl navigatorControl;
 
-	private RobotPoseSource particleFilter;
+	private PoseAdjuster poseAdjuster;
+	RobotInterface robot;
+
+	Set<XY> vistedLocations = new HashSet<>();
+
+	class SubMapHolder
+	{
+		public SubMapHolder(Pose pose, ProbabilityMapIIFc map)
+		{
+			this.mapPose = pose;
+			this.map = map;
+		}
+
+		Pose mapPose;
+		ProbabilityMapIIFc map;
+	}
+
+	class PoseAdjuster implements RobotPoseSource
+
+	{
+		Pose pose;
+		RobotPoseSource source;
+
+		PoseAdjuster(Pose pose, RobotPoseSource source)
+		{
+			this.pose = pose;
+			this.source = source;
+		}
+
+		@Override
+		public double getHeading()
+		{
+			return pose.heading + source.getHeading();
+		}
+
+		@Override
+		public DistanceXY getXyPosition()
+		{
+			Vector3D vector = new Vector3D(source.getXyPosition().getX().convert(DistanceUnit.CM),
+					source.getXyPosition().getY().convert(DistanceUnit.CM), 0);
+
+			vector = pose.applyTo(vector);
+
+			return new DistanceXY(vector.getX(), vector.getY(), DistanceUnit.CM);
+		}
+
+		@Override
+		public double getStdDev()
+		{
+			return source.getStdDev();
+		}
+
+		@Override
+		public void shutdown()
+		{
+			source.shutdown();
+
+		}
+
+		public void setPose(Pose mapPose)
+		{
+			pose = mapPose;
+
+		}
+
+		@Override
+		public DataSourcePoint getParticlePointSource()
+		{
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public DataSourceMap getHeadingMapDataSource()
+		{
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Double getBestScanMatchScore()
+		{
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Double getBestRawScore()
+		{
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+	}
+
+	List<SubMapHolder> subMaps = new LinkedList<>();
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 
-	MapBuilder(ProbabilityMapIIFc map, RobotPoseSource particleFilter, NavigatorControl navigatorControl,
-			RobotInterface robot)
+	private ParticleFilterProxy particleFilterProxy;
+
+	@Test
+	public void test() throws InterruptedException
 	{
-		world = map;
-		panel = new MapDrawingWindow();
-		this.navigatorControl = navigatorControl;
-
-		panel.addDataSource(new WrapperForObservedMapInMapUI(world));
-
-		this.particleFilter = particleFilter;
-
-		robot.addMessageListener(new RobotLocationDeltaListener()
+		try
 		{
+			new DataWindow();
 
-			@Override
-			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+			boolean sim = true;
+
+			if (sim)
 			{
-				update(particleFilter.getXyPosition(), particleFilter.getHeading(), particleFilter.getStdDev(),
-						robotLocation);
-
+				RobotSimulator robotS = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
+				robotS.setLocation(-150, 300, new Random().nextInt(360));
+				this.robot = robotS;
+			} else
+			{
+				this.robot = new RobotImple();
 			}
-		});
+			panel = new MapDrawingWindow("Map Builder");
 
-		chooseTarget();
+			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
+
+			particleFilterProxy = new ParticleFilterProxy(null);
+			this.poseAdjuster = new PoseAdjuster(new Pose(0, 0, 0), particleFilterProxy);
+
+			addMap(getZeroPose());
+
+			this.navigatorControl = new Navigator(world, poseAdjuster, robot);
+
+			chooseTarget();
+			while (!complete)
+			{
+				TimeUnit.MILLISECONDS.sleep(500);
+				update();
+			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	void addMap(RobotPoseSource pose) throws InterruptedException
+	{
+		ProbabilityMapIIFc map = new SubMapBuilder().buildMap(robot);
+		SubMapHolder currentSubMap = new SubMapHolder(new Pose(pose.getXyPosition().getX().convert(DistanceUnit.CM),
+				pose.getXyPosition().getY().convert(DistanceUnit.CM), pose.getHeading()), map);
+		subMaps.add(currentSubMap);
+
+		world.erase();
+
+		for (SubMapHolder subMap : subMaps)
+		{
+			int minX = subMap.map.getMinX();
+			int maxX = subMap.map.getMaxX();
+			int minY = subMap.map.getMinY();
+			int maxY = subMap.map.getMaxY();
+
+			for (int x = minX; x < maxX + 1; x++)
+			{
+				for (int y = minY; y < maxY + 1; y++)
+				{
+					double value = subMap.map.get(x, y);
+					Vector3D vector = new Vector3D(x, y, 0);
+					if (vector.distance(Vector3D.ZERO) < 200)
+					{
+						vector = subMap.mapPose.applyTo(vector);
+
+						if (world.get((int) vector.getX(), (int) vector.getY()) == 0.5)
+						{
+							if (value < 0.5)
+							{
+								world.resetPoint((int) vector.getX(), (int) vector.getY());
+								world.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT, 1, 1);
+							} else if (value > 0.5)
+							{
+								world.resetPoint((int) vector.getX(), (int) vector.getY());
+								world.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.OCCUPIED, 1, 1);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		particleFilterProxy
+				.changeParticleFilter(new ParticleFilterImpl(map, 1000, 5.8, 5.8, StartPosition.ZERO, robot, null));
+		poseAdjuster.setPose(currentSubMap.mapPose);
+
 	}
 
 	int lastHeading = 0;
 
 	private boolean complete = false;
 
-	public void update(DistanceXY averagePosition, double averageHeading, double stdDev,
-			List<ScanObservation> particleFilterObservationSet)
+	void navigateThroughSubMapsTo() throws InterruptedException
 	{
 
-		// TODO: add a somewhat kalman fiter on the heading here!!!
+		SubMapHolder currentMap = null;
+		List<SubMapHolder> mapList = new LinkedList<>();
 
-		if (particleFilter.getStdDev() > 40)
-		{
-			// we're lost, the scan data is useless
-			return;
-		}
+		double x = particleFilterProxy.getXyPosition().getX().convert(DistanceUnit.CM);
+		double y = particleFilterProxy.getXyPosition().getY().convert(DistanceUnit.CM);
 
-		for (ScanObservation obs : particleFilterObservationSet)
+		int targetX = 0;
+		int targetY = 0;
+
+		for (int i = 0; i < 300; i++)
 		{
-			double absObsAngle = Math.abs(HeadingHelper.getChangeInHeading(0, Math.toDegrees(obs.getAngleRadians())));
-			if (obs.getDisctanceCm() < 30 && absObsAngle < 45)
+			ExpansionPoint next = navigatorControl.getRouteForLocation((int) x, (int) y);
+
+			SubMapHolder map = findNearestSubMap(next);
+
+			if (!map.equals(currentMap))
 			{
+				mapList.add(map);
+				currentMap = map;
+			}
 
-				// we only consider this if the observation is in front of us,
-				// the lidar mount is visable behind... some times
-
-				// can't use observations closer that 30cm, the pariticle filter
-				// gets confused and the data becomes bad
-
-				// also we get some lidar artifacts at close range
-
-				chooseTarget();
-
+			double dx = (x - next.getX()) * 5;
+			x -= dx;
+			double dy = (y - next.getY()) * 5;
+			y -= dy;
+			if (dx == 0 && dy == 0)
+			{
+				// reached the target
+				targetX = (int) x;
+				targetY = (int) y;
+				break;
 			}
 		}
 
-		for (ScanObservation obs : particleFilterObservationSet)
+		for (int i = 0; i < mapList.size() - 1; i++)
 		{
+			SubMapHolder map = mapList.get(i);
+			particleFilterProxy.changeParticleFilter(
+					new ParticleFilterImpl(map.map, 1000, 5.8, 5.8, StartPosition.RANDOM, robot, null));
+			poseAdjuster.setPose(map.mapPose);
 
-			Particle particle = new Particle(averagePosition.getX().convert(DistanceUnit.CM),
-					averagePosition.getY().convert(DistanceUnit.CM), averageHeading, 0, 0);
-
-			Vector3D point = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(averageHeading))
-					.applyTo(obs.getVector());
-			point = averagePosition.getVector(DistanceUnit.CM).add(point);
-
-			// calculate distance of the point observed
-			double distance = Vector3D.distance(averagePosition.getVector(DistanceUnit.CM), point);
-
-			if (distance < maxUsableDistance)
+			navigatorControl.calculateRouteTo((int) mapList.get(i + 1).mapPose.x, (int) mapList.get(i + 1).mapPose.y,
+					null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			navigatorControl.go();
+			while (!navigatorControl.hasReachedDestination())
 			{
-				clearPoints(averagePosition.getVector(DistanceUnit.CM), point);
-				if (particle.simulateObservation(world, Math.toDegrees(obs.getAngleRadians()), 1000,
-						RobotSimulator.REQUIRED_POINT_CERTAINTY) >= 1000)
-				{
-					world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75,
-							(int) particleFilter.getStdDev());
-				}
+				TimeUnit.MILLISECONDS.sleep(500);
 			}
 		}
 
-		lastHeading = (int) averageHeading;
-
+		if (mapList.size() > 1)
+		{
+			SubMapHolder map = mapList.get(mapList.size() - 1);
+			particleFilterProxy.changeParticleFilter(
+					new ParticleFilterImpl(map.map, 1000, 5.8, 5.8, StartPosition.RANDOM, robot, null));
+			poseAdjuster.setPose(map.mapPose);
+		}
+		navigatorControl.calculateRouteTo(targetX, targetY, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 		navigatorControl.go();
+
+	}
+
+	private SubMapHolder findNearestSubMap(ExpansionPoint next)
+	{
+		double distance = Double.MAX_VALUE;
+
+		DistanceXY position = poseAdjuster.source.getXyPosition();
+		Vector3D pos = new Vector3D(position.getX().convert(DistanceUnit.CM), position.getY().convert(DistanceUnit.CM),
+				0);
+		SubMapHolder bestMap = null;
+		for (SubMapHolder map : subMaps)
+		{
+			Vector3D mapPose = new Vector3D(map.mapPose.x, map.mapPose.y, 0);
+			double dis = mapPose.distance(pos);
+			if (dis < distance)
+			{
+				distance = dis;
+				bestMap = map;
+			}
+		}
+
+		return bestMap;
+	}
+
+	public void update() throws InterruptedException
+	{
 
 		boolean hasReachedDestination = navigatorControl.hasReachedDestination();
 		long targetElapsedMinutes = targetAge.elapsed(TimeUnit.MINUTES);
@@ -136,13 +333,20 @@ public class MapBuilder
 		if (hasReachedDestination || (navigatorControl.isStuck() && targetElapsedSeconds > 120)
 				|| targetElapsedMinutes > 2)
 		{
+			navigatorControl.stop();
+			TimeUnit.SECONDS.sleep(5);
+			addMap(poseAdjuster);
+
 			chooseTarget();
+
+			navigateThroughSubMapsTo();
+			// navigatorControl.go();
 		}
 	}
 
 	private void chooseTarget()
 	{
-		navigatorControl.stop();
+
 		if (targetAge.elapsed(TimeUnit.SECONDS) > 15)
 		{
 
@@ -157,26 +361,42 @@ public class MapBuilder
 
 	boolean setNewTarget()
 	{
-		maxDistance = 0;
-		int xspread = Math.abs(world.getMaxX() - world.getMinX());
-		int yspread = Math.abs(world.getMaxY() - world.getMinY());
+		maxDistance = Double.MAX_VALUE;
 
-		Random r = new Random();
+		int minX = world.getMinX();
+		int maxX = world.getMaxX() + 1;
+		int minY = world.getMinY();
+		int maxY = world.getMaxY() + 1;
 
-		int ctr = 0;
-		while (ctr < 300)
+		XY location = null;
+		for (int x = minX; x < maxX; x += 10)
 		{
-			ctr++;
-			int x = r.nextInt(xspread) + world.getMinX();
-			int y = r.nextInt(yspread) + world.getMinY();
-			if (isTarget(x, y))
+			for (int y = minY; y < maxY; y += 10)
 			{
+				XY newLocation = new XY(x, y);
 
-				return true;
+				boolean isVisited = false;
+				for (XY visted : vistedLocations)
+				{
+					isVisited |= Math.abs(visted.getX() - newLocation.getX()) < 75
+							&& Math.abs(visted.getY() - newLocation.getY()) < 75;
+				}
+
+				if (!isVisited)
+				{
+					if (isTarget(x, y))
+					{
+						location = newLocation;
+					}
+				}
 			}
-			System.out.println(ctr);
 		}
-
+		if (location != null)
+		{
+			vistedLocations.add(location);
+			navigatorControl.calculateRouteTo(location.getX(), location.getY(), null,
+					RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+		}
 		return true;
 		// complete = true;
 		// return false;
@@ -184,7 +404,7 @@ public class MapBuilder
 
 	private boolean isTarget(int x, int y)
 	{
-		DistanceXY currentLocation = particleFilter.getXyPosition();
+		DistanceXY currentLocation = poseAdjuster.getXyPosition();
 		if (x >= world.getMinX() && x <= world.getMaxX())
 		{
 			if (y >= world.getMinY() && y <= world.getMaxY())
@@ -193,24 +413,16 @@ public class MapBuilder
 				{
 
 					Vector3D position = new Vector3D(x, y, 0);
-
-					if (isUnexplored(position, 90))
-					{
-						navigatorControl.calculateRouteTo(x, y, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-						return true;
-					}
-					if (isUnexplored(position, -90))
-					{
-						navigatorControl.calculateRouteTo(x, y, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-						return true;
-					}
-
 					double distance = Vector3D.distance(currentLocation.getVector(DistanceUnit.CM), position);
-					if (maxDistance < distance)
-					{
-						maxDistance = distance;
-						navigatorControl.calculateRouteTo(x, y, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 
+					if (isUnexplored(position, 0))
+					{
+
+						if (distance < maxDistance)
+						{
+							maxDistance = distance;
+							return true;
+						}
 					}
 
 				}
@@ -225,7 +437,7 @@ public class MapBuilder
 		boolean isValid = world.get(x, y) < requiredValue;
 		if (isValid)
 		{
-			int checkRadius = 30;
+			int checkRadius = 25;
 			isValid &= world.get(x + checkRadius, y) < requiredValue;
 			isValid &= world.get(x - checkRadius, y) < requiredValue;
 			isValid &= world.get(x, y + checkRadius) < requiredValue;
@@ -261,58 +473,71 @@ public class MapBuilder
 			}
 		}
 		// there is too much unexplored (unmapped) in sight
-		return existInMap < (Math.abs(to - from) / angleStepSize) * .9
-				&& existInMap > (Math.abs(to - from) / angleStepSize) * .5;
-	}
+		return existInMap < (Math.abs(to - from) / angleStepSize) * .9;
 
-	void clearPoints(Vector3D pos, Vector3D point)
-	{
-		// clear out points
-
-		Random rand = new Random();
-
-		double x1 = pos.getX();
-		double y1 = pos.getY();
-
-		double x2 = point.getX();
-		double y2 = point.getY();
-
-		double dist = pos.distance(point) - world.getBlockSize();
-
-		if (dist > 0 && dist < maxUsableDistance)
-		{
-			for (int i = 0; i < dist; i += world.getBlockSize())
-			{
-				double percent = i / dist;
-				// certainty of the observation is at max 0.5, and dimishes
-				// to 0 at 10 meters(1000 cm)
-				double certainty = 1.0 - Math.sqrt(percent);
-				certainty *= 0.3;
-
-				double x = (percent * x2) + ((1.0 - percent) * x1);
-				double y = (percent * y2) + ((1.0 - percent) * y1);
-				if (world.get(x, y) < RobotSimulator.REQUIRED_POINT_CERTAINTY)
-				{
-					world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
-				} else
-				{
-					// check probability clearning
-					double randomValue = rand.nextDouble();
-					if (randomValue - 0.25 > percent)
-					{
-						// rand is greater than percentage of distace to the
-						// detected point, so clear
-						world.updatePoint((int) (x), (int) (y), Occupancy.VACANT, certainty, 2);
-					}
-					// don't clear beyond a definite point
-					break;
-				}
-			}
-		}
 	}
 
 	public boolean isComplete()
 	{
 		return complete;
 	}
+
+	RobotPoseSource getZeroPose()
+	{
+		return new RobotPoseSource()
+		{
+
+			@Override
+			public void shutdown()
+			{
+			}
+
+			@Override
+			public DistanceXY getXyPosition()
+			{
+				return new DistanceXY(0, 0, DistanceUnit.CM);
+			}
+
+			@Override
+			public double getStdDev()
+			{
+				return 0;
+			}
+
+			@Override
+			public double getHeading()
+			{
+				return 0;
+			}
+
+			@Override
+			public DataSourcePoint getParticlePointSource()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public DataSourceMap getHeadingMapDataSource()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public Double getBestScanMatchScore()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public Double getBestRawScore()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+		};
+	}
+
 }

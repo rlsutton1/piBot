@@ -7,7 +7,8 @@ import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaHelper;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
-import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
@@ -59,14 +60,36 @@ public class RobotPoseSourceDeadReconning implements RobotPoseSource, RobotLocat
 	}
 
 	@Override
-	public void addDataSoures(MapDrawingWindow ui)
+	public void shutdown()
 	{
 
 	}
 
 	@Override
-	public void shutdown()
+	public DataSourcePoint getParticlePointSource()
 	{
+		// TODO Auto-generated method stub
+		return null;
+	}
 
+	@Override
+	public DataSourceMap getHeadingMapDataSource()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Double getBestScanMatchScore()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Double getBestRawScore()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

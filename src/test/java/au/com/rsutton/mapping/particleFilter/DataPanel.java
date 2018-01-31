@@ -56,19 +56,25 @@ public class DataPanel extends JPanel implements MessageListener<DataLogValue>, 
 			@Override
 			public void run()
 			{
-				for (Entry<String, String> entry : currentData.entrySet())
+				try
 				{
-					TextField field = fields.get(entry.getKey());
-					if (field == null)
+					for (Entry<String, String> entry : currentData.entrySet())
 					{
-						field = new TextField("");
+						TextField field = fields.get(entry.getKey());
+						if (field == null)
+						{
+							field = new TextField("");
 
-						fields.put(entry.getKey(), field);
-						add(new Label(entry.getKey()));
-						add(field);
+							fields.put(entry.getKey(), field);
+							add(new Label(entry.getKey()));
+							add(field);
+						}
+						field.setText(entry.getValue());
+						field.setName(entry.getKey());
 					}
-					field.setText(entry.getValue());
-					field.setName(entry.getKey());
+				} catch (Exception e)
+				{
+					e.printStackTrace();
 				}
 				validate();
 				repaint();

@@ -79,6 +79,11 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 		this.distanceTravelled = distanceTravelled;
 	}
 
+	public void setTime(long time)
+	{
+		this.time = time;
+	}
+
 	@Override
 	public String toString()
 	{
