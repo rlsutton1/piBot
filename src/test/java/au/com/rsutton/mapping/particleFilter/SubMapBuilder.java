@@ -39,6 +39,8 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 
 	}
 
+	private int scansRemaining = 5;
+
 	ProbabilityMapIIFc buildMap(RobotInterface robot) throws InterruptedException
 	{
 		robot.freeze(true);
@@ -46,7 +48,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 		robot.turn(0);
 
 		robot.publishUpdate();
-		TimeUnit.SECONDS.sleep(5);
+		TimeUnit.MILLISECONDS.sleep(1500);
 		robot.addMessageListener(this);
 
 		while (scansRemaining > 0)
@@ -100,8 +102,6 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 	}
 
 	int lastHeading = 0;
-
-	private int scansRemaining = 10;
 
 	@Override
 	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observations)

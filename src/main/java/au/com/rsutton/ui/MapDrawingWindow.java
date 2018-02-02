@@ -73,7 +73,7 @@ public class MapDrawingWindow extends JFrame implements Runnable
 	@Override
 	public void run()
 	{
-		while (true)
+		while (stop == false)
 		{
 			try
 			{

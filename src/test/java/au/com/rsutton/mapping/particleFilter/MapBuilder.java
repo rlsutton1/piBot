@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import com.google.common.base.Stopwatch;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.multimap.ParticleFilterProxy;
@@ -33,6 +34,10 @@ import au.com.rsutton.units.DistanceUnit;
 
 public class MapBuilder
 {
+
+	private static final double DISTANCE_NOISE = 1;
+
+	private static final double HEADING_NOISE = 1;
 
 	double maxUsableDistance = 1000;
 
@@ -155,12 +160,15 @@ public class MapBuilder
 			if (sim)
 			{
 				RobotSimulator robotS = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
-				robotS.setLocation(-150, 300, new Random().nextInt(360));
+				robotS.setLocation(-150, 100, new Random().nextInt(360));
 				this.robot = robotS;
 			} else
 			{
 				this.robot = new RobotImple();
 			}
+
+			vistedLocations.add(new XY(0, 0));
+
 			panel = new MapDrawingWindow("Map Builder");
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
@@ -227,8 +235,8 @@ public class MapBuilder
 			}
 		}
 
-		particleFilterProxy
-				.changeParticleFilter(new ParticleFilterImpl(map, 1000, 5.8, 5.8, StartPosition.ZERO, robot, null));
+		particleFilterProxy.changeParticleFilter(
+				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
 		poseAdjuster.setPose(currentSubMap.mapPose);
 
 	}
@@ -240,11 +248,11 @@ public class MapBuilder
 	void navigateThroughSubMapsTo() throws InterruptedException
 	{
 
-		SubMapHolder currentMap = null;
 		List<SubMapHolder> mapList = new LinkedList<>();
+		Set<SubMapHolder> usedMaps = new HashSet<>();
 
-		double x = particleFilterProxy.getXyPosition().getX().convert(DistanceUnit.CM);
-		double y = particleFilterProxy.getXyPosition().getY().convert(DistanceUnit.CM);
+		double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
+		double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
 
 		int targetX = 0;
 		int targetY = 0;
@@ -253,12 +261,12 @@ public class MapBuilder
 		{
 			ExpansionPoint next = navigatorControl.getRouteForLocation((int) x, (int) y);
 
-			SubMapHolder map = findNearestSubMap(next);
+			SubMapHolder map = findNearestSubMap(x, y);
 
-			if (!map.equals(currentMap))
+			if (!usedMaps.contains(map))
 			{
 				mapList.add(map);
-				currentMap = map;
+				usedMaps.add(map);
 			}
 
 			double dx = (x - next.getX()) * 5;
@@ -277,12 +285,12 @@ public class MapBuilder
 		for (int i = 0; i < mapList.size() - 1; i++)
 		{
 			SubMapHolder map = mapList.get(i);
-			particleFilterProxy.changeParticleFilter(
-					new ParticleFilterImpl(map.map, 1000, 5.8, 5.8, StartPosition.RANDOM, robot, null));
-			poseAdjuster.setPose(map.mapPose);
+
+			setupForSubMapTraversal(map);
 
 			navigatorControl.calculateRouteTo((int) mapList.get(i + 1).mapPose.x, (int) mapList.get(i + 1).mapPose.y,
 					null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			TimeUnit.MILLISECONDS.sleep(1500);
 			navigatorControl.go();
 			while (!navigatorControl.hasReachedDestination())
 			{
@@ -293,22 +301,33 @@ public class MapBuilder
 		if (mapList.size() > 1)
 		{
 			SubMapHolder map = mapList.get(mapList.size() - 1);
-			particleFilterProxy.changeParticleFilter(
-					new ParticleFilterImpl(map.map, 1000, 5.8, 5.8, StartPosition.RANDOM, robot, null));
-			poseAdjuster.setPose(map.mapPose);
+			setupForSubMapTraversal(map);
 		}
 		navigatorControl.calculateRouteTo(targetX, targetY, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 		navigatorControl.go();
 
 	}
 
-	private SubMapHolder findNearestSubMap(ExpansionPoint next)
+	private void setupForSubMapTraversal(SubMapHolder map)
+	{
+		DistanceXY currentXY = poseAdjuster.getXyPosition();
+		double currentHeading = poseAdjuster.getHeading();
+		double tx = map.mapPose.getX() - currentXY.getX().convert(DistanceUnit.CM);
+		double ty = map.mapPose.getY() - currentXY.getY().convert(DistanceUnit.CM);
+		double th = HeadingHelper.normalizeHeading(currentHeading - map.mapPose.heading);
+
+		Pose pose = new Pose(tx, ty, th);
+
+		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(map.map, 1000, DISTANCE_NOISE, HEADING_NOISE,
+				StartPosition.USE_POSE, robot, pose));
+		poseAdjuster.setPose(map.mapPose);
+	}
+
+	private SubMapHolder findNearestSubMap(double x, double y)
 	{
 		double distance = Double.MAX_VALUE;
 
-		DistanceXY position = poseAdjuster.source.getXyPosition();
-		Vector3D pos = new Vector3D(position.getX().convert(DistanceUnit.CM), position.getY().convert(DistanceUnit.CM),
-				0);
+		Vector3D pos = new Vector3D(x, y, 0);
 		SubMapHolder bestMap = null;
 		for (SubMapHolder map : subMaps)
 		{
@@ -334,7 +353,11 @@ public class MapBuilder
 				|| targetElapsedMinutes > 2)
 		{
 			navigatorControl.stop();
-			TimeUnit.SECONDS.sleep(5);
+			for (int i = 0; i < 15; i++)
+			{
+				robot.freeze(true);
+				TimeUnit.MILLISECONDS.sleep(100);
+			}
 			addMap(poseAdjuster);
 
 			chooseTarget();
@@ -350,7 +373,18 @@ public class MapBuilder
 		if (targetAge.elapsed(TimeUnit.SECONDS) > 15)
 		{
 
-			setNewTarget();
+			if (!setNewTarget())
+			{
+				navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				try
+				{
+					TimeUnit.SECONDS.sleep(10);
+				} catch (InterruptedException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			targetAge.reset();
 			targetAge.start();
 		}
@@ -396,8 +430,10 @@ public class MapBuilder
 			vistedLocations.add(location);
 			navigatorControl.calculateRouteTo(location.getX(), location.getY(), null,
 					RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+
+			return true;
 		}
-		return true;
+		return false;
 		// complete = true;
 		// return false;
 	}
