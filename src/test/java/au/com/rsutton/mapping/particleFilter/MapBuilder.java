@@ -35,9 +35,13 @@ import au.com.rsutton.units.DistanceUnit;
 public class MapBuilder
 {
 
-	private static final double DISTANCE_NOISE = 1;
+	private static final int RANGE_LIMIT_FOR_ADD = 150;
 
-	private static final double HEADING_NOISE = 1;
+	private static final int MIN_TARGET_SEPARATION = (int) (RANGE_LIMIT_FOR_ADD * 0.4);
+
+	private static final double DISTANCE_NOISE = 3;
+
+	private static final double HEADING_NOISE = 3;
 
 	double maxUsableDistance = 1000;
 
@@ -64,98 +68,23 @@ public class MapBuilder
 		ProbabilityMapIIFc map;
 	}
 
-	class PoseAdjuster implements RobotPoseSource
-
-	{
-		Pose pose;
-		RobotPoseSource source;
-
-		PoseAdjuster(Pose pose, RobotPoseSource source)
-		{
-			this.pose = pose;
-			this.source = source;
-		}
-
-		@Override
-		public double getHeading()
-		{
-			return pose.heading + source.getHeading();
-		}
-
-		@Override
-		public DistanceXY getXyPosition()
-		{
-			Vector3D vector = new Vector3D(source.getXyPosition().getX().convert(DistanceUnit.CM),
-					source.getXyPosition().getY().convert(DistanceUnit.CM), 0);
-
-			vector = pose.applyTo(vector);
-
-			return new DistanceXY(vector.getX(), vector.getY(), DistanceUnit.CM);
-		}
-
-		@Override
-		public double getStdDev()
-		{
-			return source.getStdDev();
-		}
-
-		@Override
-		public void shutdown()
-		{
-			source.shutdown();
-
-		}
-
-		public void setPose(Pose mapPose)
-		{
-			pose = mapPose;
-
-		}
-
-		@Override
-		public DataSourcePoint getParticlePointSource()
-		{
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public DataSourceMap getHeadingMapDataSource()
-		{
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Double getBestScanMatchScore()
-		{
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Double getBestRawScore()
-		{
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-	}
-
 	List<SubMapHolder> subMaps = new LinkedList<>();
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 
 	private ParticleFilterProxy particleFilterProxy;
 
+	SubMapHolder currentMap;
+
 	@Test
 	public void test() throws InterruptedException
 	{
 		try
 		{
+
 			new DataWindow();
 
-			boolean sim = true;
+			boolean sim = false;
 
 			if (sim)
 			{
@@ -177,14 +106,37 @@ public class MapBuilder
 			this.poseAdjuster = new PoseAdjuster(new Pose(0, 0, 0), particleFilterProxy);
 
 			addMap(getZeroPose());
+			currentMap = subMaps.get(0);
 
 			this.navigatorControl = new Navigator(world, poseAdjuster, robot);
 
 			chooseTarget();
+
+			int changeCounter = 10;
 			while (!complete)
 			{
 				TimeUnit.MILLISECONDS.sleep(500);
 				update();
+
+				double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
+				double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
+				SubMapHolder nearestmap = findNearestSubMap(x, y);
+				if (nearestmap != currentMap)
+				{
+					Vector3D nearest = new Vector3D(nearestmap.mapPose.getX(), nearestmap.mapPose.getY(), 0);
+					Vector3D current = new Vector3D(currentMap.mapPose.getX(), currentMap.mapPose.getY(), 0);
+					Vector3D here = new Vector3D(x, y, 0);
+					double separation = nearest.distance(current);
+					if (here.distance(current) > here.distance(nearest) + 20 && separation > MIN_TARGET_SEPARATION
+							&& changeCounter < 0)
+					{
+						setupForSubMapTraversal(nearestmap);
+						current = nearest;
+						changeCounter = 10;
+					}
+				}
+				changeCounter--;
+
 			}
 		} catch (Exception e)
 		{
@@ -198,6 +150,7 @@ public class MapBuilder
 		SubMapHolder currentSubMap = new SubMapHolder(new Pose(pose.getXyPosition().getX().convert(DistanceUnit.CM),
 				pose.getXyPosition().getY().convert(DistanceUnit.CM), pose.getHeading()), map);
 		subMaps.add(currentSubMap);
+		currentMap = currentSubMap;
 
 		world.erase();
 
@@ -214,7 +167,7 @@ public class MapBuilder
 				{
 					double value = subMap.map.get(x, y);
 					Vector3D vector = new Vector3D(x, y, 0);
-					if (vector.distance(Vector3D.ZERO) < 200)
+					if (vector.distance(Vector3D.ZERO) < RANGE_LIMIT_FOR_ADD)
 					{
 						vector = subMap.mapPose.applyTo(vector);
 
@@ -257,7 +210,7 @@ public class MapBuilder
 		int targetX = 0;
 		int targetY = 0;
 
-		for (int i = 0; i < 300; i++)
+		for (int i = 0; i < 600; i++)
 		{
 			ExpansionPoint next = navigatorControl.getRouteForLocation((int) x, (int) y);
 
@@ -308,7 +261,7 @@ public class MapBuilder
 
 	}
 
-	private void setupForSubMapTraversal(SubMapHolder map)
+	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
 	{
 		DistanceXY currentXY = poseAdjuster.getXyPosition();
 		double currentHeading = poseAdjuster.getHeading();
@@ -318,9 +271,13 @@ public class MapBuilder
 
 		Pose pose = new Pose(tx, ty, th);
 
+		navigatorControl.suspend();
+		TimeUnit.SECONDS.sleep(1);
 		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(map.map, 1000, DISTANCE_NOISE, HEADING_NOISE,
 				StartPosition.USE_POSE, robot, pose));
 		poseAdjuster.setPose(map.mapPose);
+		TimeUnit.SECONDS.sleep(1);
+		navigatorControl.resume();
 	}
 
 	private SubMapHolder findNearestSubMap(double x, double y)
@@ -362,32 +319,29 @@ public class MapBuilder
 
 			chooseTarget();
 
-			navigateThroughSubMapsTo();
-			// navigatorControl.go();
+			// navigateThroughSubMapsTo();
+			navigatorControl.go();
 		}
 	}
 
 	private void chooseTarget()
 	{
 
-		if (targetAge.elapsed(TimeUnit.SECONDS) > 15)
+		if (!setNewTarget())
 		{
-
-			if (!setNewTarget())
+			navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			try
 			{
-				navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-				try
-				{
-					TimeUnit.SECONDS.sleep(10);
-				} catch (InterruptedException e)
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				TimeUnit.SECONDS.sleep(10);
+			} catch (InterruptedException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			targetAge.reset();
-			targetAge.start();
 		}
+		targetAge.reset();
+		targetAge.start();
+
 		navigatorControl.go();
 	}
 
@@ -412,8 +366,8 @@ public class MapBuilder
 				boolean isVisited = false;
 				for (XY visted : vistedLocations)
 				{
-					isVisited |= Math.abs(visted.getX() - newLocation.getX()) < 75
-							&& Math.abs(visted.getY() - newLocation.getY()) < 75;
+					isVisited |= Math.abs(visted.getX() - newLocation.getX()) < MIN_TARGET_SEPARATION
+							&& Math.abs(visted.getY() - newLocation.getY()) < MIN_TARGET_SEPARATION;
 				}
 
 				if (!isVisited)
@@ -473,15 +427,17 @@ public class MapBuilder
 		boolean isValid = world.get(x, y) < requiredValue;
 		if (isValid)
 		{
-			int checkRadius = 25;
-			isValid &= world.get(x + checkRadius, y) < requiredValue;
-			isValid &= world.get(x - checkRadius, y) < requiredValue;
-			isValid &= world.get(x, y + checkRadius) < requiredValue;
-			isValid &= world.get(x, y - checkRadius) < requiredValue;
-			isValid &= world.get(x + checkRadius, y + checkRadius) < requiredValue;
-			isValid &= world.get(x - checkRadius, y - checkRadius) < requiredValue;
-			isValid &= world.get(x + checkRadius, y - checkRadius) < requiredValue;
-			isValid &= world.get(x - checkRadius, y + checkRadius) < requiredValue;
+			for (int checkRadius = 5; checkRadius < 40; checkRadius += 5)
+			{
+				isValid &= world.get(x + checkRadius, y) < requiredValue;
+				isValid &= world.get(x - checkRadius, y) < requiredValue;
+				isValid &= world.get(x, y + checkRadius) < requiredValue;
+				isValid &= world.get(x, y - checkRadius) < requiredValue;
+				isValid &= world.get(x + checkRadius, y + checkRadius) < requiredValue;
+				isValid &= world.get(x - checkRadius, y - checkRadius) < requiredValue;
+				isValid &= world.get(x + checkRadius, y - checkRadius) < requiredValue;
+				isValid &= world.get(x - checkRadius, y + checkRadius) < requiredValue;
+			}
 		}
 		return isValid;
 

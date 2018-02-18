@@ -19,9 +19,15 @@ import ev3dev.sensors.slamtec.model.ScanDistance;
 
 public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetMotion>
 {
+	private static final int ROBOT_RADIUS = 15;
+
+	private static final int MINIMUM_CLEARANCE = 5;
+
 	Roomba630 roomba630;
 
 	private RPLidarAdaptor lidar;
+
+	private volatile boolean obsticleNear = false;
 
 	Vector3D lidarTranslation = new Vector3D(0, -10, 0);
 
@@ -48,6 +54,21 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 	{
 		SetMotion command = message.getMessageObject();
 
+		if (obsticleNear)
+		{
+			// turn on the spot!
+			Double changeHeading = command.getChangeHeading();
+			if (changeHeading > 179)
+			{
+				changeHeading -= 360;
+			}
+			if (changeHeading < -179)
+			{
+				changeHeading += 360;
+			}
+			command.setChangeHeading(Math.signum(changeHeading) * 120);
+		}
+
 		roomba630.setMotion(command);
 
 	}
@@ -61,6 +82,7 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 
 		if (scan != null)
 		{
+			obsticleNear = false;
 
 			for (ScanDistance measurement : scan.getDistances())
 			{
@@ -80,6 +102,13 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 				{
 					isStartOfScan = false;
 				}
+
+				obsticleNear |= isObsticleNear(result);
+
+			}
+			if (obsticleNear)
+			{
+				roomba630.alarm();
 			}
 		}
 		// need to apply translations to the scan data
@@ -93,6 +122,30 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 		location.addObservations(observations);
 		location.publish();
 
+	}
+
+	boolean isObsticleNear(Vector3D result)
+	{
+		double safeWidth = ROBOT_RADIUS + MINIMUM_CLEARANCE;
+		double yExclusionZone = 35;
+		boolean ret = false;
+		if (result.getY() > 0 && result.getY() < yExclusionZone + ROBOT_RADIUS)
+		{
+			if (Math.abs(result.getX()) < safeWidth)
+			{
+				double distance = result.distance(Vector3D.ZERO);
+				if (distance > ROBOT_RADIUS)
+				{
+					double scaling = 1.0 - (Math.abs(result.getX()) / safeWidth);
+
+					if ((distance - ROBOT_RADIUS) < (yExclusionZone * scaling) + MINIMUM_CLEARANCE)
+					{
+						ret = true;
+					}
+				}
+			}
+		}
+		return ret;
 	}
 
 	public void shutdown()

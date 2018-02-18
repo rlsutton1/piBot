@@ -11,13 +11,16 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.array.SparseArray;
-import au.com.rsutton.mapping.particleFilter.Despecaler;
+import au.com.rsutton.mapping.probability.Occupancy;
+import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class RoutePlanner
 {
 
-	private ProbabilityMapIIFc world;
+	private ProbabilityMapIIFc sourceMap;
+
+	private ProbabilityMapIIFc augmentedMap;
 
 	static final int WALL = 1000000;
 
@@ -31,14 +34,17 @@ public class RoutePlanner
 
 	public RoutePlanner(ProbabilityMapIIFc world)
 	{
-		this.world = world;
+		this.sourceMap = world;
 	}
 
 	public void createRoute(int toX, int toY, RouteOption routeOption)
 	{
 		wallChecks.clear();
 
-		Despecaler.despecal(world);
+		augmentedMap = sourceMap;
+		augmentedMap = createAugmentedMap(sourceMap);
+
+		// Despecaler.despecal(augmentedMap);
 
 		this.targetX = toX;
 		this.targetY = toY;
@@ -60,6 +66,38 @@ public class RoutePlanner
 			deferredPoints.addAll(expandPoints(immediatePoints, WALL, moveCounter, routeOption));
 			immediatePoints.addAll(expandDeferredPoints(deferredPoints, moveCounter));
 		}
+	}
+
+	ProbabilityMapIIFc createAugmentedMap(ProbabilityMapIIFc source)
+	{
+		ProbabilityMap matchMap = new ProbabilityMap(5);
+		matchMap.setDefaultValue(0.5);
+		matchMap.erase();
+		int radius = 35;
+
+		int minX = source.getMinX();
+		int maxX = source.getMaxX();
+		int minY = source.getMinY();
+		int maxY = source.getMaxY();
+
+		for (int x = minX; x < maxX + 1; x++)
+		{
+			for (int y = minY; y < maxY + 1; y++)
+			{
+				double value = source.get(x, y);
+				if (value > 0.5)
+				{
+					matchMap.updatePoint(x, y, Occupancy.OCCUPIED, 1, radius);
+				}
+				if (value < 0.5)
+				{
+					matchMap.updatePoint(x, y, Occupancy.VACANT, 1, radius);
+
+				}
+			}
+		}
+
+		return matchMap;
 	}
 
 	/**
@@ -108,7 +146,7 @@ public class RoutePlanner
 			for (ExpansionPoint temp : tempPoints)
 			{
 				if (isPointWithinWorldBountries(temp))
-					if (routeOption.isPointRoutable(world.get(temp.x * blockSize, temp.y * blockSize))
+					if (routeOption.isPointRoutable(augmentedMap.get(temp.x * blockSize, temp.y * blockSize))
 							&& route.get(temp.x, temp.y) > moveCounter.get() && !isPointRoutedAlready(wall, temp))
 					{
 
@@ -135,8 +173,8 @@ public class RoutePlanner
 
 	private boolean isPointWithinWorldBountries(ExpansionPoint temp)
 	{
-		return temp.x > world.getMinX() / blockSize && temp.x < world.getMaxX() / blockSize
-				&& temp.y > world.getMinY() / blockSize && temp.y < world.getMaxY() / blockSize;
+		return temp.x > augmentedMap.getMinX() / blockSize && temp.x < augmentedMap.getMaxX() / blockSize
+				&& temp.y > augmentedMap.getMinY() / blockSize && temp.y < augmentedMap.getMaxY() / blockSize;
 	}
 
 	Map<ExpansionPoint, Integer> wallChecks = new HashMap<>();
@@ -170,7 +208,8 @@ public class RoutePlanner
 
 			for (ExpansionPoint radiusPoint : points)
 			{
-				if (world.get((epoint.x + radiusPoint.x) * blockSize, (epoint.y + radiusPoint.y) * blockSize) > 0.5)
+				if (augmentedMap.get((epoint.x + radiusPoint.x) * blockSize,
+						(epoint.y + radiusPoint.y) * blockSize) > 0.5)
 				{
 					wallChecks.put(epoint, size);
 					return size;

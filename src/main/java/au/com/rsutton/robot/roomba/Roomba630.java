@@ -5,6 +5,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.maschel.roomba.RoombaJSSC;
 import com.maschel.roomba.RoombaJSSCSerial;
+import com.maschel.roomba.song.RoombaNote;
+import com.maschel.roomba.song.RoombaNoteDuration;
+import com.maschel.roomba.song.RoombaSongNote;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
@@ -21,6 +24,7 @@ public class Roomba630 implements Runnable
 
 	// publish deltas
 
+	private static final int ALARM_SONG = 0;
 	private static final int STRAIGHT = 32768;
 	// enact commands
 	final private DistanceUnit distUnit = DistanceUnit.MM;
@@ -28,6 +32,10 @@ public class Roomba630 implements Runnable
 	private RoombaJSSC roomba;
 
 	final Object sync = new Object();
+
+	int currentSpeed;
+	int targetSpeed;
+	int turnRadius;
 
 	private volatile long commandExpires;
 
@@ -83,8 +91,23 @@ public class Roomba630 implements Runnable
 			TimeUnit.SECONDS.sleep(1);
 			roomba.leds(true, true, true, true, 100, 100);
 
+			setupMusic();
+
 		}
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 100, TimeUnit.MILLISECONDS);
+
+	}
+
+	private void setupMusic()
+	{
+		RoombaSongNote[] notes = {
+				new RoombaSongNote(RoombaNote.C3, RoombaNoteDuration.SixteenthNote),
+				new RoombaSongNote(RoombaNote.E3, RoombaNoteDuration.SixteenthNote),
+				new RoombaSongNote(RoombaNote.C3, RoombaNoteDuration.SixteenthNote),
+				new RoombaSongNote(RoombaNote.E3, RoombaNoteDuration.SixteenthNote) };
+		// Save to song number 0, tempo (in BPM) 125
+		roomba.song(ALARM_SONG, notes, 125);
+		// Play song 0
 
 	}
 
@@ -136,6 +159,8 @@ public class Roomba630 implements Runnable
 			{
 				synchronized (sync)
 				{
+					currentSpeed = 0;
+					targetSpeed = 0;
 					roomba.driveDirect(0, 0);
 				}
 			}
@@ -150,9 +175,21 @@ public class Roomba630 implements Runnable
 
 				updateDistanceTraveled();
 
-				if (roomba.bumpLeft() || roomba.bumpRight())
+				if (commandExpires < System.currentTimeMillis())
 				{
-					roomba.drive(0, 0);
+					if (roomba.bumpLeft() || roomba.bumpRight())
+					{
+						currentSpeed = 0;
+						targetSpeed = 0;
+						roomba.drive(0, 0);
+					} else
+					{
+						if (targetSpeed > currentSpeed)
+						{
+							currentSpeed += Math.min(50, targetSpeed - currentSpeed);
+						}
+						roomba.drive(currentSpeed, turnRadius);
+					}
 				}
 				if (batteryStats % 10 == 0)
 				{
@@ -172,7 +209,9 @@ public class Roomba630 implements Runnable
 				}
 			}
 
-		} catch (Exception e)
+		} catch (
+
+		Exception e)
 		{
 			e.printStackTrace();
 		}
@@ -227,7 +266,8 @@ public class Roomba630 implements Runnable
 		{
 			synchronized (sync)
 			{
-
+				currentSpeed = 0;
+				targetSpeed = 0;
 				roomba.driveDirect(0, 0);
 			}
 			new DataLogValue("Roomba-Speed", "0").publish();
@@ -266,15 +306,30 @@ public class Roomba630 implements Runnable
 			{
 				if (!roomba.bumpLeft() && !roomba.bumpRight())
 				{
-					roomba.drive(speed, radius);
+					targetSpeed = speed;
+					turnRadius = radius;
+					if (targetSpeed < currentSpeed)
+					{
+						currentSpeed = targetSpeed;
+					} else
+					{
+						currentSpeed += Math.min(50, targetSpeed - currentSpeed);
+					}
+					roomba.drive(currentSpeed, radius);
 				} else
 				{
-
+					currentSpeed = 0;
+					targetSpeed = 0;
 					roomba.drive(0, 0);
 					System.out.println("Stopping due to bumper");
 				}
 			}
 		}
+	}
+
+	public void alarm()
+	{
+		roomba.play(ALARM_SONG);
 	}
 
 }

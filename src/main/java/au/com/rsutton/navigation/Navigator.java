@@ -268,7 +268,7 @@ public class Navigator implements Runnable, NavigatorControl
 				if (routePlanner.hasPlannedRoute())
 				{
 
-					for (int i = 0; i < 150; i++)
+					for (int i = 0; i < 300; i++)
 					{
 						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
 						points.add(new Point(next.getX(), next.getY()));
