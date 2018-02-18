@@ -59,11 +59,19 @@
 			<version>15.0</version>
 		</dependency>
 
+<!-- 		<dependency> -->
+<!-- 			<groupId>Quadtree</groupId> -->
+<!-- 			<artifactId>Quadtree</artifactId> -->
+<!-- 			<version>1.0</version> -->
+<!-- 		</dependency> -->
+
 		<dependency>
-			<groupId>Quadtree</groupId>
-			<artifactId>Quadtree</artifactId>
-			<version>1.0</version>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>

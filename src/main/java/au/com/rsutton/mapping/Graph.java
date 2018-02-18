@@ -190,7 +190,8 @@ public class Graph extends JPanel implements RobotLocationDeltaListener
 
 	public void clearMap()
 	{
-		map.qt.clear();
+		// TODO: fix this
+		// map.qt.clear();
 
 	}
 
