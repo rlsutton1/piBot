@@ -12,54 +12,28 @@ public class GraphSlamV3Test
 	{
 		GraphSlamV3<GraphSlamNodeLinear> slam = new GraphSlamV3<>(getCtor());
 
-		slam.move("p1", 20, 1);
+		slam.dump();
+
+		GraphSlamNodeLinear node1 = slam.addNode("one", 10, 1, slam.getRoot());
 
 		slam.dump();
 
-		GraphSlamNodeLinear node0 = slam.addNode("zero", 0, 1);
+		GraphSlamNodeLinear node2 = slam.addNode("two", 3, 1, slam.getRoot());
 
 		slam.dump();
 
-		GraphSlamNodeLinear node1 = slam.addNode("one", 10, 1);
+		slam.addConstraint(9, node1, 1, slam.getRoot());
 
-		slam.dump();
+		slam.addConstraint(4, node2, 1, slam.getRoot());
 
-		GraphSlamNodeLinear node2 = slam.addNode("two", 3, 1);
+		slam.addConstraint(-7, node2, 1, node1);
 
-		slam.dump();
-
-		slam.addConstraint(9, node1, 1);
-
-		slam.addConstraint(4, node2, 1);
-
-		slam.move("p2", 5, 1);
-
-		slam.addConstraint(-1, node2, 1);
-
+		System.out.println("Start Solve");
 		slam.solve();
 
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void test2()
-	{
-
-		GraphSlamV3<GraphSlamNodeLinear> slam = new GraphSlamV3<>(getCtor());
-
-		slam.move("p1", 0, 1);
-		GraphSlamNodeLinear feature = slam.addNode("f1", 10, 1);
-
-		for (int i = 0; i < 20; i++)
-		{
-			slam.move("p" + i, 1, 1);
-			slam.addConstraint(i + 10, feature, 1);
-		}
-
 		slam.dump();
 
-		System.out.println("Done");
-
+		fail("Not yet implemented");
 	}
 
 	private GraphSlamNodeConstructor<GraphSlamNodeLinear> getCtor()

@@ -84,7 +84,7 @@ public class MapBuilder
 
 			new DataWindow();
 
-			boolean sim = false;
+			boolean sim = true;
 
 			if (sim)
 			{

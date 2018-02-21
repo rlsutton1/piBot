@@ -7,8 +7,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.base.Preconditions;
-
 import au.com.rsutton.robot.rover.LogLevelHelper;
 
 public class GraphSlamV3<T extends GraphSlamNode>
@@ -18,29 +16,35 @@ public class GraphSlamV3<T extends GraphSlamNode>
 
 	List<T> nodes = new LinkedList<>();
 
-	T currentPosition;
-
 	private GraphSlamNodeConstructor<T> ctor;
+
+	private final T root;
 
 	public GraphSlamV3(GraphSlamNodeConstructor<T> ctor)
 	{
 		LogLevelHelper.setLevel(logger, Level.ERROR);
 		this.ctor = ctor;
-
-		currentPosition = this.ctor.construct("init", 0);
+		root = this.ctor.construct("init", 0);
+		addNode(0, 1, root);
 	}
 
-	public T addNode(double offset, double certainty)
+	T getRoot()
 	{
-		return addNode("", offset, certainty);
+		return root;
 	}
 
-	public T addNode(String name, double offset, double certainty)
+	public T addNode(double offset, double certainty, T referenceNode)
 	{
 
-		T node = ctor.construct(name, offset + currentPosition.getPosition());
+		return addNode("", offset, certainty, referenceNode);
+	}
 
-		addConstraint(offset, node, certainty);
+	public T addNode(String name, double offset, double certainty, T referenceNode)
+	{
+
+		T node = ctor.construct(name, offset + referenceNode.getPosition());
+
+		addConstraint(offset, node, certainty, referenceNode);
 
 		if (nodes.isEmpty())
 		{
@@ -52,65 +56,11 @@ public class GraphSlamV3<T extends GraphSlamNode>
 		return node;
 	}
 
-	public T move(double offset, double certainty)
-	{
-		return move("", offset, certainty);
-	}
-
-	public T move(String name, double offset, double certainty)
-	{
-		T previousPosition = currentPosition;
-
-		T newPosition = addNode(name, offset, certainty);
-		currentPosition = newPosition;
-
-		if (!previousPosition.isRoot())
-		{
-			// deleteNodeRetainConstraints(previousPosition);
-		}
-
-		return currentPosition;
-	}
-
-	public void addConstraint(double offset, T node, double certainty)
+	public void addConstraint(double offset, T node, double certainty, T referenceNode)
 	{
 
-		node.addConstraint(currentPosition, -offset, certainty, ConstraintOrigin.ROOT);
-		currentPosition.addConstraint(node, offset, certainty, ConstraintOrigin.FLOATING);
-	}
-
-	public void deleteNode(T node)
-	{
-		Preconditions.checkArgument(!node.equals(currentPosition), "can not delete current position");
-		nodes.remove(node);
-		for (T existing : nodes)
-		{
-			existing.deleteConstraint(node);
-		}
-	}
-
-	public void deleteNodeRetainConstraints(T node)
-	{
-		Preconditions.checkArgument(!node.equals(currentPosition), "can not delete current position");
-
-		// add linking constraints between all nodes constrained through this
-		// node we're about to delete
-		for (GraphSlamConstraint constraint1 : node.getConstraints())
-		{
-
-			for (GraphSlamConstraint constraint2 : node.getConstraints())
-			{
-				if (!constraint1.equals(constraint2))
-				{
-					double offset = constraint2.getOffset() - constraint1.getOffset();
-					double weight = Math.min(constraint1.getWeight(), constraint2.getWeight());
-					constraint1.node.addConstraint(constraint2.node, offset, weight, constraint2.constraintOrigin);
-					constraint2.node.addConstraint(constraint1.node, -offset, weight, constraint1.constraintOrigin);
-				}
-			}
-		}
-		deleteNode(node);
-
+		node.addConstraint(referenceNode, -offset, certainty, ConstraintOrigin.ROOT);
+		referenceNode.addConstraint(node, offset, certainty, ConstraintOrigin.FLOATING);
 	}
 
 	public void solve()
@@ -126,7 +76,6 @@ public class GraphSlamV3<T extends GraphSlamNode>
 			lastError = error;
 
 		}
-		logger.info("Current Position " + currentPosition);
 		if (ctr > 4)
 		{
 			logger.info("Rounds " + ctr);
@@ -167,10 +116,10 @@ public class GraphSlamV3<T extends GraphSlamNode>
 	{
 		for (T node : nodes)
 		{
-			logger.info(node);
+			logger.error(node);
 			for (GraphSlamConstraint constraint : node.getConstraints())
 			{
-				logger.info("-->" + constraint);
+				logger.error("-->" + constraint);
 			}
 
 		}

@@ -19,7 +19,6 @@ import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.navigation.feature.PiBotGraphSlamFeatureTracker;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -65,13 +64,6 @@ public class Navigator implements Runnable, NavigatorControl
 		ui = new MapDrawingWindow("Navigator");
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
-		//
-		if (pf == null)
-		{
-			// if no pf provided, then use slam
-			slam = new PiBotGraphSlamFeatureTracker(ui, robot);
-			pf = slam;
-		}
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
