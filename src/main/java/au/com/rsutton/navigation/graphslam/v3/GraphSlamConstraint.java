@@ -1,19 +1,20 @@
 package au.com.rsutton.navigation.graphslam.v3;
 
-class GraphSlamConstraint
+class GraphSlamConstraint<T extends MathOperators<T>>
 {
-	final GraphSlamNode node;
-	final GraphSlamNode parentNode;
-	private final GraphSlamWeightedAverage offset = new GraphSlamWeightedAverage();
+	final GraphSlamNode<T> node;
+	final GraphSlamNode<T> parentNode;
+	private final T offset;
 
 	final ConstraintOrigin constraintOrigin;
 
-	GraphSlamConstraint(GraphSlamNode parentNode, GraphSlamNode node, double offset, double certainty,
-			ConstraintOrigin constraintDirection)
+	GraphSlamConstraint(GraphSlamNode<T> parentNode, GraphSlamNode<T> node, T offset, double certainty,
+			ConstraintOrigin constraintDirection, T zero)
 	{
+		this.offset = zero.copy();
 		this.parentNode = parentNode;
 		this.node = node;
-		this.offset.addValue(offset, certainty);
+		this.offset.addWeightedValueForAverage(offset, certainty);
 		this.constraintOrigin = constraintDirection;
 	}
 
@@ -23,7 +24,7 @@ class GraphSlamConstraint
 		return "Constraint [node=" + node + ", offset=" + offset + " origin=" + constraintOrigin + "]";
 	}
 
-	public double getOffset()
+	public T getOffset()
 	{
 		return offset.getWeightedAverage();
 	}
@@ -46,7 +47,8 @@ class GraphSlamConstraint
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		GraphSlamConstraint other = (GraphSlamConstraint) obj;
+		@SuppressWarnings("unchecked")
+		GraphSlamConstraint<T> other = (GraphSlamConstraint<T>) obj;
 		if (node == null)
 		{
 			if (other.node != null)
@@ -56,9 +58,9 @@ class GraphSlamConstraint
 		return true;
 	}
 
-	public void addValue(double offset2, double certainty)
+	public void addValue(T offset2, double certainty)
 	{
-		offset.addValue(offset2, certainty);
+		offset.addWeightedValueForAverage(offset2, certainty);
 
 	}
 

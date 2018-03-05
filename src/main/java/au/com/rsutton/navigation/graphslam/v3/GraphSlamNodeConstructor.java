@@ -1,8 +1,10 @@
 package au.com.rsutton.navigation.graphslam.v3;
 
-public interface GraphSlamNodeConstructor<T extends GraphSlamNode>
+public interface GraphSlamNodeConstructor<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 {
 
-	T construct(String name, double initialPosition);
+	N construct(String name, V initialPosition);
+
+	V zero();
 
 }

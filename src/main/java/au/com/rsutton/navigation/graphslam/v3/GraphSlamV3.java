@@ -9,40 +9,40 @@ import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.robot.rover.LogLevelHelper;
 
-public class GraphSlamV3<T extends GraphSlamNode>
+public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 {
 
 	Logger logger = LogManager.getLogger();
 
-	List<T> nodes = new LinkedList<>();
+	List<N> nodes = new LinkedList<>();
 
-	private GraphSlamNodeConstructor<T> ctor;
+	private GraphSlamNodeConstructor<N, V> ctor;
 
-	private final T root;
+	private final N root;
 
-	public GraphSlamV3(GraphSlamNodeConstructor<T> ctor)
+	public GraphSlamV3(GraphSlamNodeConstructor<N, V> ctor)
 	{
 		LogLevelHelper.setLevel(logger, Level.ERROR);
 		this.ctor = ctor;
-		root = this.ctor.construct("init", 0);
-		addNode(0, 1, root);
+		root = this.ctor.construct("init", ctor.zero());
+		addNode(ctor.zero(), 1, root);
 	}
 
-	T getRoot()
+	N getRoot()
 	{
 		return root;
 	}
 
-	public T addNode(double offset, double certainty, T referenceNode)
+	public N addNode(V offset, double certainty, N referenceNode)
 	{
 
 		return addNode("", offset, certainty, referenceNode);
 	}
 
-	public T addNode(String name, double offset, double certainty, T referenceNode)
+	public N addNode(String name, V offset, double certainty, N referenceNode)
 	{
 
-		T node = ctor.construct(name, offset + referenceNode.getPosition());
+		N node = ctor.construct(name, offset);
 
 		addConstraint(offset, node, certainty, referenceNode);
 
@@ -56,24 +56,20 @@ public class GraphSlamV3<T extends GraphSlamNode>
 		return node;
 	}
 
-	public void addConstraint(double offset, T node, double certainty, T referenceNode)
+	public void addConstraint(V offset, N node, double certainty, N referenceNode)
 	{
 
-		node.addConstraint(referenceNode, -offset, certainty, ConstraintOrigin.ROOT);
+		node.addConstraint(referenceNode, offset.inverse(), certainty, ConstraintOrigin.FLOATING);
 		referenceNode.addConstraint(node, offset, certainty, ConstraintOrigin.FLOATING);
 	}
 
 	public void solve()
 	{
-		double lastError = 1;
-		double errorChange = 10000;
 		int ctr = 0;
-		while (errorChange > 1 && ctr < 10)
+		while (ctr < 10)
 		{
 			ctr++;
-			double error = updatePositions();
-			errorChange = Math.abs(error - lastError);
-			lastError = error;
+			V error = updatePositions();
 
 		}
 		if (ctr > 4)
@@ -82,24 +78,26 @@ public class GraphSlamV3<T extends GraphSlamNode>
 		}
 	}
 
-	private double updatePositions()
+	private V updatePositions()
 	{
-		double totalError = 0;
-		for (T node : nodes)
+		V totalError = ctor.zero();
+		for (N node : nodes)
 		{
-			GraphSlamWeightedAverage error = new GraphSlamWeightedAverage();
-			for (GraphSlamConstraint constraint : node.getConstraints())
+			V error = ctor.zero();
+			for (GraphSlamConstraint<V> constraint : node.getConstraints())
 			{
-				double err = node.calculateError(constraint);
+				V err = node.calculateError(constraint);
+				// if (!node.isRoot())
+				// logger.error(node + " err=" + err);
 				double weight = node.getWeight();
-				error.addValue(err, weight);
+				error.addWeightedValueForAverage(err, weight);
 
 			}
 
 			node.setCurrentError(error.getWeightedAverage());
-			totalError += error.getWeightedAverage();
+			totalError = totalError.adjust(error.getWeightedAverage());
 		}
-		for (T node : nodes)
+		for (N node : nodes)
 		{
 			if (!node.isRoot())
 			{
@@ -114,10 +112,11 @@ public class GraphSlamV3<T extends GraphSlamNode>
 
 	public void dump()
 	{
-		for (T node : nodes)
+		System.out.println("Dumping Graph Slam V3");
+		for (N node : nodes)
 		{
 			logger.error(node);
-			for (GraphSlamConstraint constraint : node.getConstraints())
+			for (GraphSlamConstraint<V> constraint : node.getConstraints())
 			{
 				logger.error("-->" + constraint);
 			}

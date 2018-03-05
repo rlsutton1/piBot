@@ -2,30 +2,30 @@ package au.com.rsutton.navigation.graphslam.v3;
 
 import java.util.Collection;
 
-public interface GraphSlamNode
+public interface GraphSlamNode<T extends MathOperators<T>>
 {
-	double calculateError(GraphSlamConstraint constraint);
+	T calculateError(GraphSlamConstraint<T> constraint);
 
-	public double getPosition();
+	public T getPosition();
 
 	void setIsRoot(boolean isRoot);
 
 	boolean isRoot();
 
-	Collection<GraphSlamConstraint> getConstraints();
+	Collection<GraphSlamConstraint<T>> getConstraints();
 
-	void adjustPosition(double error);
+	void adjustPosition(T error);
 
-	void setCurrentError(double error);
+	void setCurrentError(T error);
 
-	double getCurrentError();
+	T getCurrentError();
 
-	double getNormalisedOffset(double offset);
+	T getNormalisedOffset(T offset);
 
-	void addConstraint(GraphSlamNode node, double offset, double certainty, ConstraintOrigin constraintDirection);
+	void addConstraint(GraphSlamNode<T> node, T offset, double certainty, ConstraintOrigin constraintDirection);
 
 	double getWeight();
 
-	void deleteConstraint(GraphSlamNode node);
+	void deleteConstraint(GraphSlamNode<T> node);
 
 }

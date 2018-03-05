@@ -5,20 +5,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class GraphSlamNodeLinear implements GraphSlamNode
+public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamNode<T>
 {
 	static final AtomicInteger nodeIdSeed = new AtomicInteger();
 
 	int id = nodeIdSeed.incrementAndGet();
-	protected double position;
-	Map<GraphSlamNode, GraphSlamConstraint> constraints = new HashMap<>();
-	double currentError;
+	protected T position;
+	Map<GraphSlamNode<T>, GraphSlamConstraint<T>> constraints = new HashMap<>();
+	T currentError;
 	boolean isRoot = false;
 	String name;
 
-	GraphSlamNodeLinear(String name, double initialPosition)
+	private final T zero;
+
+	GraphSlamNodeImpl(String name, T initialPosition, T zero)
 	{
 		position = initialPosition;
+		this.zero = zero;
 		this.name = name;
 
 	}
@@ -30,21 +33,21 @@ public class GraphSlamNodeLinear implements GraphSlamNode
 	}
 
 	@Override
-	public double calculateError(GraphSlamConstraint constraint)
+	public T calculateError(GraphSlamConstraint<T> constraint)
 	{
-		return (position - constraint.node.getPosition()) + constraint.getOffset();
+		return position.minus(constraint.node.getPosition()).applyOffset(constraint.getOffset());
 	}
 
 	@Override
-	public double getPosition()
+	public T getPosition()
 	{
 		return position;
 	}
 
 	@Override
-	public void addConstraint(GraphSlamNode node, double offset, double certainty, ConstraintOrigin constraintDirection)
+	public void addConstraint(GraphSlamNode<T> node, T offset, double certainty, ConstraintOrigin constraintDirection)
 	{
-		GraphSlamConstraint target = constraints.get(node);
+		GraphSlamConstraint<T> target = constraints.get(node);
 		if (target != null)
 		{
 			if (target.constraintOrigin != constraintDirection)
@@ -55,7 +58,7 @@ public class GraphSlamNodeLinear implements GraphSlamNode
 			target.addValue(offset, certainty);
 		} else
 		{
-			constraints.put(node, new GraphSlamConstraint(this, node, offset, certainty, constraintDirection));
+			constraints.put(node, new GraphSlamConstraint<>(this, node, offset, certainty, constraintDirection, zero));
 		}
 	}
 
@@ -72,31 +75,31 @@ public class GraphSlamNodeLinear implements GraphSlamNode
 	}
 
 	@Override
-	public Collection<GraphSlamConstraint> getConstraints()
+	public Collection<GraphSlamConstraint<T>> getConstraints()
 	{
 		return constraints.values();
 	}
 
 	@Override
-	public void adjustPosition(double error)
+	public void adjustPosition(T error)
 	{
-		position -= error;
+		position = position.minus(error);
 	}
 
 	@Override
-	public void setCurrentError(double error)
+	public void setCurrentError(T error)
 	{
 		currentError = error;
 	}
 
 	@Override
-	public double getCurrentError()
+	public T getCurrentError()
 	{
 		return currentError;
 	}
 
 	@Override
-	public double getNormalisedOffset(double offset)
+	public T getNormalisedOffset(T offset)
 	{
 		return offset;
 
@@ -120,7 +123,8 @@ public class GraphSlamNodeLinear implements GraphSlamNode
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		GraphSlamNodeLinear other = (GraphSlamNodeLinear) obj;
+		@SuppressWarnings("unchecked")
+		GraphSlamNodeImpl<T> other = (GraphSlamNodeImpl<T>) obj;
 		if (id != other.id)
 			return false;
 		return true;
@@ -130,7 +134,7 @@ public class GraphSlamNodeLinear implements GraphSlamNode
 	public double getWeight()
 	{
 		double weight = 0;
-		for (GraphSlamConstraint constraint : constraints.values())
+		for (GraphSlamConstraint<T> constraint : constraints.values())
 		{
 			weight += constraint.getWeight();
 		}
@@ -138,7 +142,7 @@ public class GraphSlamNodeLinear implements GraphSlamNode
 	}
 
 	@Override
-	public void deleteConstraint(GraphSlamNode node)
+	public void deleteConstraint(GraphSlamNode<T> node)
 	{
 		constraints.remove(node);
 	}

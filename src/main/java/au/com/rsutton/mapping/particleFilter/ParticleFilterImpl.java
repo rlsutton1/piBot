@@ -21,6 +21,7 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 import com.google.common.base.Stopwatch;
 
+import au.com.rsutton.angle.AngleUtil;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
@@ -373,37 +374,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	private void selectNewParticles(int newParticleCount, Random rand, List<Particle> newSet, double next)
-	{
-		// this is where all the time is going
-		int pos = 0;
-
-		Particle selectedParticle = null;
-
-		List<Particle> working = new LinkedList<>();
-		working.addAll(particles);
-
-		while (!working.isEmpty() && newSet.size() < newParticleCount)
-		{
-			next += rand.nextDouble() * 2.0;// 50/50 chance of the same or
-											// next
-											// being picked if they are
-											// both
-											// rated 1.0
-			while (next > 0.0)
-			{
-				selectedParticle = working.get(pos);
-
-				next -= selectedParticle.getRescaledRating();
-				pos++;
-				pos %= working.size();
-
-			}
-			// System.out.println(selectedParticle.getRating());
-			newSet.add(new Particle(selectedParticle));
-		}
-	}
-
 	class ParticleRef implements Comparable<Double>
 	{
 		Particle particle;
@@ -496,65 +466,19 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		double x = 0;
 		double y = 0;
 
-		double h = 0;
-		double h1c = 0;
-		double h2c = 0;
-		double h1 = 0;
-		double h2 = 0;
+		List<Double> angles = new LinkedList<>();
 
-		// TopNList<Particle> top = new TopNList<Particle>(550);
-		// for (Particle particle:particles)
-		// {
-		// top.add(particle.getRating(), particle);
-		// }
 		for (Particle particle : particles)
 		{
 			x += particle.getX();
 			y += particle.getY();
-			double heading = particle.getHeading();
-			if (heading > 180)
-			{
-				h2c++;
-				h2 += heading;
-			} else
-			{
-				h1c++;
-				h1 += heading;
-			}
+			angles.add(particle.getHeading());
 
-		}
-		h1 = h1 / h1c;
-		h2 = h2 / h2c;
-		if (h1c < 1)
-		{
-			h1 = h2;
-			h1c = h2c;
-		}
-		if (h2c < 1)
-		{
-			h2 = h1;
-			h2c = h1c;
-		}
-
-		Vector3D unit = new Vector3D(0, 1, 0);
-
-		Rotation r1 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(h1));
-
-		Rotation r2 = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(h2));
-
-		Vector3D v1 = r1.applyTo(unit).scalarMultiply(h1c / h2c);
-		Vector3D v2 = r2.applyTo(unit).scalarMultiply(h2c / h1c);
-
-		h = Math.toDegrees(Math.atan2(v1.add(v2).getY(), v1.add(v2).getX())) - 90;
-
-		if (h < 0)
-		{
-			h += 360;
 		}
 
 		// System.out.println("Average Heading " + h);
 
-		averageHeading = h;
+		averageHeading = AngleUtil.getAverageAngle(angles);
 
 		stablisedHeading = stablisedHeading
 				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.1);
