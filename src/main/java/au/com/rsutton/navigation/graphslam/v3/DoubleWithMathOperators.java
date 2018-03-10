@@ -3,10 +3,13 @@ package au.com.rsutton.navigation.graphslam.v3;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+
 public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOperators>
 {
 
-	final double value;
+	private final double value;
+	private org.apache.logging.log4j.Logger logger = LogManager.getLogger();
 
 	DoubleWithMathOperators(double value)
 	{
@@ -16,30 +19,25 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 	@Override
 	public DoubleWithMathOperators applyOffset(DoubleWithMathOperators value)
 	{
-		return new DoubleWithMathOperators(this.value + value.value);
+		return new DoubleWithMathOperators(this.value + value.getValue());
 	}
 
 	@Override
-	public DoubleWithMathOperators adjust(DoubleWithMathOperators value)
+	public DoubleWithMathOperators plus(DoubleWithMathOperators value)
 	{
-		return new DoubleWithMathOperators(this.value + value.value);
-	}
-
-	@Override
-	public DoubleWithMathOperators zero()
-	{
-		return new DoubleWithMathOperators(0);
+		return new DoubleWithMathOperators(this.value + value.getValue());
 	}
 
 	@Override
 	public DoubleWithMathOperators minus(DoubleWithMathOperators value)
 	{
-		return new DoubleWithMathOperators(this.value - value.value);
+		return new DoubleWithMathOperators(this.value - value.getValue());
 	}
 
 	@Override
 	public String toString()
 	{
+
 		return "" + value;
 	}
 
@@ -49,7 +47,7 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 	@Override
 	public void addWeightedValueForAverage(DoubleWithMathOperators value, double weight)
 	{
-		valuesForAverage.add(value.value);
+		valuesForAverage.add(value.getValue());
 		totalWeight += weight;
 
 	}
@@ -62,7 +60,7 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 		{
 			total += value;
 		}
-		return new DoubleWithMathOperators(total / valuesForAverage.size());
+		return new DoubleWithMathOperators(total / Math.max(1, valuesForAverage.size()));
 	}
 
 	@Override
@@ -78,10 +76,19 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 
 	}
 
-	@Override
-	public DoubleWithMathOperators inverse()
+	public double getValue()
 	{
-		return new DoubleWithMathOperators(value * -1);
+		return value;
+	}
+
+	@Override
+	public void dumpObservations()
+	{
+		for (Double value : valuesForAverage)
+		{
+			logger.error("--------> Observation " + value);
+		}
+
 	}
 
 }

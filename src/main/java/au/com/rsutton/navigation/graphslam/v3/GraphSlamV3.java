@@ -12,9 +12,9 @@ import au.com.rsutton.robot.rover.LogLevelHelper;
 public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 {
 
-	Logger logger = LogManager.getLogger();
+	private Logger logger = LogManager.getLogger();
 
-	List<N> nodes = new LinkedList<>();
+	private List<N> nodes = new LinkedList<>();
 
 	private GraphSlamNodeConstructor<N, V> ctor;
 
@@ -25,7 +25,8 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 		LogLevelHelper.setLevel(logger, Level.ERROR);
 		this.ctor = ctor;
 		root = this.ctor.construct("init", ctor.zero());
-		addNode(ctor.zero(), 1, root);
+		root.setIsRoot(true);
+		nodes.add(root);
 	}
 
 	N getRoot()
@@ -33,16 +34,16 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 		return root;
 	}
 
-	public N addNode(V offset, double certainty, N referenceNode)
+	public N addNode(V initialPosition, V offset, double certainty, N referenceNode)
 	{
 
-		return addNode("", offset, certainty, referenceNode);
+		return addNode("", initialPosition, offset, certainty, referenceNode);
 	}
 
-	public N addNode(String name, V offset, double certainty, N referenceNode)
+	public N addNode(String name, V initialPosition, V offset, double certainty, N referenceNode)
 	{
 
-		N node = ctor.construct(name, offset);
+		N node = ctor.construct(name, initialPosition);
 
 		addConstraint(offset, node, certainty, referenceNode);
 
@@ -59,8 +60,9 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 	public void addConstraint(V offset, N node, double certainty, N referenceNode)
 	{
 
-		node.addConstraint(referenceNode, offset.inverse(), certainty, ConstraintOrigin.FLOATING);
-		referenceNode.addConstraint(node, offset, certainty, ConstraintOrigin.FLOATING);
+		// node.addConstraint(referenceNode, offset.inverse(), certainty,
+		// ConstraintOrigin.FLOATING);
+		referenceNode.addConstraint(node, offset, certainty);
 	}
 
 	public void solve()
@@ -80,34 +82,27 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 
 	private V updatePositions()
 	{
-		V totalError = ctor.zero();
 		for (N node : nodes)
 		{
-			V error = ctor.zero();
+			node.clearError();
+		}
+		for (N node : nodes)
+		{
 			for (GraphSlamConstraint<V> constraint : node.getConstraints())
 			{
-				V err = node.calculateError(constraint);
-				// if (!node.isRoot())
-				// logger.error(node + " err=" + err);
-				double weight = node.getWeight();
-				error.addWeightedValueForAverage(err, weight);
-
+				constraint.getNode().addCalculatedError(constraint);
 			}
 
-			node.setCurrentError(error.getWeightedAverage());
-			totalError = totalError.adjust(error.getWeightedAverage());
 		}
 		for (N node : nodes)
 		{
 			if (!node.isRoot())
 			{
-				node.adjustPosition(node.getCurrentError());
-				// logger.info(node);
-
+				node.adjustPosition();
 			}
 		}
 		// logger.info("Total Error " + totalError);
-		return totalError;
+		return null;
 	}
 
 	public void dump()
@@ -119,6 +114,7 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 			for (GraphSlamConstraint<V> constraint : node.getConstraints())
 			{
 				logger.error("-->" + constraint);
+				constraint.dumpObservations();
 			}
 
 		}

@@ -13,9 +13,11 @@ public class GraphSlamV3Test
 		GraphSlamV3<GraphSlamNodeImpl<DoubleWithMathOperators>, DoubleWithMathOperators> slam = new GraphSlamV3<>(
 				getCtor());
 
-		GraphSlamNodeImpl<DoubleWithMathOperators> node1 = slam.addNode("one", createValue(10), 1, slam.getRoot());
+		GraphSlamNodeImpl<DoubleWithMathOperators> node1 = slam.addNode("one", createValue(10), createValue(10), 1,
+				slam.getRoot());
 
-		GraphSlamNodeImpl<DoubleWithMathOperators> node2 = slam.addNode("two", createValue(3), 1, slam.getRoot());
+		GraphSlamNodeImpl<DoubleWithMathOperators> node2 = slam.addNode("two", createValue(3), createValue(3), 1,
+				slam.getRoot());
 
 		slam.addConstraint(createValue(9), node1, 1, slam.getRoot());
 
@@ -37,9 +39,11 @@ public class GraphSlamV3Test
 		GraphSlamV3<GraphSlamNodeImpl<DoubleWithMathOperators>, DoubleWithMathOperators> slam = new GraphSlamV3<>(
 				getCtor());
 
-		GraphSlamNodeImpl<DoubleWithMathOperators> node1 = slam.addNode("one", createValue(10), 1, slam.getRoot());
+		GraphSlamNodeImpl<DoubleWithMathOperators> node1 = slam.addNode("one", createValue(10), createValue(10), 1,
+				slam.getRoot());
 
-		GraphSlamNodeImpl<DoubleWithMathOperators> node2 = slam.addNode("two", createValue(3), 1, node1);
+		GraphSlamNodeImpl<DoubleWithMathOperators> node2 = slam.addNode("two", createValue(13), createValue(3), 1,
+				node1);
 
 		System.out.println("Start Solve");
 		slam.solve();
@@ -80,11 +84,11 @@ public class GraphSlamV3Test
 		GraphSlamV3<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> slam = new GraphSlamV3<>(
 				getCtorPose());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 0), 1,
-				slam.getRoot());
+		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 0),
+				createPoseValue(10, 0, 0), 1, slam.getRoot());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(3, 0, 0), 1,
-				slam.getRoot());
+		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(3, 0, 0),
+				createPoseValue(3, 0, 0), 1, slam.getRoot());
 
 		slam.addConstraint(createPoseValue(9, 0, 0), node1, 1, slam.getRoot());
 
@@ -106,11 +110,11 @@ public class GraphSlamV3Test
 		GraphSlamV3<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> slam = new GraphSlamV3<>(
 				getCtorPose());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 10), 1,
-				slam.getRoot());
+		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 10),
+				createPoseValue(10, 0, 10), 1, slam.getRoot());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(3, 0, 3), 1,
-				slam.getRoot());
+		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(3, 0, 3),
+				createPoseValue(3, 0, 3), 1, slam.getRoot());
 
 		slam.addConstraint(createPoseValue(9, 0, 9), node1, 1, slam.getRoot());
 
@@ -132,8 +136,8 @@ public class GraphSlamV3Test
 		GraphSlamV3<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> slam = new GraphSlamV3<>(
 				getCtorPose());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 90), 1,
-				slam.getRoot());
+		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 90),
+				createPoseValue(10, 0, 90), 1, slam.getRoot());
 
 		// GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two",
 		// createPoseValue(10, 0, 90), 1, node1);

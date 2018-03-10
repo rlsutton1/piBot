@@ -4,7 +4,7 @@ import java.util.Collection;
 
 public interface GraphSlamNode<T extends MathOperators<T>>
 {
-	T calculateError(GraphSlamConstraint<T> constraint);
+	void addCalculatedError(GraphSlamConstraint<T> constraint);
 
 	public T getPosition();
 
@@ -14,18 +14,12 @@ public interface GraphSlamNode<T extends MathOperators<T>>
 
 	Collection<GraphSlamConstraint<T>> getConstraints();
 
-	void adjustPosition(T error);
+	void adjustPosition();
 
-	void setCurrentError(T error);
-
-	T getCurrentError();
-
-	T getNormalisedOffset(T offset);
-
-	void addConstraint(GraphSlamNode<T> node, T offset, double certainty, ConstraintOrigin constraintDirection);
+	void addConstraint(GraphSlamNode<T> node, T offset, double certainty);
 
 	double getWeight();
 
-	void deleteConstraint(GraphSlamNode<T> node);
+	void clearError();
 
 }

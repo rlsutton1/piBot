@@ -7,14 +7,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamNode<T>
 {
-	static final AtomicInteger nodeIdSeed = new AtomicInteger();
+	private static final AtomicInteger nodeIdSeed = new AtomicInteger();
 
-	int id = nodeIdSeed.incrementAndGet();
-	protected T position;
-	Map<GraphSlamNode<T>, GraphSlamConstraint<T>> constraints = new HashMap<>();
-	T currentError;
-	boolean isRoot = false;
-	String name;
+	private int id = nodeIdSeed.incrementAndGet();
+	private T position;
+	private Map<GraphSlamNode<T>, GraphSlamConstraint<T>> constraints = new HashMap<>();
+	private T currentError;
+	private boolean isRoot = false;
+	private String name;
 
 	private final T zero;
 
@@ -33,9 +33,12 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	}
 
 	@Override
-	public T calculateError(GraphSlamConstraint<T> constraint)
+	public void addCalculatedError(GraphSlamConstraint<T> constraint)
 	{
-		return position.minus(constraint.node.getPosition()).applyOffset(constraint.getOffset());
+		T calculatedPosition = constraint.getParentNode().getPosition().applyOffset(constraint.getOffset());
+		T error = calculatedPosition.minus(position);
+
+		currentError.addWeightedValueForAverage(error, 1);
 	}
 
 	@Override
@@ -45,20 +48,15 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	}
 
 	@Override
-	public void addConstraint(GraphSlamNode<T> node, T offset, double certainty, ConstraintOrigin constraintDirection)
+	public void addConstraint(GraphSlamNode<T> node, T offset, double certainty)
 	{
 		GraphSlamConstraint<T> target = constraints.get(node);
 		if (target != null)
 		{
-			if (target.constraintOrigin != constraintDirection)
-			{
-				throw new RuntimeException("Constraint Directions don't match");
-			}
-
 			target.addValue(offset, certainty);
 		} else
 		{
-			constraints.put(node, new GraphSlamConstraint<>(this, node, offset, certainty, constraintDirection, zero));
+			constraints.put(node, new GraphSlamConstraint<>(this, node, offset, certainty, zero));
 		}
 	}
 
@@ -81,28 +79,9 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	}
 
 	@Override
-	public void adjustPosition(T error)
+	public void adjustPosition()
 	{
-		position = position.minus(error);
-	}
-
-	@Override
-	public void setCurrentError(T error)
-	{
-		currentError = error;
-	}
-
-	@Override
-	public T getCurrentError()
-	{
-		return currentError;
-	}
-
-	@Override
-	public T getNormalisedOffset(T offset)
-	{
-		return offset;
-
+		position = position.plus(currentError.getWeightedAverage());
 	}
 
 	@Override
@@ -142,9 +121,10 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	}
 
 	@Override
-	public void deleteConstraint(GraphSlamNode<T> node)
+	public void clearError()
 	{
-		constraints.remove(node);
+		currentError = zero.copy();
+
 	}
 
 }

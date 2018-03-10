@@ -6,15 +6,18 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
 
 import au.com.rsutton.angle.AngleUtil;
 
 public class PoseWithMathOperators implements MathOperators<PoseWithMathOperators>
 {
 
-	final double x;
-	final double y;
-	final double angle;
+	private org.apache.logging.log4j.Logger logger = LogManager.getLogger();
+
+	private final double x;
+	private final double y;
+	private final double angle;
 
 	PoseWithMathOperators(double x, double y, double angle)
 	{
@@ -29,52 +32,28 @@ public class PoseWithMathOperators implements MathOperators<PoseWithMathOperator
 		// the rotation of this pose will rotate the incoming value
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle));
 
-		Vector3D vector2 = rotation.applyTo(new Vector3D(offset.x, offset.y, 0d));
+		Vector3D vector2 = rotation.applyTo(new Vector3D(offset.getX(), offset.getY(), 0d));
 
 		// Vector3D vector2 = new Vector3D(value.x, value.y, 0d);
 
 		return new PoseWithMathOperators(vector2.getX() + this.x, vector2.getY() + this.y,
-				AngleUtil.normalize(this.angle + offset.angle));
+				AngleUtil.normalize(this.angle + offset.getAngle()));
 	}
 
 	@Override
 	public PoseWithMathOperators minus(PoseWithMathOperators value)
 	{
 
-		return new PoseWithMathOperators(this.x - value.x, this.y - value.y,
-				AngleUtil.normalize(AngleUtil.normalize(this.angle) - AngleUtil.normalize(value.angle)));
+		return new PoseWithMathOperators(this.x - value.getX(), this.y - value.getY(),
+				AngleUtil.normalize(AngleUtil.normalize(this.angle) - AngleUtil.normalize(value.getAngle())));
 	}
 
 	@Override
-	public PoseWithMathOperators adjust(PoseWithMathOperators adjustment)
+	public PoseWithMathOperators plus(PoseWithMathOperators adjustment)
 	{
 
-		return new PoseWithMathOperators(adjustment.x + this.x, adjustment.y + this.y,
-				AngleUtil.normalize(this.angle + adjustment.angle));
-	}
-
-	@Override
-	public PoseWithMathOperators inverse()
-	{
-		// angle is a delta : range -180 to +180
-
-		double na = angle;
-		if (na > 180)
-		{
-			na -= 360;
-		}
-		if (na < -180)
-		{
-			na += 360;
-		}
-
-		return new PoseWithMathOperators(this.x * -1, this.y * -1, na * -1);
-	}
-
-	@Override
-	public PoseWithMathOperators zero()
-	{
-		return new PoseWithMathOperators(0, 0, 0);
+		return new PoseWithMathOperators(adjustment.getX() + this.x, adjustment.getY() + this.y,
+				AngleUtil.normalize(this.angle + adjustment.getAngle()));
 	}
 
 	@Override
@@ -109,9 +88,9 @@ public class PoseWithMathOperators implements MathOperators<PoseWithMathOperator
 
 		for (PoseWithMathOperators pose : valuesForAverage)
 		{
-			xt += pose.x;
-			yt += pose.y;
-			angles.add(pose.angle);
+			xt += pose.getX();
+			yt += pose.getY();
+			angles.add(pose.getAngle());
 		}
 
 		double averageAngle = AngleUtil.getAverageAngle(angles);
@@ -129,6 +108,31 @@ public class PoseWithMathOperators implements MathOperators<PoseWithMathOperator
 	public double getWeight()
 	{
 		return totalWeight;
+	}
+
+	public double getX()
+	{
+		return x;
+	}
+
+	public double getY()
+	{
+		return y;
+	}
+
+	public double getAngle()
+	{
+		return angle;
+	}
+
+	@Override
+	public void dumpObservations()
+	{
+		for (PoseWithMathOperators value : valuesForAverage)
+		{
+			logger.error("--------> Observation " + value);
+		}
+
 	}
 
 }

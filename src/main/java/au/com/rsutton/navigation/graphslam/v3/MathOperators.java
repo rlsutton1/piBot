@@ -4,22 +4,18 @@ public interface MathOperators<T>
 {
 	T applyOffset(T value);
 
-	T adjust(T value);
-
-	T inverse();
-	//
-	// T divideScaler(double scaler);
+	T plus(T value);
 
 	void addWeightedValueForAverage(T value, double weight);
 
 	T getWeightedAverage();
-
-	T zero();
 
 	T minus(T value);
 
 	T copy();
 
 	double getWeight();
+
+	void dumpObservations();
 
 }

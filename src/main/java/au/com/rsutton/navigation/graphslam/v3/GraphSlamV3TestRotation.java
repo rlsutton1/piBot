@@ -13,10 +13,13 @@ public class GraphSlamV3TestRotation
 		GraphSlamV3<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> slam = new GraphSlamV3<>(
 				getCtorPose());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 90), 1,
-				slam.getRoot());
+		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 90),
+				createPoseValue(10, 0, 90), 1, slam.getRoot());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(10, 0, 90), 1, node1);
+		slam.addConstraint(createPoseValue(10, 0, 95), node1, 1, slam.getRoot());
+
+		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(10, 0, 90),
+				createPoseValue(10, 0, 90), 1, node1);
 
 		// slam.addConstraint(createPoseValue(9, 0, 9), node1, 1,
 		// slam.getRoot());

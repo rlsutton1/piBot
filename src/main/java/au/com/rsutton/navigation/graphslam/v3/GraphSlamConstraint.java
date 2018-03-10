@@ -2,31 +2,27 @@ package au.com.rsutton.navigation.graphslam.v3;
 
 class GraphSlamConstraint<T extends MathOperators<T>>
 {
-	final GraphSlamNode<T> node;
-	final GraphSlamNode<T> parentNode;
-	private final T offset;
+	private final GraphSlamNode<T> node;
+	private final GraphSlamNode<T> parentNode;
+	private final T observations;
 
-	final ConstraintOrigin constraintOrigin;
-
-	GraphSlamConstraint(GraphSlamNode<T> parentNode, GraphSlamNode<T> node, T offset, double certainty,
-			ConstraintOrigin constraintDirection, T zero)
+	GraphSlamConstraint(GraphSlamNode<T> parentNode, GraphSlamNode<T> node, T offset, double certainty, T zero)
 	{
-		this.offset = zero.copy();
+		this.observations = zero.copy();
 		this.parentNode = parentNode;
 		this.node = node;
-		this.offset.addWeightedValueForAverage(offset, certainty);
-		this.constraintOrigin = constraintDirection;
+		this.observations.addWeightedValueForAverage(offset, certainty);
 	}
 
 	@Override
 	public String toString()
 	{
-		return "Constraint [node=" + node + ", offset=" + offset + " origin=" + constraintOrigin + "]";
+		return "Constraint [node=" + node + "]";
 	}
 
 	public T getOffset()
 	{
-		return offset.getWeightedAverage();
+		return observations.getWeightedAverage();
 	}
 
 	@Override
@@ -60,18 +56,28 @@ class GraphSlamConstraint<T extends MathOperators<T>>
 
 	public void addValue(T offset2, double certainty)
 	{
-		offset.addWeightedValueForAverage(offset2, certainty);
+		observations.addWeightedValueForAverage(offset2, certainty);
 
 	}
 
 	public double getWeight()
 	{
-		return offset.getWeight();
+		return observations.getWeight();
 	}
 
-	public ConstraintOrigin isFromRoot()
+	void dumpObservations()
 	{
-		return constraintOrigin;
+		observations.dumpObservations();
+	}
+
+	GraphSlamNode<T> getParentNode()
+	{
+		return parentNode;
+	}
+
+	GraphSlamNode<T> getNode()
+	{
+		return node;
 	}
 
 }
