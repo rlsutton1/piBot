@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
+import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -170,6 +171,13 @@ public class MovingLidarObservationBufferTest
 
 			@Override
 			public Double getBestRawScore()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public ParticleFilterStatus getParticleFilterStatus()
 			{
 				// TODO Auto-generated method stub
 				return null;

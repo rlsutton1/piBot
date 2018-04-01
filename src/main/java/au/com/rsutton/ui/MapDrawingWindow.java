@@ -23,7 +23,7 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 	volatile boolean stop = false;
 
-	public MapDrawingWindow(String string)
+	public MapDrawingWindow(String string, int x, int y)
 	{
 		if (StringUtils.isNotBlank(string))
 		{
@@ -40,16 +40,16 @@ public class MapDrawingWindow extends JFrame implements Runnable
 		this.add(graph);
 
 		setSize(700, 700);
-		setLocation(500, 200);
+		setLocation(x, y);
 		setVisible(true);
 
 		new Thread(this, "ui").start();
 
 	}
 
-	public MapDrawingWindow()
+	public MapDrawingWindow(int x, int y)
 	{
-		this("");
+		this("", x, y);
 	}
 
 	public void addDataSource(DataSourcePoint map, Color color)

@@ -48,7 +48,7 @@ public class ParticleFilterLiveTest
 	public void test() throws InterruptedException
 	{
 
-		MapDrawingWindow ui = new MapDrawingWindow();
+		MapDrawingWindow ui = new MapDrawingWindow(0, 0);
 
 		final ProbabilityMap world = KitchenMapBuilder.buildKitchenMap();
 		ui.addDataSource(world, new Color(255, 255, 255));

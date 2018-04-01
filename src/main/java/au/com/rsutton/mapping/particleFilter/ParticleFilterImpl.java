@@ -92,7 +92,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		robot.addMessageListener(observer);
 
-		ui = new MapDrawingWindow("Particle Filter");
+		ui = new MapDrawingWindow("Particle Filter", 600, 0);
 		addDataSoures(ui);
 		ui.addDataSource(map, new Color(255, 255, 255));
 	}
@@ -135,7 +135,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 			@Override
 			public void onMessage(final Angle deltaHeading, final Distance deltaDistance,
-					List<ScanObservation> observations)
+					List<ScanObservation> observations, boolean bump)
 			{
 
 				if (suspended)
@@ -304,6 +304,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		stablisedHeading = HeadingHelper.normalizeHeading(stablisedHeading);
 	}
 
+	int poorMatches = 0;
+
 	protected synchronized void resample(int newParticleCount)
 	{
 
@@ -324,6 +326,16 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 
 		new DataLogValue("PF best:", "" + maxRating).publish();
+
+		// 90 ok
+		if (maxRating < 0.80)
+		{
+			poorMatches++;
+			if (poorMatches > 5 && particleFilterStatus == ParticleFilterStatus.LOCALIZED)
+			{
+				particleFilterStatus = ParticleFilterStatus.POOR_MATCH;
+			}
+		}
 
 		for (Particle selectedParticle : particles)
 		{
@@ -502,6 +514,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	int counter = 10;
 	private volatile boolean suspended;
+	private ParticleFilterStatus particleFilterStatus = ParticleFilterStatus.LOCALIZING;
 
 	/*
 	 * (non-Javadoc)
@@ -523,6 +536,12 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 		double dev = xdev.getResult() + ydev.getResult();
 		// System.out.println("Deviation " + dev);
+
+		if (dev < 30 && particleFilterStatus == ParticleFilterStatus.LOCALIZING)
+		{
+			particleFilterStatus = ParticleFilterStatus.LOCALIZED;
+		}
+
 		return dev;
 	}
 
@@ -715,5 +734,11 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	{
 		listener = null;
 
+	}
+
+	@Override
+	public ParticleFilterStatus getParticleFilterStatus()
+	{
+		return particleFilterStatus;
 	}
 }

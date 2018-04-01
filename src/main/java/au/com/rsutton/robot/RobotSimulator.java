@@ -68,6 +68,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 		new Thread(this, "Robot").start();
 	}
 
+	volatile boolean bump = false;
+
 	public double move(double distance)
 	{
 		if (freeze)
@@ -92,11 +94,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			x = nx;
 			y = ny;
 			totalDistanceTravelled += distance;
+			bump = false;
 
 			return distance;
 		} else
 		{
 			logger.info("Avoiding wall");
+			bump = true;
 			return 0;
 		}
 
@@ -274,6 +278,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			RobotLocation message = new RobotLocation();
 			message.setDeadReaconingHeading(new Angle(360 - heading, AngleUnits.DEGREES));
 			message.setDistanceTravelled(new Distance(totalDistanceTravelled, DistanceUnit.CM));
+			message.setBumpLeft(bump);
+			message.setBumpRight(bump);
 			new DataLogValue("Simulator-Distance Traveled", "" + totalDistanceTravelled).publish();
 
 			new DataLogValue("Simulator-Angle turned", "" + heading).publish();
@@ -307,12 +313,12 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation, boolean bump)
 	{
 		for (RobotLocationDeltaListener listener : listeners)
 		{
 
-			listener.onMessage(deltaHeading, deltaDistance, robotLocation);
+			listener.onMessage(deltaHeading, deltaDistance, robotLocation, bump);
 		}
 
 	}

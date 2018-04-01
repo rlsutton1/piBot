@@ -9,6 +9,6 @@ import au.com.rsutton.units.Distance;
 public interface RobotLocationDeltaListener
 {
 
-	void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation);
+	void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation, boolean bump);
 
 }

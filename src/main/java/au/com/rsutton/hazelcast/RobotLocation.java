@@ -19,6 +19,8 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 
 	private long time = System.currentTimeMillis();
 	private List<LidarObservation> observations;
+	private boolean bumpLeft;
+	private boolean bumpRight;
 
 	public RobotLocation()
 	{
@@ -89,6 +91,27 @@ public class RobotLocation extends MessageBase<RobotLocation> implements Particl
 	{
 		return "RobotLocation [deadReaconingHeading=" + deadReaconingHeading + ", distanceTravelled="
 				+ distanceTravelled + "]";
+	}
+
+	public void setBumpLeft(boolean bumpLeft)
+	{
+		this.bumpLeft = bumpLeft;
+
+	}
+
+	public void setBumpRight(boolean bumpRight)
+	{
+		this.bumpRight = bumpRight;
+	}
+
+	public boolean isBumpLeft()
+	{
+		return bumpLeft;
+	}
+
+	public boolean isBumpRight()
+	{
+		return bumpRight;
 	}
 
 }

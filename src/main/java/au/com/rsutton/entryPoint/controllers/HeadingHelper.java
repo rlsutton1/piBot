@@ -1,17 +1,20 @@
 package au.com.rsutton.entryPoint.controllers;
 
+import au.com.rsutton.angle.AngleUtil;
+
 public class HeadingHelper
 {
 
 	static public double normalizeHeading(double heading)
 	{
-		double normalizedHeading = heading;
-		while (normalizedHeading < 0)
-		{
-			normalizedHeading = 360 + normalizedHeading;
-		}
-
-		return normalizedHeading % 360;
+		return AngleUtil.normalize(heading);
+		// double normalizedHeading = heading;
+		// while (normalizedHeading < 0)
+		// {
+		// normalizedHeading = 360 + normalizedHeading;
+		// }
+		//
+		// return normalizedHeading % 360;
 	}
 
 	static public double getChangeInHeading(double newHeading, double oldHeading)

@@ -51,7 +51,8 @@ public class ObsticleAvoidance
 		{
 
 			@Override
-			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observation)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observation,
+					boolean bump)
 			{
 				scanBuffer.addObservation(observation);
 

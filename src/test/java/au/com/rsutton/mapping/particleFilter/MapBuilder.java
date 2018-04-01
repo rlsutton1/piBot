@@ -13,7 +13,8 @@ import org.junit.Test;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.mapping.KitchenMapBuilder;
+import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.mapping.LoopMapBuilder;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.multimap.ParticleFilterProxy;
 import au.com.rsutton.mapping.probability.Occupancy;
@@ -22,6 +23,7 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
@@ -30,6 +32,8 @@ import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
 public class MapBuilder
@@ -84,21 +88,42 @@ public class MapBuilder
 
 			new DataWindow();
 
-			boolean sim = true;
+			boolean sim = false;
 
 			if (sim)
 			{
-				RobotSimulator robotS = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
-				robotS.setLocation(-150, 100, new Random().nextInt(360));
+				// RobotSimulator robotS = new
+				// RobotSimulator(KitchenMapBuilder.buildKitchenMap());
+
+				// robotS.setLocation(-150, 100, new Random().nextInt(360));
+
+				RobotSimulator robotS = new RobotSimulator(LoopMapBuilder.buildKitchenMap());
+
+				robotS.setLocation(130, 50, new Random().nextInt(360));
 				this.robot = robotS;
 			} else
 			{
 				this.robot = new RobotImple();
 			}
 
+			robot.addMessageListener(new RobotLocationDeltaListener()
+			{
+
+				@Override
+				public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation,
+						boolean bump)
+				{
+					if (bump)
+					{
+						System.out
+								.println("bump *********************************************************************");
+					}
+				}
+			});
+
 			vistedLocations.add(new XY(0, 0));
 
-			panel = new MapDrawingWindow("Map Builder");
+			panel = new MapDrawingWindow("Map Builder", 0, 0);
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
@@ -113,25 +138,48 @@ public class MapBuilder
 			chooseTarget();
 
 			int changeCounter = 10;
+			boolean localized = false;
 			while (!complete)
 			{
 				TimeUnit.MILLISECONDS.sleep(500);
 				update();
 
+				new DataLogValue("PF best raw score:", "" + poseAdjuster.getBestRawScore()).publish();
+
+				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZED)
+				{
+					localized = true;
+				}
+
+				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.POOR_MATCH
+						&& changeCounter < 0 && localized == true)
+				{
+					// TODO:
+					navigatorControl.suspend();
+					for (int i = 0; i < 15; i++)
+					{
+						robot.freeze(true);
+						TimeUnit.MILLISECONDS.sleep(100);
+					}
+					addMap(poseAdjuster);
+					navigatorControl.resume();
+					localized = false;
+					changeCounter = 10;
+
+				}
+
 				double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
 				double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
 				SubMapHolder nearestmap = findNearestSubMap(x, y);
-				if (nearestmap != currentMap)
+				if (nearestmap != currentMap && nearestmap != null)
 				{
 					Vector3D nearest = new Vector3D(nearestmap.mapPose.getX(), nearestmap.mapPose.getY(), 0);
 					Vector3D current = new Vector3D(currentMap.mapPose.getX(), currentMap.mapPose.getY(), 0);
 					Vector3D here = new Vector3D(x, y, 0);
 					double separation = nearest.distance(current);
-					if (here.distance(current) > here.distance(nearest) + 20 && separation > MIN_TARGET_SEPARATION
-							&& changeCounter < 0)
+					if (here.distance(current) > here.distance(nearest) + 20 && changeCounter < 0)
 					{
 						setupForSubMapTraversal(nearestmap);
-						current = nearest;
 						changeCounter = 10;
 					}
 				}
@@ -263,6 +311,9 @@ public class MapBuilder
 
 	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
 	{
+		navigatorControl.suspend();
+		TimeUnit.SECONDS.sleep(1);
+
 		DistanceXY currentXY = poseAdjuster.getXyPosition();
 		double currentHeading = poseAdjuster.getHeading();
 		double tx = map.mapPose.getX() - currentXY.getX().convert(DistanceUnit.CM);
@@ -271,12 +322,16 @@ public class MapBuilder
 
 		Pose pose = new Pose(tx, ty, th);
 
-		navigatorControl.suspend();
-		TimeUnit.SECONDS.sleep(1);
 		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(map.map, 1000, DISTANCE_NOISE, HEADING_NOISE,
 				StartPosition.USE_POSE, robot, pose));
 		poseAdjuster.setPose(map.mapPose);
 		TimeUnit.SECONDS.sleep(1);
+
+		while (poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZING)
+		{
+			TimeUnit.MILLISECONDS.sleep(250);
+		}
+
 		navigatorControl.resume();
 	}
 
@@ -329,14 +384,17 @@ public class MapBuilder
 
 		if (!setNewTarget())
 		{
-			navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-			try
+
+			if (subMaps.isEmpty())
 			{
-				TimeUnit.SECONDS.sleep(10);
-			} catch (InterruptedException e)
+				navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+
+			} else
 			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				SubMapHolder map = subMaps.get((int) (Math.random() * subMaps.size()));
+				navigatorControl.calculateRouteTo((int) map.mapPose.getX(), (int) map.mapPose.getY(), null,
+						RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+
 			}
 		}
 		targetAge.reset();
@@ -345,11 +403,12 @@ public class MapBuilder
 		navigatorControl.go();
 	}
 
-	double maxDistance = 0;
+	double closestToIdealDistance = Double.MAX_VALUE;
 
 	boolean setNewTarget()
 	{
-		maxDistance = Double.MAX_VALUE;
+
+		closestToIdealDistance = Double.MAX_VALUE;
 
 		int minX = world.getMinX();
 		int maxX = world.getMaxX() + 1;
@@ -366,8 +425,8 @@ public class MapBuilder
 				boolean isVisited = false;
 				for (XY visted : vistedLocations)
 				{
-					isVisited |= Math.abs(visted.getX() - newLocation.getX()) < MIN_TARGET_SEPARATION
-							&& Math.abs(visted.getY() - newLocation.getY()) < MIN_TARGET_SEPARATION;
+					isVisited |= Math.abs(visted.getX() - newLocation.getX()) < MIN_TARGET_SEPARATION / 3.0
+							&& Math.abs(visted.getY() - newLocation.getY()) < MIN_TARGET_SEPARATION / 3.0;
 				}
 
 				if (!isVisited)
@@ -394,6 +453,8 @@ public class MapBuilder
 
 	private boolean isTarget(int x, int y)
 	{
+
+		double idealDistance = MIN_TARGET_SEPARATION * 2.0;
 		DistanceXY currentLocation = poseAdjuster.getXyPosition();
 		if (x >= world.getMinX() && x <= world.getMaxX())
 		{
@@ -408,9 +469,9 @@ public class MapBuilder
 					if (isUnexplored(position, 0))
 					{
 
-						if (distance < maxDistance)
+						if (Math.abs(idealDistance - distance) < closestToIdealDistance)
 						{
-							maxDistance = distance;
+							closestToIdealDistance = Math.abs(idealDistance - distance);
 							return true;
 						}
 					}
@@ -427,7 +488,7 @@ public class MapBuilder
 		boolean isValid = world.get(x, y) < requiredValue;
 		if (isValid)
 		{
-			for (int checkRadius = 5; checkRadius < 40; checkRadius += 5)
+			for (int checkRadius = 5; checkRadius < 25; checkRadius += 5)
 			{
 				isValid &= world.get(x + checkRadius, y) < requiredValue;
 				isValid &= world.get(x - checkRadius, y) < requiredValue;
@@ -525,6 +586,13 @@ public class MapBuilder
 
 			@Override
 			public Double getBestRawScore()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public ParticleFilterStatus getParticleFilterStatus()
 			{
 				// TODO Auto-generated method stub
 				return null;

@@ -26,13 +26,14 @@ public class RobotImple implements RobotInterface
 		{
 
 			@Override
-			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation,
+					boolean bump)
 			{
 				for (RobotLocationDeltaListener listener : listeners)
 				{
 					try
 					{
-						listener.onMessage(deltaHeading, deltaDistance, robotLocation);
+						listener.onMessage(deltaHeading, deltaDistance, robotLocation, bump);
 					} catch (Exception e)
 					{
 						e.printStackTrace();

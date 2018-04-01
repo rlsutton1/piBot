@@ -72,15 +72,18 @@ public class PoseAdjuster implements RobotPoseSource
 	@Override
 	public Double getBestScanMatchScore()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return source.getBestScanMatchScore();
 	}
 
 	@Override
 	public Double getBestRawScore()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return source.getBestRawScore();
+	}
+
+	public ParticleFilterStatus getParticleFilterStatus()
+	{
+		return source.getParticleFilterStatus();
 	}
 
 }

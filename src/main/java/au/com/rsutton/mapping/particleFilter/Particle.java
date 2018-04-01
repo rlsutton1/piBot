@@ -104,6 +104,8 @@ public class Particle
 
 	}
 
+	double totalObservations = 0;
+
 	public void addObservation(ProbabilityMapIIFc currentWorld, List<ScanObservation> observations, boolean isLost)
 	{
 
@@ -112,6 +114,7 @@ public class Particle
 			double rating = scoreObservation(currentWorld, obs);
 
 			this.rating += rating;
+			totalObservations++;
 		}
 
 	}
@@ -199,7 +202,7 @@ public class Particle
 	public double getRating()
 	{
 
-		return rating;
+		return rating / Math.max(1, totalObservations);
 
 	}
 

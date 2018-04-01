@@ -61,7 +61,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot)
 	{
-		ui = new MapDrawingWindow("Navigator");
+		ui = new MapDrawingWindow("Navigator", 800, 0);
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
 		this.pf = pf;

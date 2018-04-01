@@ -41,7 +41,8 @@ public abstract class FeatureExtractor
 		{
 
 			@Override
-			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation)
+			public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation,
+					boolean bump)
 			{
 				evaluateScan(robotLocation);
 

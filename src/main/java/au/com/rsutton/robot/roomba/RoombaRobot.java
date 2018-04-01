@@ -120,6 +120,8 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 		location.setDeadReaconingHeading(roomba630.getAngleTurned());
 
 		location.addObservations(observations);
+		location.setBumpLeft(roomba630.getBumpLeft());
+		location.setBumpRight(roomba630.getBumpRight());
 		location.publish();
 
 	}

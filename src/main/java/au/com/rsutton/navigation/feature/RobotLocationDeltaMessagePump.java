@@ -78,7 +78,8 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 				new DataLogValue("Message Pump-delta distance", "" + deltaDistance).publish();
 
 				listener.onMessage(new Angle(deltaHeading, AngleUnits.DEGREES),
-						new Distance(deltaDistance, DistanceUnit.MM), robotLocation.getObservations());
+						new Distance(deltaDistance, DistanceUnit.MM), robotLocation.getObservations(),
+						robotLocation.isBumpLeft() || robotLocation.isBumpRight());
 				logger.warn("Recieved and dispatched RobotLocation");
 			} else
 			{

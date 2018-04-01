@@ -9,6 +9,7 @@ import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
@@ -162,6 +163,12 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 	{
 		listeners.remove(listener);
 
+	}
+
+	@Override
+	public ParticleFilterStatus getParticleFilterStatus()
+	{
+		return pf.getParticleFilterStatus();
 	}
 
 }

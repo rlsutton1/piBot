@@ -29,4 +29,6 @@ public interface RobotPoseSource
 
 	public abstract Double getBestRawScore();
 
+	public abstract ParticleFilterStatus getParticleFilterStatus();
+
 }

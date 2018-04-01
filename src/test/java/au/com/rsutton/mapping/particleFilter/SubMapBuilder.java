@@ -33,7 +33,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 
 	SubMapBuilder() throws InterruptedException
 	{
-		panel = new MapDrawingWindow("Sub Map Builder");
+		panel = new MapDrawingWindow("Sub Map Builder", 600, 0);
 
 		panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
@@ -104,7 +104,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 	int lastHeading = 0;
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observations)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observations, boolean bump)
 	{
 		if (scansRemaining > 0)
 		{

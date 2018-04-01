@@ -93,6 +93,7 @@ public class Roomba630 implements Runnable
 
 			setupMusic();
 
+			alarm();
 		}
 		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 100, TimeUnit.MILLISECONDS);
 
@@ -144,7 +145,19 @@ public class Roomba630 implements Runnable
 		}
 	}
 
+	boolean getBumpLeft()
+	{
+		return bumpLeft;
+	}
+
+	boolean getBumpRight()
+	{
+		return bumpRight;
+	}
+
 	int batteryStats = 0;
+	private boolean bumpLeft = false;
+	private boolean bumpRight = false;
 
 	@Override
 	public void run()
@@ -175,21 +188,45 @@ public class Roomba630 implements Runnable
 
 				updateDistanceTraveled();
 
-				if (commandExpires < System.currentTimeMillis())
+				bumpLeft = roomba.bumpLeft();
+				bumpRight = roomba.bumpRight();
+
+				if (commandExpires > System.currentTimeMillis())
 				{
 					if (roomba.bumpLeft() || roomba.bumpRight())
 					{
-						currentSpeed = 0;
-						targetSpeed = 0;
-						roomba.drive(0, 0);
-					} else
-					{
-						if (targetSpeed > currentSpeed)
+						// only allow reversing
+						if (currentSpeed > 0 || targetSpeed > 0)
 						{
-							currentSpeed += Math.min(50, targetSpeed - currentSpeed);
+							currentSpeed = 0;
+							targetSpeed = 0;
+							roomba.drive(0, 0);
 						}
-						roomba.drive(currentSpeed, turnRadius);
+						if (targetSpeed < -50)
+						{
+							// top speed in reverse is 50mm/second
+							targetSpeed = -50;
+						}
+
 					}
+					if (targetSpeed > currentSpeed)
+					{
+						// forward or accelerating, ramp up
+						currentSpeed += Math.min(50, targetSpeed - currentSpeed);
+					}
+					if (targetSpeed < currentSpeed)
+					{
+						// slowing down or reversing, go straight to the target
+						// speed
+						currentSpeed = targetSpeed;
+					}
+					System.out.println("current/target speed " + currentSpeed + " " + targetSpeed);
+
+					roomba.drive(currentSpeed, turnRadius);
+
+				} else
+				{
+					System.out.println("Command is expired");
 				}
 				if (batteryStats % 10 == 0)
 				{
@@ -304,25 +341,10 @@ public class Roomba630 implements Runnable
 			System.out.println("Set radius to " + radius + " for " + changeInHeading + " speed " + speed);
 			synchronized (sync)
 			{
-				if (!roomba.bumpLeft() && !roomba.bumpRight())
-				{
-					targetSpeed = speed;
-					turnRadius = radius;
-					if (targetSpeed < currentSpeed)
-					{
-						currentSpeed = targetSpeed;
-					} else
-					{
-						currentSpeed += Math.min(50, targetSpeed - currentSpeed);
-					}
-					roomba.drive(currentSpeed, radius);
-				} else
-				{
-					currentSpeed = 0;
-					targetSpeed = 0;
-					roomba.drive(0, 0);
-					System.out.println("Stopping due to bumper");
-				}
+
+				targetSpeed = speed;
+				turnRadius = radius;
+
 			}
 		}
 	}
