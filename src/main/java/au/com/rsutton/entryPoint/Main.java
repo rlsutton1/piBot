@@ -4,11 +4,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
-import com.pi4j.io.gpio.GpioController;
-import com.pi4j.io.gpio.GpioFactory;
-import com.pi4j.io.gpio.GpioPinDigitalOutput;
-import com.pi4j.io.gpio.RaspiPin;
-
 import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.robot.roomba.RoombaRobot;
@@ -23,8 +18,6 @@ public class Main
 
 	public static void main(String[] args) throws Exception
 	{
-
-		configureGpioForGrove();
 
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
@@ -120,19 +113,6 @@ public class Main
 		// new RoombaTest();
 		// }
 
-	}
-
-	private static void configureGpioForGrove() throws InterruptedException
-	{
-		// the grove continuously resets if GPIO_10 is low
-
-		final GpioController gpio = GpioFactory.getInstance();
-
-		GpioPinDigitalOutput myLed1 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_10);
-
-		myLed1.high();
-
-		TimeUnit.SECONDS.sleep(1);
 	}
 
 }
