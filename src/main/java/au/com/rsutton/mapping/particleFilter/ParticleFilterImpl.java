@@ -314,7 +314,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		Random rand = new Random();
 		List<Particle> newSet = new LinkedList<>();
 
-		double next = 0.0;
 		double totalRating = 0;
 		double maxRating = 0;
 		double bestRawSoFar = 1000000;
@@ -417,7 +416,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 
 		Particle selectedParticle = null;
-		int size = working.size();
 		for (int i = 0; i < newParticleCount; i++)
 		{
 			double key = rand.nextDouble() * pos;
@@ -527,7 +525,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		StandardDeviation xdev = new StandardDeviation();
 		StandardDeviation ydev = new StandardDeviation();
-		StandardDeviation headingDev = new StandardDeviation();
 
 		for (Particle particle : particles)
 		{
@@ -607,9 +604,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 					{
 						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(stablisedHeading))
 								.applyTo(obs.getVector());
-						graphics.drawLine((int) pointOriginX, (int) pointOriginY,
-								(int) (pointOriginX + (vector.getX() * scale)),
-								(int) (pointOriginY + (vector.getY() * scale)));
+
+						double xend = pointOriginX + (vector.getX() * scale);
+						double yend = pointOriginY + (vector.getY() * scale);
+						graphics.drawLine((int) pointOriginX, (int) pointOriginY, (int) xend, (int) yend);
 					}
 				}
 				// draw heading line
@@ -690,8 +688,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	private void addDataSoures(MapDrawingWindow ui)
 	{
-		ui.addDataSource(getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(getHeadingMapDataSource());
+		ui.addDataSource(getParticlePointSource(), new Color(255, 0, 0));
 
 		ui.addStatisticSource(new DataSourceStatistic()
 		{
