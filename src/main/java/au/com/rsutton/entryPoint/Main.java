@@ -28,7 +28,7 @@ public class Main
 
 		System.out.println("Press 3 test straight");
 
-		System.out.println("Press 4 to calabrate left wheel");
+		System.out.println("Press 4 turn on the spot");
 
 		System.out.println("Press 5 to perform straight line test");
 
@@ -79,6 +79,24 @@ public class Main
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
+			setMotion.setFreeze(true);
+			setMotion.publish();
+			TimeUnit.SECONDS.sleep(1);
+			robot.shutdown();
+			return;
+		}
+		if (ch == '4')
+		{
+			for (int i = 0; i < 60; i++)
+			{
+				SetMotion setMotion = new SetMotion();
+				setMotion.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
+				setMotion.setChangeHeading(150d);
+				setMotion.publish();
+
+				TimeUnit.SECONDS.sleep(1);
+			}
+			SetMotion setMotion = new SetMotion();
 			setMotion.setFreeze(true);
 			setMotion.publish();
 			TimeUnit.SECONDS.sleep(1);

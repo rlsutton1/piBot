@@ -33,10 +33,10 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 
 	SubMapBuilder() throws InterruptedException
 	{
-		panel = new MapDrawingWindow("Sub Map Builder", 600, 0);
+		panel = new MapDrawingWindow("Sub Map Builder", 0, 600);
 
 		panel.addDataSource(new WrapperForObservedMapInMapUI(world));
-
+		panel.dispose();
 	}
 
 	private int scansRemaining = 5;

@@ -135,6 +135,8 @@ public class MapBuilder
 
 			this.navigatorControl = new Navigator(world, poseAdjuster, robot);
 
+			Thread.sleep(20000);
+
 			chooseTarget();
 
 			int changeCounter = 10;
