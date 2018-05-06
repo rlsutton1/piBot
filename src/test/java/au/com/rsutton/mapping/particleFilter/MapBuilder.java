@@ -279,14 +279,20 @@ public class MapBuilder
 
 		} else
 		{
+			// get relative XY for map
 			Vector3D xy = new Vector3D((currentSubMap.mapPose.getX() - currentMap.mapPose.getX()),
 					(currentSubMap.mapPose.getY() - currentMap.mapPose.getY()), 0);
 
+			// rotate the relative XY as if it were observed from the current
+			// map
 			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(currentMap.mapPose.getHeading()));
 			xy = rotation.applyInverseTo(xy);
 
+			// create the pose object
 			PoseWithMathOperators slamPoseOffset = createPoseValue(xy.getX(), xy.getY(),
 					AngleUtil.delta(currentMap.mapPose.getHeading(), currentSubMap.mapPose.getHeading()));
+
+			// add the node to slam
 			currentSubMap.node = slam.addNode("nodeid-" + nodeSeed.incrementAndGet(), slamPose, slamPoseOffset, 1,
 					currentMap.node);
 		}
