@@ -18,6 +18,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Stopwatch;
 
@@ -68,6 +70,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	private ProbabilityMapIIFc map;
 	private RobotLocationDeltaListener observer;
 	private MapDrawingWindow ui;
+
+	Logger logger = LogManager.getLogger();
 
 	public ParticleFilterImpl(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition, RobotInterface robot, Pose pose)
@@ -290,10 +294,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	public void moveParticles(ParticleUpdate update)
 	{
-		System.out.println("Delta heading " + update.getDeltaHeading() + " Delta move " + update.getMoveDistance());
+		logger.debug("Delta heading " + update.getDeltaHeading() + " Delta move " + update.getMoveDistance());
 		if (update.getDeltaHeading() > 180 || update.getDeltaHeading() < -180)
 		{
-			System.out.println("What hte this is crazy");
+			logger.error("What hte this is crazy");
 		}
 		for (Particle particle : particles)
 		{
@@ -361,7 +365,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 		bestScanMatchScore = bestRatingSoFar;
 		bestRawScore = bestRawSoFar;
-		System.out.println("Best rating " + bestScanMatchScore);
+		logger.debug("Best rating " + bestScanMatchScore);
 		if (bestScanMatchScore < MINIMUM_MEANINGFUL_RATING && getStdDev() > 60)
 		{
 			// there is no useful data, re-seed the particle filter
@@ -375,7 +379,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		new DataLogValue("PF-particle count", "" + particleQty).publish();
 
-		System.out.println("Resample took " + timer.elapsed(TimeUnit.MILLISECONDS));
+		logger.debug("Resample took " + timer.elapsed(TimeUnit.MILLISECONDS));
 
 		if (listener != null)
 		{
@@ -451,7 +455,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		if (particlesToRemove.size() + 100 < particles.size())
 		{
 			String message = "removing " + particlesToRemove.size() + " useless particles";
-			System.out.println(message);
+			logger.debug(message);
 			new DataLogValue("PF-useless particles", "" + particlesToRemove.size()).publish();
 			// strip particles with ratings that are below the minimum threshold
 			particles.removeAll(particlesToRemove);

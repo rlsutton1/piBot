@@ -19,7 +19,7 @@ public class PoseWithMathOperators implements MathOperators<PoseWithMathOperator
 	private final double y;
 	private final double angle;
 
-	PoseWithMathOperators(double x, double y, double angle)
+	public PoseWithMathOperators(double x, double y, double angle)
 	{
 		this.x = x;
 		this.y = y;

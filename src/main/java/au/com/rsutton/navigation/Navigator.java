@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
@@ -34,6 +36,8 @@ import au.com.rsutton.units.Time;
 
 public class Navigator implements Runnable, NavigatorControl
 {
+
+	Logger logger = LogManager.getLogger();
 
 	private RobotPoseSource pf;
 	private RoutePlanner routePlanner;
@@ -159,7 +163,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;
-				System.out.println(next + " " + dx + " " + dy);
+				logger.debug(next + " " + dx + " " + dy);
 
 				double da = 5;
 				if (distanceToTarget > 20)
@@ -174,7 +178,7 @@ public class Navigator implements Runnable, NavigatorControl
 					if (Math.abs(da) > 35)
 					{
 						// turning more than 35 degrees, stop while we do it.
-						System.out.println("Setting speed to 0");
+						logger.debug("Setting speed to 0");
 						speed = 10;
 					}
 					speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da), speed);

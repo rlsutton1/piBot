@@ -67,8 +67,8 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 				lastHeading = angle.getDegrees();
 				lastDistance = robotLocation.getDistanceTravelled();
 
-				logger.error("raw angle: " + angle.getDegrees() + " delta: " + deltaHeading);
-				logger.error("raw diatance: " + robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)
+				logger.debug("raw angle: " + angle.getDegrees() + " delta: " + deltaHeading);
+				logger.debug("raw diatance: " + robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)
 						+ " delta: " + deltaDistance);
 
 				new DataLogValue("Message Pump-raw angle", "" + angle.getDegrees()).publish();

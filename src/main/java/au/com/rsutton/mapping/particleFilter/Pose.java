@@ -71,4 +71,11 @@ public class Pose
 		return rotation.applyTo(vector).add(delta);
 	}
 
+	@Override
+	public String toString()
+	{
+		return "X: " + x + " Y:" + y + " A:" + heading;
+
+	}
+
 }

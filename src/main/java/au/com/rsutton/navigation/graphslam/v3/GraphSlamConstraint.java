@@ -1,6 +1,6 @@
 package au.com.rsutton.navigation.graphslam.v3;
 
-class GraphSlamConstraint<T extends MathOperators<T>>
+public class GraphSlamConstraint<T extends MathOperators<T>>
 {
 	private final GraphSlamNode<T> node;
 	private final GraphSlamNode<T> parentNode;
@@ -17,7 +17,9 @@ class GraphSlamConstraint<T extends MathOperators<T>>
 	@Override
 	public String toString()
 	{
-		return "Constraint [node=" + node + "]";
+		String tmp = "Constraint [node=" + node + "]";
+		observations.dumpObservations();
+		return tmp;
 	}
 
 	public T getOffset()

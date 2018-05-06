@@ -29,7 +29,7 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 		nodes.add(root);
 	}
 
-	N getRoot()
+	public N getRoot()
 	{
 		return root;
 	}

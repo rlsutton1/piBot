@@ -18,7 +18,7 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 
 	private final T zero;
 
-	GraphSlamNodeImpl(String name, T initialPosition, T zero)
+	public GraphSlamNodeImpl(String name, T initialPosition, T zero)
 	{
 		position = initialPosition;
 		this.zero = zero;
