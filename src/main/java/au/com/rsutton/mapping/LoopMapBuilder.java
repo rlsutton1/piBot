@@ -7,7 +7,7 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 public class LoopMapBuilder
 {
 
-	private static final int MULTIPLIER = 40;
+	private static final int MULTIPLIER = 50;
 
 	public static ProbabilityMap buildKitchenMap()
 	{

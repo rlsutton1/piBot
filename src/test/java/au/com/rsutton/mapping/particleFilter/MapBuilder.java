@@ -23,6 +23,7 @@ import au.com.rsutton.angle.AngleUtil;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.KitchenMapBuilder;
+import au.com.rsutton.mapping.LoopMapBuilder;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.multimap.ParticleFilterProxy;
 import au.com.rsutton.mapping.probability.Occupancy;
@@ -37,7 +38,6 @@ import au.com.rsutton.navigation.graphslam.v3.GraphSlamNodeConstructor;
 import au.com.rsutton.navigation.graphslam.v3.GraphSlamNodeImpl;
 import au.com.rsutton.navigation.graphslam.v3.GraphSlamV3;
 import au.com.rsutton.navigation.graphslam.v3.PoseWithMathOperators;
-import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
@@ -68,6 +68,8 @@ public class MapBuilder
 
 	ProbabilityMapIIFc world = new ProbabilityMap(5);
 
+	ProbabilityMapIIFc slamWorld = new ProbabilityMap(5);
+
 	private NavigatorControl navigatorControl;
 
 	private PoseAdjuster poseAdjuster;
@@ -77,17 +79,48 @@ public class MapBuilder
 
 	AtomicLong nodeSeed = new AtomicLong();
 
+	boolean addMap = true;
+
 	class SubMapHolder
 	{
 		public SubMapHolder(Pose pose, ProbabilityMapIIFc map)
 		{
-			this.mapPose = pose;
+			this.setMapPose(pose);
 			this.map = map;
 		}
 
-		Pose mapPose;
+		Pose getMapPose()
+		{
+			if (node == null)
+			{
+				return mapPose;
+			}
+			// if (node.getConstraints().size() > 10)
+			// {
+			// return new Pose(node.getPosition().getX(),
+			// node.getPosition().getY(), node.getPosition().getAngle());
+			// }
+			return mapPose;
+		}
+
+		// Pose getOriginalMapPose()
+		// {
+		// return mapPose;
+		// }
+
+		void setMapPose(Pose mapPose)
+		{
+			this.mapPose = mapPose;
+		}
+
+		private Pose mapPose;
 		ProbabilityMapIIFc map;
 		GraphSlamNodeImpl<PoseWithMathOperators> node;
+
+		public Pose getSlamMapPose()
+		{
+			return new Pose(node.getPosition().getX(), node.getPosition().getY(), node.getPosition().getAngle());
+		}
 	}
 
 	List<SubMapHolder> subMaps = new LinkedList<>();
@@ -139,14 +172,19 @@ public class MapBuilder
 
 			if (sim)
 			{
-				RobotSimulator robotS = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
+				boolean useKitchenMap = false;
+				RobotSimulator robotS;
+				if (useKitchenMap)
+				{
+					robotS = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
 
-				robotS.setLocation(-150, 100, new Random().nextInt(360));
+					robotS.setLocation(-150, 100, new Random().nextInt(360));
+				} else
+				{
+					robotS = new RobotSimulator(LoopMapBuilder.buildKitchenMap());
 
-				// RobotSimulator robotS = new
-				// RobotSimulator(LoopMapBuilder.buildKitchenMap());
-				//
-				// robotS.setLocation(130, 50, new Random().nextInt(360));
+					robotS.setLocation(130, 50, new Random().nextInt(360));
+				}
 				this.robot = robotS;
 			} else
 			{
@@ -171,6 +209,9 @@ public class MapBuilder
 			vistedLocations.add(new XY(0, 0));
 
 			panel = new MapDrawingWindow("Map Builder", 0, 0);
+
+			MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0, 600);
+			slamPanel.addDataSource(new WrapperForObservedMapInMapUI(slamWorld));
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
@@ -210,15 +251,31 @@ public class MapBuilder
 						robot.freeze(true);
 						TimeUnit.MILLISECONDS.sleep(100);
 					}
-					addMap(poseAdjuster);
-
+					if (addMap)
+					{
+						addMap(poseAdjuster);
+					}
 					slam.solve();
 					for (SubMapHolder map : subMaps)
 					{
 						PoseWithMathOperators nodePosition = map.node.getPosition();
 						Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
 								nodePosition.getAngle());
-						logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.mapPose);
+						logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.getMapPose());
+					}
+
+					for (SubMapHolder sm : subMaps)
+					{
+						PoseWithMathOperators nodePosition = sm.node.getPosition();
+						Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
+								nodePosition.getAngle());
+						logger.error("*********** Slam Pose: " + graphSlamPose + " actual pose -> " + sm.getMapPose());
+						logger.error("node: " + sm.node);
+						for (GraphSlamConstraint<PoseWithMathOperators> c : sm.node.getConstraints())
+						{
+							logger.error("Node constraint: " + c);
+						}
+
 					}
 
 					navigatorControl.resume();
@@ -232,8 +289,8 @@ public class MapBuilder
 				SubMapHolder nearestmap = findNearestSubMap(x, y);
 				if (nearestmap != currentMap && nearestmap != null)
 				{
-					Vector3D nearest = new Vector3D(nearestmap.mapPose.getX(), nearestmap.mapPose.getY(), 0);
-					Vector3D current = new Vector3D(currentMap.mapPose.getX(), currentMap.mapPose.getY(), 0);
+					Vector3D nearest = new Vector3D(nearestmap.getMapPose().getX(), nearestmap.getMapPose().getY(), 0);
+					Vector3D current = new Vector3D(currentMap.getMapPose().getX(), currentMap.getMapPose().getY(), 0);
 					Vector3D here = new Vector3D(x, y, 0);
 					if (here.distance(current) > here.distance(nearest) + 20 && changeCounter < 0)
 					{
@@ -243,7 +300,7 @@ public class MapBuilder
 							PoseWithMathOperators nodePosition = map.node.getPosition();
 							Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
 									nodePosition.getAngle());
-							logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.mapPose);
+							logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.getMapPose());
 
 						}
 
@@ -269,28 +326,31 @@ public class MapBuilder
 
 		// TODO: angles are correct, X/Y are broken on slam calculations
 
-		PoseWithMathOperators slamPose = createPoseValue(currentSubMap.mapPose.getX(), currentSubMap.mapPose.getY(),
-				currentSubMap.mapPose.getHeading());
+		PoseWithMathOperators slamPose = createPoseValue(currentSubMap.getMapPose().getX(),
+				currentSubMap.getMapPose().getY(), currentSubMap.getMapPose().getHeading());
 
 		if (currentMap == null)
 		{
-			currentSubMap.node = slam.addNode("nodeid-" + nodeSeed.incrementAndGet(), slamPose, slamPose, 1,
-					slam.getRoot());
+			currentSubMap.node = slam.getRoot();
+			// slam.addNode("nodeid-" + nodeSeed.incrementAndGet(), slamPose,
+			// slamPose, 1,
+			// slam.getRoot());
 
 		} else
 		{
 			// get relative XY for map
-			Vector3D xy = new Vector3D((currentSubMap.mapPose.getX() - currentMap.mapPose.getX()),
-					(currentSubMap.mapPose.getY() - currentMap.mapPose.getY()), 0);
+			Vector3D xy = new Vector3D((currentSubMap.getMapPose().getX() - currentMap.getMapPose().getX()),
+					(currentSubMap.getMapPose().getY() - currentMap.getMapPose().getY()), 0);
 
 			// rotate the relative XY as if it were observed from the current
 			// map
-			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(currentMap.mapPose.getHeading()));
+			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0,
+					Math.toRadians(currentMap.getMapPose().getHeading()));
 			xy = rotation.applyInverseTo(xy);
 
 			// create the pose object
 			PoseWithMathOperators slamPoseOffset = createPoseValue(xy.getX(), xy.getY(),
-					AngleUtil.delta(currentMap.mapPose.getHeading(), currentSubMap.mapPose.getHeading()));
+					AngleUtil.delta(currentMap.getMapPose().getHeading(), currentSubMap.getMapPose().getHeading()));
 
 			// add the node to slam
 			currentSubMap.node = slam.addNode("nodeid-" + nodeSeed.incrementAndGet(), slamPose, slamPoseOffset, 1,
@@ -301,7 +361,7 @@ public class MapBuilder
 		{
 			PoseWithMathOperators nodePosition = sm.node.getPosition();
 			Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(), nodePosition.getAngle());
-			logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + sm.mapPose);
+			logger.error("*********** Slam Pose: " + graphSlamPose + " actual pose -> " + sm.getMapPose());
 			logger.error("node: " + sm.node);
 			for (GraphSlamConstraint<PoseWithMathOperators> c : sm.node.getConstraints())
 			{
@@ -312,7 +372,18 @@ public class MapBuilder
 
 		currentMap = currentSubMap;
 
-		world.erase();
+		regernateWorld(world, false);
+		regernateWorld(slamWorld, true);
+
+		particleFilterProxy.changeParticleFilter(
+				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
+		poseAdjuster.setPose(currentSubMap.getMapPose());
+
+	}
+
+	private void regernateWorld(ProbabilityMapIIFc targetWorld, boolean useSlam)
+	{
+		targetWorld.erase();
 
 		for (SubMapHolder subMap : subMaps)
 		{
@@ -329,128 +400,139 @@ public class MapBuilder
 					Vector3D vector = new Vector3D(x, y, 0);
 					if (vector.distance(Vector3D.ZERO) < RANGE_LIMIT_FOR_ADD)
 					{
-						vector = subMap.mapPose.applyTo(vector);
+						Pose pose;
+						if (!useSlam)
+						{
+							pose = subMap.getMapPose();
+						} else
+						{
+							pose = subMap.getSlamMapPose();
+						}
+						vector = pose.applyTo(vector);
 
-						if (world.get((int) vector.getX(), (int) vector.getY()) == 0.5)
+						if (targetWorld.get((int) vector.getX(), (int) vector.getY()) == 0.5)
 						{
 							if (value < 0.5)
 							{
-								world.resetPoint((int) vector.getX(), (int) vector.getY());
-								world.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT, 1, 1);
+								targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
+								targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT, 1,
+										1);
 							} else if (value > 0.5)
 							{
-								world.resetPoint((int) vector.getX(), (int) vector.getY());
-								world.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.OCCUPIED, 1, 1);
+								targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
+								targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.OCCUPIED, 1,
+										1);
 							}
 						}
 					}
 				}
 			}
 		}
-
-		particleFilterProxy.changeParticleFilter(
-				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
-		poseAdjuster.setPose(currentSubMap.mapPose);
-
 	}
 
 	int lastHeading = 0;
 
 	private boolean complete = false;
 
-	void navigateThroughSubMapsTo() throws InterruptedException
-	{
-
-		List<SubMapHolder> mapList = new LinkedList<>();
-		Set<SubMapHolder> usedMaps = new HashSet<>();
-
-		double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
-		double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
-
-		int targetX = 0;
-		int targetY = 0;
-
-		for (int i = 0; i < 600; i++)
-		{
-			ExpansionPoint next = navigatorControl.getRouteForLocation((int) x, (int) y);
-
-			SubMapHolder map = findNearestSubMap(x, y);
-
-			if (!usedMaps.contains(map))
-			{
-				mapList.add(map);
-				usedMaps.add(map);
-			}
-
-			double dx = (x - next.getX()) * 5;
-			x -= dx;
-			double dy = (y - next.getY()) * 5;
-			y -= dy;
-			if (dx == 0 && dy == 0)
-			{
-				// reached the target
-				targetX = (int) x;
-				targetY = (int) y;
-				break;
-			}
-		}
-
-		for (int i = 0; i < mapList.size() - 1; i++)
-		{
-			SubMapHolder map = mapList.get(i);
-
-			setupForSubMapTraversal(map);
-
-			navigatorControl.calculateRouteTo((int) mapList.get(i + 1).mapPose.x, (int) mapList.get(i + 1).mapPose.y,
-					null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-			TimeUnit.MILLISECONDS.sleep(1500);
-			navigatorControl.go();
-			while (!navigatorControl.hasReachedDestination())
-			{
-				TimeUnit.MILLISECONDS.sleep(500);
-			}
-		}
-
-		if (mapList.size() > 1)
-		{
-			SubMapHolder map = mapList.get(mapList.size() - 1);
-			setupForSubMapTraversal(map);
-		}
-		navigatorControl.calculateRouteTo(targetX, targetY, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
-		navigatorControl.go();
-
-	}
-
 	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
 	{
 		navigatorControl.suspend();
-		TimeUnit.SECONDS.sleep(1);
+		for (int ctr = 0; ctr < 25; ctr++)
+		{
+			TimeUnit.MILLISECONDS.sleep(100);
+			robot.freeze(true);
+			robot.publishUpdate();
+		}
 
-		DistanceXY currentXY = poseAdjuster.getXyPosition();
+		final DistanceXY currentXY = poseAdjuster.getXyPosition();
 		double currentHeading = poseAdjuster.getHeading();
-		double tx = map.mapPose.getX() - currentXY.getX().convert(DistanceUnit.CM);
-		double ty = map.mapPose.getY() - currentXY.getY().convert(DistanceUnit.CM);
-		double th = HeadingHelper.normalizeHeading(currentHeading - map.mapPose.heading);
 
-		PoseWithMathOperators slamPoseOffset = createPoseValue(map.mapPose.getX() - currentMap.mapPose.getX(),
-				map.mapPose.getY() - currentMap.mapPose.getY(),
-				AngleUtil.delta(currentMap.mapPose.getHeading(), map.mapPose.getHeading()));
+		double initialHeading = currentHeading;
 
-		// TODO: fix this
+		// vector from current map origin to current position
+		Vector3D vector1 = new Vector3D(currentXY.getX().convert(DistanceUnit.CM) - currentMap.getMapPose().getX(),
+				currentXY.getY().convert(DistanceUnit.CM) - currentMap.getMapPose().getY(), 0);
 
-		// map.node.addConstraint(currentMap.node, slamPoseOffset, 1);
-
-		Pose pose = new Pose(tx, ty, th);
+		// calculate new post to initialise particle filter
+		double angle1 = HeadingHelper.getChangeInHeading(currentHeading, map.getMapPose().heading);
+		Vector3D pos = new Vector3D(currentXY.getX().convert(DistanceUnit.CM),
+				currentXY.getY().convert(DistanceUnit.CM), 0);
+		Pose pose = new Pose(map.getMapPose().applyInverseTo(pos).getX(), map.getMapPose().applyInverseTo(pos).getY(),
+				angle1);
 
 		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(map.map, 1000, DISTANCE_NOISE, HEADING_NOISE,
 				StartPosition.USE_POSE, robot, pose));
-		poseAdjuster.setPose(map.mapPose);
-		TimeUnit.SECONDS.sleep(1);
+		poseAdjuster.setPose(map.getMapPose());
 
 		while (poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZING)
 		{
 			TimeUnit.MILLISECONDS.sleep(250);
+			robot.freeze(true);
+			robot.publishUpdate();
 		}
+
+		for (int ctr = 0; ctr < 30; ctr++)
+		{
+			TimeUnit.MILLISECONDS.sleep(100);
+			robot.freeze(true);
+			robot.publishUpdate();
+		}
+
+		// TODO:
+		// DistanceXY newXY = currentXY;
+		DistanceXY newXY = poseAdjuster.getXyPosition();
+
+		// vector from newly localized position to origin of new map
+		Vector3D vector2 = new Vector3D(map.getMapPose().getX() - newXY.getX().convert(DistanceUnit.CM),
+				map.getMapPose().getY() - newXY.getY().convert(DistanceUnit.CM), 0);
+
+		// get relative XY for map
+		Vector3D xy = vector1.add(vector2);
+
+		// rotate the relative XY as if it were observed from the current
+		// map
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(currentMap.getMapPose().getHeading()));
+		xy = rotation.applyInverseTo(xy);
+
+		double finalHeading = poseAdjuster.getHeading();
+
+		// create the pose object
+		double deltaHeading = AngleUtil.delta(initialHeading, finalHeading);
+		logger.error("Initial, final " + initialHeading + " " + finalHeading);
+		logger.error("Delta heading is " + deltaHeading);
+		double mapDelta = AngleUtil.delta(currentMap.getMapPose().getHeading(), map.getMapPose().getHeading());
+		logger.error("map delta " + mapDelta);
+
+		// TODO:
+		double delta = AngleUtil.normalize(mapDelta - deltaHeading);
+
+		logger.error("Final delta " + delta);
+		PoseWithMathOperators slamPoseOffset = createPoseValue(xy.getX(), xy.getY(), delta);
+
+		// add the node to slam
+
+		double certainty = Math.min(0.75, 1.0 / Math.max(1.0, Math.abs(deltaHeading / 1.5)));
+		logger.error("Certainty :" + certainty);
+
+		currentMap.node.addConstraint(map.node, slamPoseOffset, certainty);
+
+		currentMap = map;
+
+		slam.solve();
+		for (SubMapHolder sm : subMaps)
+		{
+			PoseWithMathOperators nodePosition = sm.node.getPosition();
+			Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(), nodePosition.getAngle());
+			logger.error("*********** Slam Pose: " + graphSlamPose + " actual pose -> " + sm.getMapPose());
+			logger.error("node: " + sm.node);
+			for (GraphSlamConstraint<PoseWithMathOperators> c : sm.node.getConstraints())
+			{
+				logger.error("Node constraint: " + c);
+			}
+
+		}
+
+		regernateWorld(slamWorld, true);
 
 		navigatorControl.resume();
 	}
@@ -463,7 +545,7 @@ public class MapBuilder
 		SubMapHolder bestMap = null;
 		for (SubMapHolder map : subMaps)
 		{
-			Vector3D mapPose = new Vector3D(map.mapPose.x, map.mapPose.y, 0);
+			Vector3D mapPose = new Vector3D(map.getMapPose().x, map.getMapPose().y, 0);
 			double dis = mapPose.distance(pos);
 			if (dis < distance)
 			{
@@ -490,7 +572,10 @@ public class MapBuilder
 				robot.freeze(true);
 				TimeUnit.MILLISECONDS.sleep(100);
 			}
-			addMap(poseAdjuster);
+			if (addMap)
+			{
+				addMap(poseAdjuster);
+			}
 
 			chooseTarget();
 
@@ -502,9 +587,10 @@ public class MapBuilder
 	private void chooseTarget()
 	{
 
+		addMap = true;
 		if (!setNewTarget())
 		{
-
+			addMap = false;
 			if (subMaps.isEmpty())
 			{
 				navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
@@ -512,7 +598,7 @@ public class MapBuilder
 			} else
 			{
 				SubMapHolder map = subMaps.get((int) (Math.random() * subMaps.size()));
-				navigatorControl.calculateRouteTo((int) map.mapPose.getX(), (int) map.mapPose.getY(), null,
+				navigatorControl.calculateRouteTo((int) map.getMapPose().getX(), (int) map.getMapPose().getY(), null,
 						RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 
 			}

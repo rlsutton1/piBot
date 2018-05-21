@@ -6,16 +6,20 @@ public interface MathOperators<T>
 
 	T plus(T value);
 
-	void addWeightedValueForAverage(T value, double weight);
+	void addWeightedValueForAverage(WeightedPose<T> value);
 
 	T getWeightedAverage();
+
+	double getWeight();
+
+	T multiply(double scaler);
 
 	T minus(T value);
 
 	T copy();
 
-	double getWeight();
-
 	void dumpObservations();
+
+	// T inverse();
 
 }

@@ -55,9 +55,9 @@ public class AngleUtilTest
 	@Test
 	public void testAverageAngle()
 	{
-		List<Double> angles = new LinkedList<>();
-		angles.add(45d);
-		angles.add(90d);
+		List<WeightedAngle> angles = new LinkedList<>();
+		angles.add(new WeightedAngle(45d, 1));
+		angles.add(new WeightedAngle(90d, 1));
 		double ret = AngleUtil.getAverageAngle(angles);
 
 		assertTrue("" + ret, ret == (45.0 + 90.0) / 2.0);
@@ -67,9 +67,9 @@ public class AngleUtilTest
 	@Test
 	public void testAverageAngles45and315equals0()
 	{
-		List<Double> angles = new LinkedList<>();
-		angles.add(45d);
-		angles.add(315d);
+		List<WeightedAngle> angles = new LinkedList<>();
+		angles.add(new WeightedAngle(45d, 1));
+		angles.add(new WeightedAngle(315d, 1));
 		double ret = AngleUtil.getAverageAngle(angles);
 
 		assertTrue("" + ret, ret > -1 && ret < 1);
@@ -79,9 +79,9 @@ public class AngleUtilTest
 	@Test
 	public void testAverageAngles90and270equals180()
 	{
-		List<Double> angles = new LinkedList<>();
-		angles.add(90d);
-		angles.add(270d);
+		List<WeightedAngle> angles = new LinkedList<>();
+		angles.add(new WeightedAngle(90d, 1));
+		angles.add(new WeightedAngle(270d, 1));
 		double ret = AngleUtil.getAverageAngle(angles);
 
 		assertTrue("" + ret, ret == 180);
@@ -93,10 +93,10 @@ public class AngleUtilTest
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			List<Double> angles = new LinkedList<>();
+			List<WeightedAngle> angles = new LinkedList<>();
 			for (int i = 0; i < 100; i++)
 			{
-				angles.add(180 + Math.random() * 30);
+				angles.add(new WeightedAngle(180 + Math.random() * 30, 1));
 			}
 
 			double ret = AngleUtil.getAverageAngle(angles);
@@ -110,10 +110,10 @@ public class AngleUtilTest
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			List<Double> angles = new LinkedList<>();
+			List<WeightedAngle> angles = new LinkedList<>();
 			for (int i = 0; i < 100; i++)
 			{
-				angles.add(-30 + Math.random() * 60);
+				angles.add(new WeightedAngle(-30 + Math.random() * 60, 1));
 			}
 
 			double ret = AngleUtil.getAverageAngle(angles);
@@ -125,10 +125,10 @@ public class AngleUtilTest
 	@Test
 	public void testAverageAnglesEquals45()
 	{
-		List<Double> angles = new LinkedList<>();
-		angles.add(-90d);
-		angles.add(90d);
-		angles.add(45d);
+		List<WeightedAngle> angles = new LinkedList<>();
+		angles.add(new WeightedAngle(-90d, 1));
+		angles.add(new WeightedAngle(90d, 1));
+		angles.add(new WeightedAngle(45d, 1));
 		double ret = AngleUtil.getAverageAngle(angles);
 
 		assertTrue("" + ret, ret > 44.5 && ret < 45.5);
@@ -138,10 +138,10 @@ public class AngleUtilTest
 	@Test
 	public void testAverageAnglesEquals1()
 	{
-		List<Double> angles = new LinkedList<>();
-		angles.add(90d);
-		angles.add(0d);
-		angles.add(0d);
+		List<WeightedAngle> angles = new LinkedList<>();
+		angles.add(new WeightedAngle(90d, 1));
+		angles.add(new WeightedAngle(0d, 1));
+		angles.add(new WeightedAngle(0d, 1));
 		double ret = AngleUtil.getAverageAngle(angles);
 
 		assertTrue("" + ret, ret > 26 && ret < 27);
@@ -151,11 +151,11 @@ public class AngleUtilTest
 	@Test
 	public void testAverageAnglesEquals2()
 	{
-		List<Double> angles = new LinkedList<>();
-		angles.add(90d);
-		angles.add(0d);
-		angles.add(0d);
-		angles.add(0d);
+		List<WeightedAngle> angles = new LinkedList<>();
+		angles.add(new WeightedAngle(90d, 1));
+		angles.add(new WeightedAngle(0d, 1));
+		angles.add(new WeightedAngle(0d, 1));
+		angles.add(new WeightedAngle(0d, 1));
 		double ret = AngleUtil.getAverageAngle(angles);
 
 		assertTrue("" + ret, ret > 18 && ret < 19);

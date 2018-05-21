@@ -11,7 +11,7 @@ public class GraphSlamConstraint<T extends MathOperators<T>>
 		this.observations = zero.copy();
 		this.parentNode = parentNode;
 		this.node = node;
-		this.observations.addWeightedValueForAverage(offset, certainty);
+		this.observations.addWeightedValueForAverage(new WeightedPose<>(offset, certainty));
 	}
 
 	@Override
@@ -56,15 +56,10 @@ public class GraphSlamConstraint<T extends MathOperators<T>>
 		return true;
 	}
 
-	public void addValue(T offset2, double certainty)
+	public void addValue(WeightedPose<T> offset2)
 	{
-		observations.addWeightedValueForAverage(offset2, certainty);
+		observations.addWeightedValueForAverage(offset2);
 
-	}
-
-	public double getWeight()
-	{
-		return observations.getWeight();
 	}
 
 	void dumpObservations()

@@ -12,17 +12,19 @@ public class AngleUtil
 		return na2 - na1;
 	}
 
-	public static double getAverageAngle(List<Double> angles)
+	public static double getAverageAngle(List<WeightedAngle> angles)
 	{
 		double x = 0;
 		double y = 0;
-		for (Double angle : angles)
+		for (WeightedAngle weightedAngle : angles)
 		{
-			x += Math.cos(Math.toRadians(angle));
-			y += Math.sin(Math.toRadians(angle));
+			x += Math.cos(Math.toRadians(weightedAngle.getAngle())) * weightedAngle.getWeight();
+			y += Math.sin(Math.toRadians(weightedAngle.getAngle())) * weightedAngle.getWeight();
 		}
 
-		return normalize(Math.toDegrees(Math.atan2(y, x)));
+		double result = normalize(Math.toDegrees(Math.atan2(y, x)));
+
+		return result;
 	}
 
 	public static double normalize(double angle)

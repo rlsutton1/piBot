@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.angle.AngleUtil;
+import au.com.rsutton.angle.WeightedAngle;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
@@ -480,13 +481,13 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		double x = 0;
 		double y = 0;
 
-		List<Double> angles = new LinkedList<>();
+		List<WeightedAngle> angles = new LinkedList<>();
 
 		for (Particle particle : particles)
 		{
 			x += particle.getX();
 			y += particle.getY();
-			angles.add(particle.getHeading());
+			angles.add(new WeightedAngle(particle.getHeading(), 1));
 
 		}
 

@@ -41,14 +41,12 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 		return "" + value;
 	}
 
-	List<Double> valuesForAverage = new LinkedList<>();
-	double totalWeight = 0;
+	List<WeightedPose<DoubleWithMathOperators>> valuesForAverage = new LinkedList<>();
 
 	@Override
-	public void addWeightedValueForAverage(DoubleWithMathOperators value, double weight)
+	public void addWeightedValueForAverage(WeightedPose<DoubleWithMathOperators> value)
 	{
-		valuesForAverage.add(value.getValue());
-		totalWeight += weight;
+		valuesForAverage.add(value);
 
 	}
 
@@ -56,9 +54,9 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 	public DoubleWithMathOperators getWeightedAverage()
 	{
 		double total = 0;
-		for (Double value : valuesForAverage)
+		for (WeightedPose<DoubleWithMathOperators> value : valuesForAverage)
 		{
-			total += value;
+			total += value.getPose().getValue();
 		}
 		return new DoubleWithMathOperators(total / Math.max(1, valuesForAverage.size()));
 	}
@@ -69,13 +67,6 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 		return new DoubleWithMathOperators(value);
 	}
 
-	@Override
-	public double getWeight()
-	{
-		return totalWeight;
-
-	}
-
 	public double getValue()
 	{
 		return value;
@@ -84,11 +75,35 @@ public class DoubleWithMathOperators implements MathOperators<DoubleWithMathOper
 	@Override
 	public void dumpObservations()
 	{
-		for (Double value : valuesForAverage)
+		for (WeightedPose<DoubleWithMathOperators> value : valuesForAverage)
 		{
-			logger.error("--------> Observation " + value);
+			logger.error("--------> Observation " + value.getPose().getValue() + " W:" + value.getWeight());
 		}
 
 	}
+
+	@Override
+	public double getWeight()
+	{
+		double total = 0;
+		for (WeightedPose<DoubleWithMathOperators> value : valuesForAverage)
+		{
+			total += value.getWeight();
+		}
+		return total;
+
+	}
+
+	@Override
+	public DoubleWithMathOperators multiply(double scaler)
+	{
+		return new DoubleWithMathOperators(value * scaler);
+	}
+
+	// @Override
+	// public DoubleWithMathOperators inverse()
+	// {
+	// return new DoubleWithMathOperators(-value);
+	// }
 
 }

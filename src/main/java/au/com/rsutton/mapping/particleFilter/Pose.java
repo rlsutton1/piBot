@@ -78,4 +78,13 @@ public class Pose
 
 	}
 
+	public Vector3D applyInverseTo(Vector3D source)
+	{
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
+
+		Vector3D delta = new Vector3D(x, y, 0);
+
+		return rotation.applyInverseTo(source.subtract(delta));
+	}
+
 }

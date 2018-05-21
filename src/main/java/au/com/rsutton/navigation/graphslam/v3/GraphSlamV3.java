@@ -60,15 +60,14 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 	public void addConstraint(V offset, N node, double certainty, N referenceNode)
 	{
 
-		// node.addConstraint(referenceNode, offset.inverse(), certainty,
-		// ConstraintOrigin.FLOATING);
+		// node.addConstraint(referenceNode, offset.inverse(), certainty);
 		referenceNode.addConstraint(node, offset, certainty);
 	}
 
 	public void solve()
 	{
 		int ctr = 0;
-		while (ctr < 10)
+		while (ctr < 1000)
 		{
 			ctr++;
 			V error = updatePositions();

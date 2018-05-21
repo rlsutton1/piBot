@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamNode<T>
 {
 	private static final AtomicInteger nodeIdSeed = new AtomicInteger();
@@ -17,6 +20,8 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	private String name;
 
 	private final T zero;
+
+	Logger logger = LogManager.getLogger();
 
 	public GraphSlamNodeImpl(String name, T initialPosition, T zero)
 	{
@@ -38,7 +43,7 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 		T calculatedPosition = constraint.getParentNode().getPosition().applyOffset(constraint.getOffset());
 		T error = calculatedPosition.minus(position);
 
-		currentError.addWeightedValueForAverage(error, 1);
+		currentError.addWeightedValueForAverage(new WeightedPose<>(error, 1));
 	}
 
 	@Override
@@ -50,10 +55,11 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	@Override
 	public void addConstraint(GraphSlamNode<T> node, T offset, double certainty)
 	{
+
 		GraphSlamConstraint<T> target = constraints.get(node);
 		if (target != null)
 		{
-			target.addValue(offset, certainty);
+			target.addValue(new WeightedPose<>(offset, certainty));
 		} else
 		{
 			constraints.put(node, new GraphSlamConstraint<>(this, node, offset, certainty, zero));
@@ -81,7 +87,8 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 	@Override
 	public void adjustPosition()
 	{
-		position = position.plus(currentError.getWeightedAverage());
+		position = position
+				.plus(currentError.getWeightedAverage().multiply(Math.max(1, currentError.getWeight() / 10.0)));
 	}
 
 	@Override
@@ -107,17 +114,6 @@ public class GraphSlamNodeImpl<T extends MathOperators<T>> implements GraphSlamN
 		if (id != other.id)
 			return false;
 		return true;
-	}
-
-	@Override
-	public double getWeight()
-	{
-		double weight = 0;
-		for (GraphSlamConstraint<T> constraint : constraints.values())
-		{
-			weight += constraint.getWeight();
-		}
-		return weight;
 	}
 
 	@Override

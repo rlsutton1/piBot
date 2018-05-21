@@ -110,19 +110,14 @@ public class Navigator implements Runnable, NavigatorControl
 	{
 		try
 		{
-			if (isSuspended)
-			{
-				return;
-			}
 
-			robot.freeze(false);
-
-			if (stopped)
+			if (stopped || isSuspended)
 			{
 				robot.freeze(true);
 				robot.publishUpdate();
 				return;
 			}
+			robot.freeze(false);
 			speed = 20;
 
 			double std = pf.getStdDev();

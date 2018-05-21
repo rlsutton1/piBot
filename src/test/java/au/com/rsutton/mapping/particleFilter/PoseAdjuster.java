@@ -2,6 +2,7 @@ package au.com.rsutton.mapping.particleFilter;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -34,6 +35,16 @@ public class PoseAdjuster implements RobotPoseSource
 		vector = pose.applyTo(vector);
 
 		return new DistanceXY(vector.getX(), vector.getY(), DistanceUnit.CM);
+	}
+
+	public double getInverseHeading(double source)
+	{
+		return HeadingHelper.getChangeInHeading(pose.heading, source);
+	}
+
+	public Vector3D getInverseXyPosition(Vector3D source)
+	{
+		return pose.applyInverseTo(source);
 	}
 
 	@Override
@@ -81,6 +92,7 @@ public class PoseAdjuster implements RobotPoseSource
 		return source.getBestRawScore();
 	}
 
+	@Override
 	public ParticleFilterStatus getParticleFilterStatus()
 	{
 		return source.getParticleFilterStatus();

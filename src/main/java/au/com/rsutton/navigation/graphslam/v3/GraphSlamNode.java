@@ -18,8 +18,6 @@ public interface GraphSlamNode<T extends MathOperators<T>>
 
 	void addConstraint(GraphSlamNode<T> node, T offset, double certainty);
 
-	double getWeight();
-
 	void clearError();
 
 }
