@@ -16,6 +16,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import au.com.rsutton.depthcamera.PointCloudUI;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
@@ -67,6 +68,9 @@ public class Navigator implements Runnable, NavigatorControl
 	{
 		ui = new MapDrawingWindow("Navigator", 600, 0);
 		ui.addDataSource(map2, new Color(255, 255, 255));
+
+		// add data source from depth camera
+		ui.addDataSource(new PointCloudUI(pf));
 
 		this.pf = pf;
 		setupDataSources(ui, pf);

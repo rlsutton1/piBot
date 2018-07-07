@@ -126,6 +126,13 @@
 			<artifactId>RPLidar4J</artifactId>
 			<version>0.8.0</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.openni</groupId>
+			<artifactId>OpenNI2</artifactId>
+			<version>2</version>
+
+		</dependency>
 
 		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j 
 			-DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->

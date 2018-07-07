@@ -1,5 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +40,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 		panel.dispose();
 	}
 
-	private int scansRemaining = 5;
+	private int scansRemaining = 2;
 
 	ProbabilityMapIIFc buildMap(RobotInterface robot) throws InterruptedException
 	{
@@ -82,6 +83,14 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 		int minY = world.getMinY();
 		int maxY = world.getMaxY();
 
+		int gausianRadius = 2;
+
+		for (Vector3D point : perimiter)
+		{
+			world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75, gausianRadius);
+
+		}
+
 		for (int x = minX; x < maxX + 1; x++)
 		{
 			for (int y = minY; y < maxY + 1; y++)
@@ -103,12 +112,15 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 
 	int lastHeading = 0;
 
+	List<Vector3D> perimiter = new LinkedList<>();
+
 	@Override
 	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observations, boolean bump)
 	{
 		if (scansRemaining > 0)
 		{
 			int gausianRadius = 2;
+			Vector3D lastPoint = null;
 			for (ScanObservation obs : observations)
 			{
 
@@ -120,9 +132,35 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 				if (distance < maxUsableDistance)
 				{
 					clearPoints(Vector3D.ZERO, point);
+					perimiter.add(point);
 					world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75,
 							gausianRadius);
 				}
+
+				if (lastPoint == null)
+				{
+					lastPoint = point;
+				}
+				double p2p = Vector3D.distance(point, lastPoint);
+				if (p2p > 1 && p2p < 20)
+				{
+					// draw a line between the to endpoints
+					double x1 = point.getX();
+					double x2 = lastPoint.getX();
+					double y1 = point.getY();
+					double y2 = lastPoint.getY();
+
+					// interpolate
+					for (double i = 0; i < 1; i += 0.1)
+					{
+						double x = (x1 * i) + (x2 * (1.0 - i));
+						double y = (y1 * i) + (y2 * (1.0 - i));
+						world.updatePoint((int) (x), (int) (y), Occupancy.OCCUPIED, 0.75, gausianRadius);
+					}
+
+				}
+
+				lastPoint = point;
 			}
 			scansRemaining--;
 		}

@@ -168,7 +168,7 @@ public class MapBuilder
 			Configurator.setRootLevel(Level.ERROR);
 			new DataWindow();
 
-			boolean sim = true;
+			boolean sim = false;
 
 			if (sim)
 			{
