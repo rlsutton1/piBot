@@ -47,6 +47,11 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 	}
 
+	public void setCoordinateClickListener(CoordinateClickListener listener)
+	{
+		graph.setCoordinateClickListener(listener);
+	}
+
 	public MapDrawingWindow(int x, int y)
 	{
 		this("", x, y);

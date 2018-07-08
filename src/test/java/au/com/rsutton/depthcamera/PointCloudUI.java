@@ -24,13 +24,14 @@ import au.com.rsutton.units.DistanceUnit;
 public class PointCloudUI implements DataSourceMap, MessageListener<PointCloudMessage>
 {
 
-	AtomicReference<List<Vector3D>> vectors = new AtomicReference<>();
+	private final AtomicReference<List<Vector3D>> vectors = new AtomicReference<>();
 	private RobotPoseSource pf;
 
 	public PointCloudUI(RobotPoseSource pf)
 	{
 		this.pf = pf;
 		new PointCloudMessage().addMessageListener(this);
+		vectors.set(new LinkedList<>());
 	}
 
 	@Override

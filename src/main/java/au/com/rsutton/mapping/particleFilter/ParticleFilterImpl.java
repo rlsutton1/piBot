@@ -25,7 +25,6 @@ import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.angle.AngleUtil;
 import au.com.rsutton.angle.WeightedAngle;
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
 import au.com.rsutton.mapping.array.SparseArray;
@@ -305,8 +304,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			particle.move(update);
 		}
 
-		stablisedHeading += update.getDeltaHeading();
-		stablisedHeading = HeadingHelper.normalizeHeading(stablisedHeading);
+		// stablisedHeading += update.getDeltaHeading();
+		// stablisedHeading = HeadingHelper.normalizeHeading(stablisedHeading);
 	}
 
 	int poorMatches = 0;
@@ -495,8 +494,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		averageHeading = AngleUtil.getAverageAngle(angles);
 
-		stablisedHeading = stablisedHeading
-				+ (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading) * 0.1);
+		stablisedHeading = averageHeading;
+		// stablisedHeading = stablisedHeading
+		// + (HeadingHelper.getChangeInHeading(averageHeading, stablisedHeading)
+		// * 0.1);
 
 		return new DistanceXY((x / particles.size()), (y / particles.size()), DistanceUnit.CM);
 

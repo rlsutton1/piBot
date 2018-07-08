@@ -41,6 +41,7 @@ import au.com.rsutton.navigation.graphslam.v3.PoseWithMathOperators;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
+import au.com.rsutton.ui.CoordinateClickListener;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.MapDrawingWindow;
@@ -159,6 +160,8 @@ public class MapBuilder
 		};
 	}
 
+	Pose nextTarget = null;
+
 	@Test
 	public void test() throws InterruptedException
 	{
@@ -208,7 +211,21 @@ public class MapBuilder
 
 			vistedLocations.add(new XY(0, 0));
 
-			panel = new MapDrawingWindow("Map Builder", 0, 0);
+			panel = new MapDrawingWindow("Map Builder (Clickable)", 0, 0);
+
+			panel.setCoordinateClickListener(new CoordinateClickListener()
+			{
+
+				@Override
+				public void clickAt(int x, int y)
+				{
+					logger.error("Navigate to " + x + " " + y);
+
+					nextTarget = new Pose(x, y, 0.0);
+
+					logger.error("Navigate to XXX " + x + " " + y);
+				}
+			});
 
 			MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0, 600);
 			slamPanel.addDataSource(new WrapperForObservedMapInMapUI(slamWorld));
@@ -564,21 +581,28 @@ public class MapBuilder
 		long targetElapsedMinutes = targetAge.elapsed(TimeUnit.MINUTES);
 		long targetElapsedSeconds = targetAge.elapsed(TimeUnit.SECONDS);
 		if (hasReachedDestination || (navigatorControl.isStuck() && targetElapsedSeconds > 120)
-				|| targetElapsedMinutes > 2)
+				|| targetElapsedMinutes > 2 || nextTarget != null)
 		{
 			navigatorControl.stop();
-			for (int i = 0; i < 15; i++)
+			if (nextTarget != null)
 			{
-				robot.freeze(true);
-				TimeUnit.MILLISECONDS.sleep(100);
-			}
-			if (addMap)
+				navigatorControl.calculateRouteTo((int) nextTarget.getX(), (int) nextTarget.getY(),
+						nextTarget.getHeading(), RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				nextTarget = null;
+			} else
 			{
-				addMap(poseAdjuster);
+				for (int i = 0; i < 15; i++)
+				{
+					robot.freeze(true);
+					TimeUnit.MILLISECONDS.sleep(100);
+				}
+				if (addMap)
+				{
+					addMap(poseAdjuster);
+				}
+
+				chooseTarget();
 			}
-
-			chooseTarget();
-
 			// navigateThroughSubMapsTo();
 			navigatorControl.go();
 		}

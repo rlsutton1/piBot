@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,6 +22,11 @@ public class MapUI extends JPanel
 
 	AtomicReference<BufferedImage> currentImage = new AtomicReference<>();
 
+	CoordinateClickListener clickListener;
+	private double xOff;
+	private double yOff;
+	private double scale;
+
 	@Override
 	protected void paintComponent(Graphics g)
 	{
@@ -27,6 +34,56 @@ public class MapUI extends JPanel
 		Graphics2D g2 = (Graphics2D) g;
 		g2.drawImage(currentImage.get(), 0, 0, this);
 
+	}
+
+	public void setCoordinateClickListener(CoordinateClickListener listener)
+	{
+		this.clickListener = listener;
+		this.addMouseListener(new MouseListener()
+		{
+
+			@Override
+			public void mouseReleased(MouseEvent arg0)
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void mousePressed(MouseEvent arg0)
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void mouseExited(MouseEvent arg0)
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent arg0)
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent arg0)
+			{
+				if (clickListener != null)
+				{
+					int x = (int) ((arg0.getX() - xOff) / scale);
+					int y = (int) ((arg0.getY() - yOff) / scale);
+
+					clickListener.clickAt(x, y);
+					arg0.consume();
+				}
+
+			}
+		});
 	}
 
 	public void addDataSource(DataSourceMap source)
@@ -54,8 +111,10 @@ public class MapUI extends JPanel
 		double xCenter = totalX / ctr2;
 		double yCenter = totalY / ctr2;
 
-		double xOff = (((xOffset - xCenter) * scale)) + 350;
-		double yOff = (((yOffset - yCenter) * scale)) + 350;
+		this.scale = scale;
+
+		xOff = (((xOffset - xCenter) * scale)) + 350;
+		yOff = (((yOffset - yCenter) * scale)) + 350;
 		BufferedImage image = new BufferedImage(700, 700, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g2 = image.createGraphics();
 		g2.setColor(new Color(255, 255, 255));
