@@ -49,6 +49,8 @@ import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 
 public class MapBuilder
 {
@@ -165,6 +167,7 @@ public class MapBuilder
 	}
 
 	Pose nextTarget = null;
+	volatile boolean crashDetected = false;
 
 	@Test
 	public void test() throws InterruptedException
@@ -207,6 +210,7 @@ public class MapBuilder
 				{
 					if (bump)
 					{
+						crashDetected = true;
 						System.out
 								.println("bump *********************************************************************");
 					}
@@ -253,6 +257,26 @@ public class MapBuilder
 			while (!complete)
 			{
 				TimeUnit.MILLISECONDS.sleep(500);
+				if (crashDetected)
+				{
+
+					navigatorControl.suspend();
+
+					for (int i = 0; i < 40; i++)
+					{
+						robot.setSpeed(new Speed(new Distance(-10, DistanceUnit.CM), Time.perSecond()));
+						robot.turn(0);
+						robot.publishUpdate();
+						robot.freeze(false);
+						TimeUnit.MILLISECONDS.sleep(100);
+					}
+					robot.freeze(true);
+					robot.publishUpdate();
+					crashDetected = false;
+					chooseTarget();
+					navigatorControl.resume();
+				}
+
 				update();
 
 				new DataLogValue("PF best raw score:", "" + poseAdjuster.getBestRawScore()).publish();
