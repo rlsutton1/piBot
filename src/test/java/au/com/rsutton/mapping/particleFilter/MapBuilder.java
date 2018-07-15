@@ -61,6 +61,10 @@ public class MapBuilder
 
 	private static final double HEADING_NOISE = 3;
 
+	private static final int CHANGE_COUNTER_ADD_MAP = 0;
+	private static final int CHANGE_COUNTER_RESET = 10;
+	private static final int CHANGE_COUNTER_SWAP_MAP = 5;
+
 	double maxUsableDistance = 1000;
 
 	Logger logger = LogManager.getLogger();
@@ -253,13 +257,38 @@ public class MapBuilder
 
 				new DataLogValue("PF best raw score:", "" + poseAdjuster.getBestRawScore()).publish();
 
+				double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
+				double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
+				SubMapHolder nearestmap = findNearestSubMap(x, y);
+				if (nearestmap != currentMap && nearestmap != null)
+				{
+					Vector3D nearest = new Vector3D(nearestmap.getMapPose().getX(), nearestmap.getMapPose().getY(), 0);
+					Vector3D current = new Vector3D(currentMap.getMapPose().getX(), currentMap.getMapPose().getY(), 0);
+					Vector3D here = new Vector3D(x, y, 0);
+					if (here.distance(current) > here.distance(nearest) + 20 && changeCounter < CHANGE_COUNTER_SWAP_MAP)
+					{
+						slam.solve();
+						for (SubMapHolder map : subMaps)
+						{
+							PoseWithMathOperators nodePosition = map.node.getPosition();
+							Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
+									nodePosition.getAngle());
+							logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.getMapPose());
+
+						}
+
+						setupForSubMapTraversal(nearestmap);
+						changeCounter = CHANGE_COUNTER_RESET;
+					}
+				}
+
 				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZED)
 				{
 					localized = true;
 				}
 
 				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.POOR_MATCH
-						&& changeCounter < 0 && localized == true)
+						&& changeCounter < CHANGE_COUNTER_ADD_MAP && localized == true)
 				{
 					// TODO:
 					navigatorControl.suspend();
@@ -297,34 +326,10 @@ public class MapBuilder
 
 					navigatorControl.resume();
 					localized = false;
-					changeCounter = 10;
+					changeCounter = CHANGE_COUNTER_RESET;
 
 				}
 
-				double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
-				double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
-				SubMapHolder nearestmap = findNearestSubMap(x, y);
-				if (nearestmap != currentMap && nearestmap != null)
-				{
-					Vector3D nearest = new Vector3D(nearestmap.getMapPose().getX(), nearestmap.getMapPose().getY(), 0);
-					Vector3D current = new Vector3D(currentMap.getMapPose().getX(), currentMap.getMapPose().getY(), 0);
-					Vector3D here = new Vector3D(x, y, 0);
-					if (here.distance(current) > here.distance(nearest) + 20 && changeCounter < 0)
-					{
-						slam.solve();
-						for (SubMapHolder map : subMaps)
-						{
-							PoseWithMathOperators nodePosition = map.node.getPosition();
-							Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
-									nodePosition.getAngle());
-							logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.getMapPose());
-
-						}
-
-						setupForSubMapTraversal(nearestmap);
-						changeCounter = 10;
-					}
-				}
 				changeCounter--;
 
 			}

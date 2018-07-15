@@ -95,7 +95,7 @@ public class Roomba630 implements Runnable
 
 			alarm();
 		}
-		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 200, 100, TimeUnit.MILLISECONDS);
+		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this, 200, 100, TimeUnit.MILLISECONDS);
 
 	}
 
@@ -168,21 +168,16 @@ public class Roomba630 implements Runnable
 		try
 		{
 
-			if (commandExpires < System.currentTimeMillis())
-			{
-				synchronized (sync)
-				{
-					currentSpeed = 0;
-					targetSpeed = 0;
-					roomba.driveDirect(0, 0);
-				}
-			}
-
 			synchronized (sync)
 			{
 				batteryStats++;
 
 				roomba.updateSensors();
+				if (batteryStats % 10 == 0 && roomba.mode() == 1)
+				{
+					System.out.println("Reconnecting to the roomba");
+					roomba.safeMode();
+				}
 
 				updateAngleTurned();
 
@@ -226,6 +221,9 @@ public class Roomba630 implements Runnable
 
 				} else
 				{
+					currentSpeed = 0;
+					targetSpeed = 0;
+					roomba.driveDirect(0, 0);
 					System.out.println("Command is expired");
 				}
 				if (batteryStats % 10 == 0)
@@ -278,6 +276,7 @@ public class Roomba630 implements Runnable
 
 	private void updateAngleTurned()
 	{
+
 		int angleTurned = roomba.angleTurned();
 		if (totalAngleTurned == null)
 		{
