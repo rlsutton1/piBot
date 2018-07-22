@@ -246,7 +246,7 @@ public class MapBuilder
 			addMap(getZeroPose());
 			currentMap = subMaps.get(0);
 
-			this.navigatorControl = new Navigator(world, poseAdjuster, robot);
+			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot));
 
 			// Thread.sleep(20000);
 
@@ -260,11 +260,11 @@ public class MapBuilder
 				if (crashDetected)
 				{
 
-					navigatorControl.suspend();
+					navigatorSuspended = true;
 
 					for (int i = 0; i < 40; i++)
 					{
-						robot.setSpeed(new Speed(new Distance(-10, DistanceUnit.CM), Time.perSecond()));
+						robot.setSpeed(new Speed(new Distance(-3, DistanceUnit.CM), Time.perSecond()));
 						robot.turn(0);
 						robot.publishUpdate();
 						robot.freeze(false);
@@ -274,7 +274,7 @@ public class MapBuilder
 					robot.publishUpdate();
 					crashDetected = false;
 					chooseTarget();
-					navigatorControl.resume();
+					navigatorSuspended = false;
 				}
 
 				update();
@@ -315,7 +315,7 @@ public class MapBuilder
 						&& changeCounter < CHANGE_COUNTER_ADD_MAP && localized == true)
 				{
 					// TODO:
-					navigatorControl.suspend();
+					navigatorSuspended = true;
 					for (int i = 0; i < 15; i++)
 					{
 						robot.freeze(true);
@@ -348,7 +348,7 @@ public class MapBuilder
 
 					}
 
-					navigatorControl.resume();
+					navigatorSuspended = false;
 					localized = false;
 					changeCounter = CHANGE_COUNTER_RESET;
 
@@ -361,6 +361,76 @@ public class MapBuilder
 		{
 			e.printStackTrace();
 		}
+	}
+
+	private volatile boolean navigatorSuspended = false;
+
+	private RobotInterface getShimmedRobot(final RobotInterface robot2)
+	{
+		return new RobotInterface()
+		{
+
+			@Override
+			public void freeze(boolean b)
+			{
+				if (!navigatorSuspended)
+				{
+					robot2.freeze(b);
+				} else
+				{
+					logger.warn("Suspended");
+				}
+
+			}
+
+			@Override
+			public void setSpeed(Speed speed)
+			{
+				if (!navigatorSuspended)
+				{
+					robot2.setSpeed(speed);
+				} else
+				{
+					logger.warn("Suspended");
+				}
+			}
+
+			@Override
+			public void turn(double normalizeHeading)
+			{
+				if (!navigatorSuspended)
+				{
+					robot2.turn(normalizeHeading);
+				} else
+				{
+					logger.warn("Suspended");
+				}
+			}
+
+			@Override
+			public void publishUpdate()
+			{
+				if (!navigatorSuspended)
+				{
+					robot2.publishUpdate();
+				} else
+				{
+					logger.warn("Suspended");
+				}
+			}
+
+			@Override
+			public void addMessageListener(RobotLocationDeltaListener listener)
+			{
+				robot2.addMessageListener(listener);
+			}
+
+			@Override
+			public void removeMessageListener(RobotLocationDeltaListener listener)
+			{
+				robot2.removeMessageListener(listener);
+			}
+		};
 	}
 
 	void addMap(RobotPoseSource pose) throws InterruptedException
@@ -482,7 +552,7 @@ public class MapBuilder
 
 	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
 	{
-		navigatorControl.suspend();
+		navigatorSuspended = true;
 		for (int ctr = 0; ctr < 25; ctr++)
 		{
 			TimeUnit.MILLISECONDS.sleep(100);
@@ -580,7 +650,7 @@ public class MapBuilder
 
 		regernateWorld(slamWorld, true);
 
-		navigatorControl.resume();
+		navigatorSuspended = false;
 	}
 
 	private SubMapHolder findNearestSubMap(double x, double y)

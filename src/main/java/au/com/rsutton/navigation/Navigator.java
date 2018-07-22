@@ -107,15 +107,13 @@ public class Navigator implements Runnable, NavigatorControl
 		return slam;
 	}
 
-	volatile boolean isSuspended = false;
-
 	@Override
 	public void run()
 	{
 		try
 		{
 
-			if (stopped || isSuspended)
+			if (stopped)
 			{
 				robot.freeze(true);
 				robot.publishUpdate();
@@ -363,19 +361,6 @@ public class Navigator implements Runnable, NavigatorControl
 	public boolean isStopped()
 	{
 		return stopped;
-	}
-
-	@Override
-	public void suspend()
-	{
-		isSuspended = true;
-
-	}
-
-	@Override
-	public void resume()
-	{
-		isSuspended = false;
 	}
 
 	public DataSourceMap getDeadReconningHeadingMapDataSource()

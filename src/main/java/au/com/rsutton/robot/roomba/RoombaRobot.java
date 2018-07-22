@@ -36,7 +36,6 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 	public void configure(Config config) throws Exception
 	{
 
-		new PointCloudProcessor();
 		roomba630 = new Roomba630();
 		lidar = new RPLidarAdaptor(this);
 
@@ -45,6 +44,9 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 
 		SetMotion message = new SetMotion();
 		message.addMessageListener(this);
+
+		// new PointCloudProcessor();
+
 	}
 
 	/**

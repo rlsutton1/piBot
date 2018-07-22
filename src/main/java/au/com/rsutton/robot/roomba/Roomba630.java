@@ -72,9 +72,11 @@ public class Roomba630 implements Runnable
 
 			// check battery
 
+			int ctr = 0;
 			int batteryCharge = 0;
 			while (batteryCharge < 12000)
 			{
+				ctr++;
 				roomba.updateSensors();
 				batteryCharge = roomba.batteryVoltage();
 				System.out.println("Battery charge/capacity/voltage/temperature " + roomba.batteryCharge() + " "
@@ -83,6 +85,11 @@ public class Roomba630 implements Runnable
 				{
 					System.out.println("Battery is too low to start (less than 500mah");
 					TimeUnit.SECONDS.sleep(1);
+				}
+				if (ctr > 30)
+				{
+					System.exit(-1);
+					throw new RuntimeException("Out of here");
 				}
 
 			}

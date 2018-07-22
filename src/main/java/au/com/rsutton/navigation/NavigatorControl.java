@@ -32,10 +32,6 @@ public interface NavigatorControl
 
 	boolean isStopped();
 
-	void suspend();
-
-	void resume();
-
 	ExpansionPoint getRouteForLocation(int x, int y);
 
 }
