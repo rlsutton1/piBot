@@ -514,33 +514,40 @@ public class MapBuilder
 				{
 					double value = subMap.map.get(x, y);
 					Vector3D vector = new Vector3D(x, y, 0);
-					if (vector.distance(Vector3D.ZERO) < RANGE_LIMIT_FOR_ADD)
-					{
-						Pose pose;
-						if (!useSlam)
-						{
-							pose = subMap.getMapPose();
-						} else
-						{
-							pose = subMap.getSlamMapPose();
-						}
-						vector = pose.applyTo(vector);
+					double distance = vector.distance(Vector3D.ZERO);
+					// nearest point is value 1, furthest is 0;
+					double magnetude = Math.max(0, (1000 - distance) / 1000.0);
+					// adjust magnetude to 0 to 0.5
+					magnetude /= 2.0;
 
-						if (targetWorld.get((int) vector.getX(), (int) vector.getY()) == 0.5)
+					Pose pose;
+					if (!useSlam)
+					{
+						pose = subMap.getMapPose();
+					} else
+					{
+						pose = subMap.getSlamMapPose();
+					}
+					vector = pose.applyTo(vector);
+
+					double targetWorldValue = targetWorld.get((int) vector.getX(), (int) vector.getY());
+
+					if (Math.abs(0.5 - targetWorldValue) < magnetude)
+
+					{
+						if (value < 0.5)
 						{
-							if (value < 0.5)
-							{
-								targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
-								targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT, 1,
-										1);
-							} else if (value > 0.5)
-							{
-								targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
-								targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.OCCUPIED, 1,
-										1);
-							}
+							targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
+							targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT,
+									0.5 + magnetude, 1);
+						} else if (value > 0.5)
+						{
+							targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
+							targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.OCCUPIED,
+									0.5 + magnetude, 1);
 						}
 					}
+
 				}
 			}
 		}
@@ -690,16 +697,6 @@ public class MapBuilder
 				nextTarget = null;
 			} else
 			{
-				for (int i = 0; i < 15; i++)
-				{
-					robot.freeze(true);
-					TimeUnit.MILLISECONDS.sleep(100);
-				}
-				if (addMap)
-				{
-					addMap(poseAdjuster);
-				}
-
 				chooseTarget();
 			}
 			// navigateThroughSubMapsTo();
