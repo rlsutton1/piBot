@@ -692,8 +692,8 @@ public class MapBuilder
 			navigatorControl.stop();
 			if (nextTarget != null)
 			{
-				navigatorControl.calculateRouteTo((int) nextTarget.getX(), (int) nextTarget.getY(),
-						nextTarget.getHeading(), RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				navigatorControl.calculateRouteTo((int) nextTarget.getX(), (int) nextTarget.getY(), null,
+						RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 				nextTarget = null;
 			} else
 			{
