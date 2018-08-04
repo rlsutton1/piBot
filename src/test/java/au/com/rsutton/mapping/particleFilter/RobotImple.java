@@ -90,4 +90,11 @@ public class RobotImple implements RobotInterface
 	{
 		listeners.remove(listener);
 	}
+
+	@Override
+	public double getRadius()
+	{
+		// roomba
+		return 15;
+	}
 }

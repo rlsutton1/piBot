@@ -323,4 +323,10 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 	}
 
+	@Override
+	public double getRadius()
+	{
+		return 15;
+	}
+
 }

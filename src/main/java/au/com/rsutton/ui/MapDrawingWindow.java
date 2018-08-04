@@ -25,8 +25,11 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 	volatile boolean stop = false;
 
-	public MapDrawingWindow(String string, int x, int y)
+	private long refreshIntervalMs;
+
+	public MapDrawingWindow(String string, int x, int y, long refreshIntervalMs)
 	{
+		this.refreshIntervalMs = refreshIntervalMs;
 		if (StringUtils.isNotBlank(string))
 		{
 			setTitle(string);
@@ -56,9 +59,9 @@ public class MapDrawingWindow extends JFrame implements Runnable
 		graph.setCoordinateClickListener(listener);
 	}
 
-	public MapDrawingWindow(int x, int y)
+	public MapDrawingWindow(int x, int y, long refreshIntervalMs)
 	{
-		this("", x, y);
+		this("", x, y, refreshIntervalMs);
 	}
 
 	public void addDataSource(DataSourcePoint map, Color color)
@@ -95,7 +98,7 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 			try
 			{
-				Thread.sleep(1000);
+				Thread.sleep(refreshIntervalMs);
 			} catch (InterruptedException e)
 			{
 				throw new RuntimeException("Exiting");

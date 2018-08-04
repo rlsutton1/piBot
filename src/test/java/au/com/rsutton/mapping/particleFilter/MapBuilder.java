@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -169,6 +170,8 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
+	final boolean simulator = false;
+
 	@Test
 	public void test() throws InterruptedException
 	{
@@ -178,9 +181,7 @@ public class MapBuilder
 			Configurator.setRootLevel(Level.ERROR);
 			new DataWindow();
 
-			boolean sim = false;
-
-			if (sim)
+			if (simulator)
 			{
 				boolean useKitchenMap = false;
 				RobotSimulator robotS;
@@ -219,7 +220,7 @@ public class MapBuilder
 
 			vistedLocations.add(new XY(0, 0));
 
-			panel = new MapDrawingWindow("Map Builder (Clickable)", 0, 0);
+			panel = new MapDrawingWindow("Map Builder (Clickable)", 0, 0, 1000);
 
 			panel.setCoordinateClickListener(new CoordinateClickListener()
 			{
@@ -235,7 +236,7 @@ public class MapBuilder
 				}
 			});
 
-			MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0, 600);
+			MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0, 600, 1000);
 			slamPanel.addDataSource(new WrapperForObservedMapInMapUI(slamWorld));
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
@@ -430,6 +431,12 @@ public class MapBuilder
 			{
 				robot2.removeMessageListener(listener);
 			}
+
+			@Override
+			public double getRadius()
+			{
+				return robot2.getRadius();
+			}
 		};
 	}
 
@@ -488,8 +495,10 @@ public class MapBuilder
 
 		currentMap = currentSubMap;
 
-		regernateWorld(world, false);
-		regernateWorld(slamWorld, true);
+		CountDownLatch latch = new CountDownLatch(2);
+		regernateWorld(world, false, latch);
+		regernateWorld(slamWorld, true, latch);
+		latch.await();
 
 		particleFilterProxy.changeParticleFilter(
 				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
@@ -497,60 +506,71 @@ public class MapBuilder
 
 	}
 
-	private void regernateWorld(ProbabilityMapIIFc targetWorld, boolean useSlam)
+	private void regernateWorld(final ProbabilityMapIIFc targetWorld, final boolean useSlam, final CountDownLatch latch)
 	{
-		targetWorld.erase();
-
-		for (SubMapHolder subMap : subMaps)
+		Runnable runner = new Runnable()
 		{
-			int minX = subMap.map.getMinX();
-			int maxX = subMap.map.getMaxX();
-			int minY = subMap.map.getMinY();
-			int maxY = subMap.map.getMaxY();
 
-			for (int x = minX; x < maxX + 1; x++)
+			@Override
+			public void run()
 			{
-				for (int y = minY; y < maxY + 1; y++)
+				targetWorld.erase();
+
+				for (SubMapHolder subMap : subMaps)
 				{
-					double value = subMap.map.get(x, y);
-					Vector3D vector = new Vector3D(x, y, 0);
-					double distance = vector.distance(Vector3D.ZERO);
-					// nearest point is value 1, furthest is 0;
-					double magnetude = Math.max(0, (1000 - distance) / 1000.0);
-					// adjust magnetude to 0 to 0.5
-					magnetude /= 2.0;
+					int minX = subMap.map.getMinX();
+					int maxX = subMap.map.getMaxX();
+					int minY = subMap.map.getMinY();
+					int maxY = subMap.map.getMaxY();
 
-					Pose pose;
-					if (!useSlam)
+					for (int x = minX; x < maxX + 1; x++)
 					{
-						pose = subMap.getMapPose();
-					} else
-					{
-						pose = subMap.getSlamMapPose();
-					}
-					vector = pose.applyTo(vector);
-
-					double targetWorldValue = targetWorld.get((int) vector.getX(), (int) vector.getY());
-
-					if (Math.abs(0.5 - targetWorldValue) < magnetude)
-
-					{
-						if (value < 0.5)
+						for (int y = minY; y < maxY + 1; y++)
 						{
-							targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
-							targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT,
-									0.5 + magnetude, 1);
-						} else if (value > 0.5)
-						{
-							targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
-							targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.OCCUPIED,
-									0.5 + magnetude, 1);
+							double value = subMap.map.get(x, y);
+							Vector3D vector = new Vector3D(x, y, 0);
+							double distance = vector.distance(Vector3D.ZERO);
+							// nearest point is value 1, furthest is 0;
+							double magnetude = Math.max(0, (1000 - distance) / 1000.0);
+							// adjust magnetude to 0 to 0.5
+							magnetude /= 2.0;
+
+							Pose pose;
+							if (!useSlam)
+							{
+								pose = subMap.getMapPose();
+							} else
+							{
+								pose = subMap.getSlamMapPose();
+							}
+							vector = pose.applyTo(vector);
+
+							double targetWorldValue = targetWorld.get((int) vector.getX(), (int) vector.getY());
+
+							if (Math.abs(0.5 - targetWorldValue) < magnetude)
+
+							{
+								if (value < 0.5)
+								{
+									targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
+									targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(), Occupancy.VACANT,
+											0.5 + magnetude, 1);
+								} else if (value > 0.5)
+								{
+									targetWorld.resetPoint((int) vector.getX(), (int) vector.getY());
+									targetWorld.updatePoint((int) vector.getX(), (int) vector.getY(),
+											Occupancy.OCCUPIED, 0.5 + magnetude, 1);
+								}
+							}
+
 						}
 					}
-
 				}
+				latch.countDown();
 			}
-		}
+		};
+
+		new Thread(runner).start();
 	}
 
 	int lastHeading = 0;
@@ -560,11 +580,33 @@ public class MapBuilder
 	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
 	{
 		navigatorSuspended = true;
-		for (int ctr = 0; ctr < 25; ctr++)
+
+		robot.freeze(true);
+		robot.publishUpdate();
+
+		boolean stable = false;
+		double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
+		double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
+		double z = poseAdjuster.getHeading();
+		while (!stable)
 		{
-			TimeUnit.MILLISECONDS.sleep(100);
-			robot.freeze(true);
-			robot.publishUpdate();
+			TimeUnit.MILLISECONDS.sleep(250);
+			double x1 = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
+			double y1 = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
+			double z1 = poseAdjuster.getHeading();
+
+			double totalDelta = Math.abs(x - x1) + Math.abs(y - y1) + Math.abs(HeadingHelper.getChangeInHeading(z, z1));
+			z = z1;
+			y = y1;
+			x = x1;
+			if (totalDelta < 5)
+			{
+				stable = true;
+			} else
+			{
+				logger.error("Total Delta: " + totalDelta);
+			}
+
 		}
 
 		final DistanceXY currentXY = poseAdjuster.getXyPosition();
@@ -655,7 +697,12 @@ public class MapBuilder
 
 		}
 
-		regernateWorld(slamWorld, true);
+		CountDownLatch latch = new CountDownLatch(1);
+		regernateWorld(slamWorld, true, latch);
+
+		// TODO: one day we will want to wait when using the map for navigation
+
+		// latch.await();
 
 		navigatorSuspended = false;
 	}

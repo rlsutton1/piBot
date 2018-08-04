@@ -38,6 +38,8 @@ import au.com.rsutton.units.Time;
 public class Navigator implements Runnable, NavigatorControl
 {
 
+	private static final int MAX_SPEED = 50;
+
 	Logger logger = LogManager.getLogger();
 
 	private RobotPoseSource pf;
@@ -66,7 +68,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot)
 	{
-		ui = new MapDrawingWindow("Navigator", 600, 0);
+		ui = new MapDrawingWindow("Navigator", 600, 0, 250);
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
 		// add data source from depth camera
@@ -120,7 +122,7 @@ public class Navigator implements Runnable, NavigatorControl
 				return;
 			}
 			robot.freeze(false);
-			speed = 20;
+			speed = MAX_SPEED;
 
 			double std = pf.getStdDev();
 
@@ -152,11 +154,9 @@ public class Navigator implements Runnable, NavigatorControl
 						next = routePlanner.getRouteForLocation(next.getX(), next.getY());
 				}
 				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
-				if (distanceToTarget < 20)
-				{
-					// slow down we've almost reached our goal
-					speed = 5;
-				}
+
+				// slow as we approach the target
+				speed = Math.min(Math.max(3, distanceToTarget), speed);
 
 				double dx = next.getX() - pfX;
 				double dy = next.getY() - pfY;

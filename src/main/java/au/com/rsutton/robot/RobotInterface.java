@@ -18,4 +18,6 @@ public interface RobotInterface
 
 	void removeMessageListener(RobotLocationDeltaListener listener);
 
+	double getRadius();
+
 }

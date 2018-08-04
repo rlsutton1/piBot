@@ -2,6 +2,7 @@ package au.com.rsutton.robot.roomba;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
@@ -14,6 +15,10 @@ import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.robot.lidar.LidarObservation;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Speed;
+import au.com.rsutton.units.Time;
 import ev3dev.sensors.slamtec.model.Scan;
 import ev3dev.sensors.slamtec.model.ScanDistance;
 
@@ -32,6 +37,8 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 	Vector3D lidarTranslation = new Vector3D(0, -10, 0);
 
 	Rotation lidarRotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(0));
+
+	volatile double nearestObsticle;
 
 	public void configure(Config config) throws Exception
 	{
@@ -72,6 +79,11 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 			command.setChangeHeading(Math.signum(changeHeading) * 120);
 		}
 
+		// cap speed based on distance to nearest obstacle
+		double cms = command.getSpeed().getSpeed(DistanceUnit.CM, TimeUnit.SECONDS);
+		cms = Math.min(cms, Math.max(3, nearestObsticle));
+		command.setSpeed(new Speed(new Distance(cms, DistanceUnit.CM), Time.perSecond()));
+
 		roomba630.setMotion(command);
 
 	}
@@ -86,6 +98,7 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 		if (scan != null)
 		{
 			obsticleNear = false;
+			double nearest = 10000;
 
 			for (ScanDistance measurement : scan.getDistances())
 			{
@@ -107,8 +120,15 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 				}
 
 				obsticleNear |= isObsticleNear(result);
+				if (distance > ROBOT_RADIUS)
+				{
+					nearest = Math.min(nearest, distance - ROBOT_RADIUS);
+				}
 
 			}
+
+			nearestObsticle = nearest;
+
 			if (obsticleNear)
 			{
 				roomba630.alarm();
