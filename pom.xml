@@ -23,48 +23,23 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.pi4j</groupId>
-			<artifactId>pi4j-core</artifactId>
-			<version>1.1</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>pi4j-native</artifactId>
-					<groupId>com.pi4j</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.pi4j</groupId>
-			<artifactId>pi4j-gpio-extension</artifactId>
-			<version>1.1</version>
-		</dependency>
-
-		<!-- <dependency> <groupId>com.nativelibs4java</groupId> <artifactId>bridj</artifactId> 
-			<version>0.6.3-SNAPSHOT</version> </dependency> <dependency> <groupId>com.github.sarxos</groupId> 
-			<artifactId>webcam-capture</artifactId> <<version>0.3.9</version> > <version>0.3.10</version> 
-			</dependency> <dependency> <groupId>com.github.sarxos</groupId> <artifactId>webcam-capture-driver-gstreamer</artifactId> 
-			<version>0.3.10-RC7</version> </dependency> -->
-		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
 			<version>3.1.3</version>
 		</dependency>
 
 
-		<!-- <dependency> <groupId>org.ros.rosjava_core</groupId> <artifactId>rosjava</artifactId> 
-			<version>0.1.6</version> </dependency> -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>15.0</version>
 		</dependency>
 
-<!-- 		<dependency> -->
-<!-- 			<groupId>Quadtree</groupId> -->
-<!-- 			<artifactId>Quadtree</artifactId> -->
-<!-- 			<version>1.0</version> -->
-<!-- 		</dependency> -->
-
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.0</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -82,25 +57,6 @@
 
 
 
-		<!-- ND4J backend. You need one in every DL4J project. Normally define 
-			artifactId as either "nd4j-native-platform" or "nd4j-cuda-7.5-platform" -->
-		<dependency>
-			<groupId>org.nd4j</groupId>
-			<artifactId>${nd4j.backend}</artifactId>
-		</dependency>
-
-		<!-- Core DL4J functionality -->
-		<dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-core</artifactId>
-			<version>${dl4j.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>deeplearning4j-nlp</artifactId>
-			<version>${dl4j.version}</version>
-		</dependency>
 
 		<!-- roomba lib dependency -->
 		<dependency>
@@ -126,13 +82,7 @@
 			<artifactId>RPLidar4J</artifactId>
 			<version>0.8.0</version>
 		</dependency>
-		
-		<dependency>
-			<groupId>org.openni</groupId>
-			<artifactId>OpenNI2</artifactId>
-			<version>2</version>
 
-		</dependency>
 
 		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j 
 			-DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
