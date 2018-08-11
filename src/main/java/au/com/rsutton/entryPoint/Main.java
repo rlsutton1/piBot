@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.mapping.particleFilter.MapBuilder;
 import au.com.rsutton.robot.roomba.RoombaRobot;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
@@ -36,15 +37,18 @@ public class Main
 
 		System.out.println("Press 7 to perform roomba test");
 
+		System.out.println("Press 8 to launch Map Builder UI");
+
 		int ch = br.read();
 		// if (ch == '0')
 		// {
 
-		Config config = new Config();
-		RoombaRobot robot = new RoombaRobot();
-		robot.configure(config);
 		if (ch == '1')
 		{
+			Config config = new Config();
+			RoombaRobot robot = new RoombaRobot();
+			robot.configure(config);
+
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 			setMotion.setChangeHeading(-90d);
@@ -59,6 +63,10 @@ public class Main
 		}
 		if (ch == '2')
 		{
+			Config config = new Config();
+			RoombaRobot robot = new RoombaRobot();
+			robot.configure(config);
+
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 			setMotion.setChangeHeading(90d);
@@ -73,6 +81,10 @@ public class Main
 		}
 		if (ch == '3')
 		{
+			Config config = new Config();
+			RoombaRobot robot = new RoombaRobot();
+			robot.configure(config);
+
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
 			setMotion.setChangeHeading(0d);
@@ -87,6 +99,10 @@ public class Main
 		}
 		if (ch == '4')
 		{
+			Config config = new Config();
+			RoombaRobot robot = new RoombaRobot();
+			robot.configure(config);
+
 			for (int i = 0; i < 60; i++)
 			{
 				SetMotion setMotion = new SetMotion();
@@ -102,6 +118,11 @@ public class Main
 			TimeUnit.SECONDS.sleep(1);
 			robot.shutdown();
 			return;
+		}
+		if (ch == '8')
+		{
+			new MapBuilder().test();
+
 		}
 
 		while (true)
