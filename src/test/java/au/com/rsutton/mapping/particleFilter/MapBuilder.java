@@ -170,7 +170,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = false;
+	final boolean simulator = true;
 
 	@Test
 	public void test() throws InterruptedException

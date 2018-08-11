@@ -142,7 +142,7 @@ public class Navigator implements Runnable, NavigatorControl
 				}
 				lastAngle = pf.getHeading();
 
-				ExpansionPoint next = new ExpansionPoint(pfX, pfY);
+				ExpansionPoint next = new ExpansionPoint(pfX, pfY, 0);
 				if (routePlanner.hasPlannedRoute())
 				{
 					// get a point on the route 25 steps from where we are, we

@@ -1,10 +1,10 @@
 package au.com.rsutton.navigation.router;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
@@ -49,22 +49,20 @@ public class RoutePlanner
 		this.targetX = toX;
 		this.targetY = toY;
 
-		List<ExpansionPoint> immediatePoints = new LinkedList<>();
-		PrioritizedQueueGroup<ExpansionPoint> deferredPoints = new PrioritizedQueueGroup<>(6);
-		AtomicInteger moveCounter = new AtomicInteger();
+		PriorityBlockingQueue<ExpansionPoint> immediatePoints = new PriorityBlockingQueue<>();
 
 		route = new Dynamic2dSparseArray(WALL);
 
 		int x = toX / blockSize;
 		int y = toY / blockSize;
 
-		immediatePoints.add(new ExpansionPoint(x, y));
-		route.set(x, y, moveCounter.getAndIncrement());
+		immediatePoints.add(new ExpansionPoint(x, y, 0));
+		AtomicInteger base = new AtomicInteger();
 
-		while (!immediatePoints.isEmpty() || !deferredPoints.isEmpty())
+		while (!immediatePoints.isEmpty())
 		{
-			deferredPoints.addAll(expandPoints(immediatePoints, WALL, moveCounter, routeOption));
-			immediatePoints.addAll(expandDeferredPoints(deferredPoints, moveCounter));
+			ExpansionPoint point = immediatePoints.poll();
+			immediatePoints.addAll(expandPoints(point, WALL, routeOption, base));
 		}
 	}
 
@@ -102,68 +100,52 @@ public class RoutePlanner
 
 	/**
 	 * 
-	 * @param deferredPoints
-	 * @return a list of immediatePoints
-	 */
-	private Collection<ExpansionPoint> expandDeferredPoints(PrioritizedQueueGroup<ExpansionPoint> deferredPoints,
-			AtomicInteger moveCounter)
-	{
-		List<ExpansionPoint> immediatePoints = new LinkedList<>();
-		if (!deferredPoints.isEmpty())
-		{
-			ExpansionPoint temp = deferredPoints.take();
-			route.set(temp.x, temp.y, moveCounter.getAndIncrement());
-			immediatePoints.add(temp);
-		}
-		return immediatePoints;
-	}
-
-	/**
-	 * 
 	 * @param imme
 	 * @param routeOption
 	 *            diatePoints
 	 * @return a list of deferred points
 	 */
-	private PrioritizedQueueGroup<ExpansionPoint> expandPoints(List<ExpansionPoint> immediatePoints, int wall,
-			AtomicInteger moveCounter, RouteOption routeOption)
+	private List<ExpansionPoint> expandPoints(ExpansionPoint point, int wall, RouteOption routeOption,
+			AtomicInteger base)
 	{
-		PrioritizedQueueGroup<ExpansionPoint> deferredPoints = new PrioritizedQueueGroup<>(6);
+		List<ExpansionPoint> tempPoints = new LinkedList<>();
 
-		while (!immediatePoints.isEmpty())
-		{
-			ExpansionPoint point = immediatePoints.remove(0);
-			List<ExpansionPoint> tempPoints = new LinkedList<>();
-			tempPoints.add(new ExpansionPoint(point.x + 1, point.y));
-			tempPoints.add(new ExpansionPoint(point.x - 1, point.y));
-			tempPoints.add(new ExpansionPoint(point.x, point.y - 1));
-			tempPoints.add(new ExpansionPoint(point.x, point.y + 1));
-			tempPoints.add(new ExpansionPoint(point.x + 1, point.y + 1));
-			tempPoints.add(new ExpansionPoint(point.x - 1, point.y - 1));
-			tempPoints.add(new ExpansionPoint(point.x + 1, point.y - 1));
-			tempPoints.add(new ExpansionPoint(point.x - 1, point.y + 1));
+		// add expands to return list
 
-			for (ExpansionPoint temp : tempPoints)
+		rateAndCreatePoint(tempPoints, point.x + 1, point.y, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x - 1, point.y, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x, point.y - 1, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x, point.y + 1, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x + 1, point.y + 1, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x - 1, point.y - 1, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x + 1, point.y - 1, routeOption, point.getRating(), wall, base);
+		rateAndCreatePoint(tempPoints, point.x - 1, point.y + 1, routeOption, point.getRating(), wall, base);
+
+		return tempPoints;
+	}
+
+	private void rateAndCreatePoint(List<ExpansionPoint> tempPoints, int x, int y, RouteOption routeOption, double cost,
+			int wall, AtomicInteger base)
+	{
+
+		ExpansionPoint temp = new ExpansionPoint(x, y, 0);
+		if (isPointWithinWorldBountries(temp))
+			if (routeOption.isPointRoutable(augmentedMap.get(temp.x * blockSize, temp.y * blockSize))
+					&& route.get(temp.x, temp.y) > base.get())
 			{
-				if (isPointWithinWorldBountries(temp))
-					if (routeOption.isPointRoutable(augmentedMap.get(temp.x * blockSize, temp.y * blockSize))
-							&& route.get(temp.x, temp.y) > moveCounter.get() && !isPointRoutedAlready(wall, temp))
-					{
 
-						int distanceToWall = doWallCheck(temp, 6);
-						if (distanceToWall == -1)
-						{
-							route.set(temp.x, temp.y, moveCounter.getAndIncrement());
-							immediatePoints.add(temp);
-						} else
-						{
-							deferredPoints.add(distanceToWall, temp);
-						}
-					}
+				int radius = 40;
+
+				double distanceToWall = (radius - (doWallCheck(temp, radius)) * 20) + base.get();
+				if (route.get(temp.x, temp.y) > base.get())
+				{
+					base.incrementAndGet();
+					route.set(temp.x, temp.y, base.get());
+
+					tempPoints.add(new ExpansionPoint(x, y, distanceToWall));
+				}
 			}
 
-		}
-		return deferredPoints;
 	}
 
 	private boolean isPointRoutedAlready(int wall, ExpansionPoint temp)
@@ -197,27 +179,27 @@ public class RoutePlanner
 		for (int radius = 1; radius <= size; radius++)
 		{
 			List<ExpansionPoint> points = new LinkedList<>();
-			points.add(new ExpansionPoint(radius, 0));
-			points.add(new ExpansionPoint(radius, radius));
-			points.add(new ExpansionPoint(radius, -radius));
-			points.add(new ExpansionPoint(0, radius));
-			points.add(new ExpansionPoint(0, -radius));
-			points.add(new ExpansionPoint(-radius, 0));
-			points.add(new ExpansionPoint(-radius, radius));
-			points.add(new ExpansionPoint(-radius, -radius));
+			points.add(new ExpansionPoint(radius, 0, 0));
+			points.add(new ExpansionPoint(radius, radius, 0));
+			points.add(new ExpansionPoint(radius, -radius, 0));
+			points.add(new ExpansionPoint(0, radius, 0));
+			points.add(new ExpansionPoint(0, -radius, 0));
+			points.add(new ExpansionPoint(-radius, 0, 0));
+			points.add(new ExpansionPoint(-radius, radius, 0));
+			points.add(new ExpansionPoint(-radius, -radius, 0));
 
 			for (ExpansionPoint radiusPoint : points)
 			{
 				if (augmentedMap.get((epoint.x + radiusPoint.x) * blockSize,
 						(epoint.y + radiusPoint.y) * blockSize) > 0.5)
 				{
-					wallChecks.put(epoint, size);
-					return size;
+					wallChecks.put(epoint, radius);
+					return radius;
 				}
 			}
 		}
-		wallChecks.put(epoint, -1);
-		return -1;
+		wallChecks.put(epoint, size);
+		return size;
 	}
 
 	private ExpansionPoint getRouteForLocation(int x, int y, int radius)
@@ -227,14 +209,14 @@ public class RoutePlanner
 		int ry = y / blockSize;
 
 		List<ExpansionPoint> points = new LinkedList<>();
-		points.add(new ExpansionPoint(radius, 0));
-		points.add(new ExpansionPoint(radius, radius));
-		points.add(new ExpansionPoint(radius, -radius));
-		points.add(new ExpansionPoint(0, radius));
-		points.add(new ExpansionPoint(0, -radius));
-		points.add(new ExpansionPoint(-radius, 0));
-		points.add(new ExpansionPoint(-radius, radius));
-		points.add(new ExpansionPoint(-radius, -radius));
+		points.add(new ExpansionPoint(radius, 0, 0));
+		points.add(new ExpansionPoint(radius, radius, 0));
+		points.add(new ExpansionPoint(radius, -radius, 0));
+		points.add(new ExpansionPoint(0, radius, 0));
+		points.add(new ExpansionPoint(0, -radius, 0));
+		points.add(new ExpansionPoint(-radius, 0, 0));
+		points.add(new ExpansionPoint(-radius, radius, 0));
+		points.add(new ExpansionPoint(-radius, -radius, 0));
 
 		ExpansionPoint target = null;
 		double min = route.get(rx, ry);
@@ -245,7 +227,7 @@ public class RoutePlanner
 			if (value < min)
 			{
 				min = value;
-				target = new ExpansionPoint(x + point.x, y + point.y);
+				target = new ExpansionPoint(x + point.x, y + point.y, 0);
 			}
 		}
 		// System.out.println("min " + min);
@@ -269,7 +251,7 @@ public class RoutePlanner
 		}
 		if (result == null)
 		{
-			result = new ExpansionPoint(x, y);
+			result = new ExpansionPoint(x, y, 0);
 		}
 		return result;
 	}
