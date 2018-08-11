@@ -1,11 +1,10 @@
 package au.com.rsutton.navigation.graphslam.v3;
 
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
 
-public class GraphSlamV3TestRotation
-{
+import static junit.framework.TestCase.fail;
+
+public class GraphSlamV3TestRotation {
 
 	@Test
 	public void test4()

@@ -40,12 +40,6 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.0</version>
 		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -53,7 +47,19 @@
 			<version>3.4.1</version>
 		</dependency>
 
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
 
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>6.14.3</version>
+			<scope>test</scope>
+		</dependency>
 
 
 
@@ -78,14 +84,19 @@
 		</dependency>
 
 		<dependency>
-			<groupId>RPLidar4J</groupId>
+			<groupId>com.github.ev3dev-lang-java</groupId>
 			<artifactId>RPLidar4J</artifactId>
-			<version>0.8.0</version>
+			<version>0.4.0</version>
 		</dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>RELEASE</version>
+        </dependency>
 
 
-		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j 
-			-DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
+        <!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j
+            -DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
 	</dependencies>
 	<build>
 		<plugins>
@@ -158,6 +169,10 @@
 		<repository>
 			<id>SarXos Repository</id>
 			<url>http://www.sarxos.pl/repo/maven2</url>
+		</repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</repository>
 	</repositories>
 	<properties>
