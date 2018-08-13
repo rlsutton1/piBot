@@ -84,9 +84,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>RPLidar4J</groupId>
+			<groupId>com.github.ev3dev-lang-java</groupId>
 			<artifactId>RPLidar4J</artifactId>
-			<version>0.8.0</version>
+			<version>0.6.1-SNAPSHOT</version>
 		</dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -143,6 +143,10 @@
 	</build>
 	<repositories>
 		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+		<repository>
 			<id>oss-snapshots-repo</id>
 			<name>Sonatype OSS Maven Repository</name>
 			<url>https://oss.sonatype.org/content/groups/public</url>
@@ -170,10 +174,7 @@
 			<id>SarXos Repository</id>
 			<url>http://www.sarxos.pl/repo/maven2</url>
 		</repository>
-		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
-		</repository>
+
 	</repositories>
 	<properties>
 		<nd4j.backend>nd4j-native-platform</nd4j.backend>
