@@ -265,7 +265,7 @@ public class Roomba630 implements Runnable
 		// I don't under stand why the roomba returns negative
 		// distance
 		// traveled values when travelling forwards
-		int distanceTraveled = -roomba.distanceTraveled();
+		int distanceTraveled = roomba.distanceTraveled();
 		if (totalDistanceTraveled == null)
 		{
 			totalDistanceTraveled = (double) distanceTraveled;
