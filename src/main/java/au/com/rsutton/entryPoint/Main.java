@@ -43,6 +43,12 @@ public class Main
 		// if (ch == '0')
 		// {
 
+		if (ch == '0')
+		{
+			Config config = new Config();
+			RoombaRobot robot = new RoombaRobot();
+			robot.configure(config);
+		}
 		if (ch == '1')
 		{
 			Config config = new Config();
