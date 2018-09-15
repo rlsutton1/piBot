@@ -5,6 +5,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.Test;
 
+import au.com.rsutton.kalman.RobotPoseSourceNoop;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.Navigator;
@@ -27,8 +28,9 @@ public class ParticleFilterNavigatorLiveTest
 
 		StartPosition startPosition = StartPosition.RANDOM;
 		Navigator navigator;
-		final ParticleFilterImpl pf = new ParticleFilterImpl(map, 5000, 2, 1, startPosition, robot, null);
-		navigator = new Navigator(map, pf, robot);
+		final RobotPoseSource pf = new RobotPoseSourceNoop(
+				new ParticleFilterImpl(map, 5000, 2, 1, startPosition, robot, null));
+		navigator = new Navigator(map, pf, robot, 20);
 
 		new SubMapBuilder().buildMap(robot);
 		navigateTo(navigator, 120, -260);

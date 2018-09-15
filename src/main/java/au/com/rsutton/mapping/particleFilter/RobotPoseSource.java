@@ -19,15 +19,9 @@ public interface RobotPoseSource
 	 */
 	public abstract double getStdDev();
 
-	public void shutdown();
-
 	public abstract DataSourcePoint getParticlePointSource();
 
 	public abstract DataSourceMap getHeadingMapDataSource();
-
-	public abstract Double getBestScanMatchScore();
-
-	public abstract Double getBestRawScore();
 
 	public abstract ParticleFilterStatus getParticleFilterStatus();
 

@@ -38,7 +38,7 @@ import au.com.rsutton.units.Time;
 public class Navigator implements Runnable, NavigatorControl
 {
 
-	private static final int MAX_SPEED = 50;
+	private int MAX_SPEED = 30;
 
 	Logger logger = LogManager.getLogger();
 
@@ -66,8 +66,9 @@ public class Navigator implements Runnable, NavigatorControl
 
 	// private Double initialHeading = null;
 
-	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot)
+	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot, int maxSpeed)
 	{
+		this.MAX_SPEED = maxSpeed;
 		ui = new MapDrawingWindow("Navigator", 600, 0, 250);
 		ui.addDataSource(map2, new Color(255, 255, 255));
 

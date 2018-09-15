@@ -151,7 +151,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 					try
 					{
-						addObservation(resampleObservations(observations));
 
 						moveParticles(new ParticleUpdate()
 						{
@@ -182,6 +181,9 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 								return deltaDistance.convert(DistanceUnit.CM);
 							}
 						});
+
+						addObservation(resampleObservations(observations));
+
 					} finally
 					{
 						lock.unlock();
@@ -384,7 +386,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		if (listener != null)
 		{
 			listener.update(getXyPosition(), new Angle(stablisedHeading, AngleUnits.DEGREES), getStdDev(),
-					lastObservation.get());
+					lastObservation.get(), particleFilterStatus);
 		}
 
 	}
@@ -474,8 +476,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		map.dumpTextWorld();
 	}
 
-	@Override
-	public DistanceXY getXyPosition()
+	private DistanceXY getXyPosition()
 	{
 		double x = 0;
 		double y = 0;
@@ -503,19 +504,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * au.com.rsutton.mapping.particleFilter.ParticleFilterIfc#getAverageHeading
-	 * ()
-	 */
-	@Override
-	public double getHeading()
-	{
-		return averageHeading;
-	}
-
 	int counter = 10;
 	private volatile boolean suspended;
 	private ParticleFilterStatus particleFilterStatus = ParticleFilterStatus.LOCALIZING;
@@ -525,8 +513,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	 * 
 	 * @see au.com.rsutton.mapping.particleFilter.ParticleFilterIfc#getStdDev()
 	 */
-	@Override
-	public double getStdDev()
+	private double getStdDev()
 	{
 
 		StandardDeviation xdev = new StandardDeviation();
@@ -628,12 +615,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		};
 	}
 
-	@Override
-	public Double getBestScanMatchScore()
-	{
-		return bestScanMatchScore;
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -656,19 +637,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			particle.addScanReference(par);
 		}
 
-	}
-
-	@Override
-	public List<Particle> getParticles()
-	{
-
-		return new LinkedList<>(particles);
-	}
-
-	@Override
-	public Double getBestRawScore()
-	{
-		return bestRawScore;
 	}
 
 	@Override
@@ -703,7 +671,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			@Override
 			public String getValue()
 			{
-				return "" + getBestScanMatchScore() + " " + getBestRawScore();
+				return "" + bestScanMatchScore + " " + bestRawScore;
 			}
 
 			@Override
@@ -740,9 +708,4 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	@Override
-	public ParticleFilterStatus getParticleFilterStatus()
-	{
-		return particleFilterStatus;
-	}
 }

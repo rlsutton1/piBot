@@ -40,7 +40,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 		panel.dispose();
 	}
 
-	private int scansRemaining = 2;
+	private int scansRemaining = 6;
 
 	ProbabilityMapIIFc buildMap(RobotInterface robot) throws InterruptedException
 	{
@@ -49,7 +49,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 		robot.turn(0);
 
 		robot.publishUpdate();
-		TimeUnit.MILLISECONDS.sleep(1500);
+		TimeUnit.MILLISECONDS.sleep(500);
 		robot.addMessageListener(this);
 
 		while (scansRemaining > 0)

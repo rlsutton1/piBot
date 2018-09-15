@@ -53,13 +53,6 @@ public class PoseAdjuster implements RobotPoseSource
 		return source.getStdDev();
 	}
 
-	@Override
-	public void shutdown()
-	{
-		source.shutdown();
-
-	}
-
 	public void setPose(Pose mapPose)
 	{
 		pose = mapPose;
@@ -78,18 +71,6 @@ public class PoseAdjuster implements RobotPoseSource
 	{
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public Double getBestScanMatchScore()
-	{
-		return source.getBestScanMatchScore();
-	}
-
-	@Override
-	public Double getBestRawScore()
-	{
-		return source.getBestRawScore();
 	}
 
 	@Override

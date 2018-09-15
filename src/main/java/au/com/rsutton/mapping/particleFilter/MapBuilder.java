@@ -21,7 +21,7 @@ import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.angle.AngleUtil;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.kalman.RobotPoseSourceNoop;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.LoopMapBuilder;
 import au.com.rsutton.mapping.XY;
@@ -59,9 +59,9 @@ public class MapBuilder
 
 	private static final int MIN_TARGET_SEPARATION = (int) (RANGE_LIMIT_FOR_ADD * 0.4);
 
-	private static final double DISTANCE_NOISE = 3;
+	private static final double DISTANCE_NOISE = 0.5;
 
-	private static final double HEADING_NOISE = 3;
+	private static final double HEADING_NOISE = 0.5;
 
 	private static final int CHANGE_COUNTER_ADD_MAP = 0;
 	private static final int CHANGE_COUNTER_RESET = 10;
@@ -169,7 +169,8 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = true;
+	final boolean simulator = false;
+	int maxSpeed = 30;
 
 	public void test() throws InterruptedException
 	{
@@ -181,7 +182,8 @@ public class MapBuilder
 
 			if (simulator)
 			{
-				boolean useKitchenMap = false;
+				maxSpeed = 50;
+				boolean useKitchenMap = true;
 				RobotSimulator robotS;
 				if (useKitchenMap)
 				{
@@ -240,12 +242,12 @@ public class MapBuilder
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
 			particleFilterProxy = new ParticleFilterProxy(null);
-			this.poseAdjuster = new PoseAdjuster(new Pose(0, 0, 0), particleFilterProxy);
+			this.poseAdjuster = new PoseAdjuster(new Pose(0, 0, 0), new RobotPoseSourceNoop(particleFilterProxy));
 
 			addMap(getZeroPose());
 			currentMap = subMaps.get(0);
 
-			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot));
+			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot), maxSpeed);
 
 			// Thread.sleep(20000);
 
@@ -277,8 +279,6 @@ public class MapBuilder
 				}
 
 				update();
-
-				new DataLogValue("PF best raw score:", "" + poseAdjuster.getBestRawScore()).publish();
 
 				double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
 				double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
@@ -634,7 +634,7 @@ public class MapBuilder
 			robot.publishUpdate();
 		}
 
-		for (int ctr = 0; ctr < 30; ctr++)
+		for (int ctr = 0; ctr < 3; ctr++)
 		{
 			TimeUnit.MILLISECONDS.sleep(100);
 			robot.freeze(true);
@@ -912,11 +912,6 @@ public class MapBuilder
 		{
 
 			@Override
-			public void shutdown()
-			{
-			}
-
-			@Override
 			public DistanceXY getXyPosition()
 			{
 				return new DistanceXY(0, 0, DistanceUnit.CM);
@@ -943,20 +938,6 @@ public class MapBuilder
 
 			@Override
 			public DataSourceMap getHeadingMapDataSource()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public Double getBestScanMatchScore()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public Double getBestRawScore()
 			{
 				// TODO Auto-generated method stub
 				return null;

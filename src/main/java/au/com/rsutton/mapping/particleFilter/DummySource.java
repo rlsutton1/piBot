@@ -35,13 +35,6 @@ public class DummySource implements RobotPoseSource
 	}
 
 	@Override
-	public void shutdown()
-	{
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public DataSourcePoint getParticlePointSource()
 	{
 		// TODO Auto-generated method stub
@@ -50,20 +43,6 @@ public class DummySource implements RobotPoseSource
 
 	@Override
 	public DataSourceMap getHeadingMapDataSource()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Double getBestScanMatchScore()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Double getBestRawScore()
 	{
 		// TODO Auto-generated method stub
 		return null;

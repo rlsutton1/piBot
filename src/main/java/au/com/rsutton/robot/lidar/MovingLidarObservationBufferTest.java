@@ -123,13 +123,6 @@ public class MovingLidarObservationBufferTest
 		{
 
 			@Override
-			public void shutdown()
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
 			public DistanceXY getXyPosition()
 			{
 				return new DistanceXY(x, y, DistanceUnit.CM);
@@ -157,20 +150,6 @@ public class MovingLidarObservationBufferTest
 
 			@Override
 			public DataSourceMap getHeadingMapDataSource()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public Double getBestScanMatchScore()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public Double getBestRawScore()
 			{
 				// TODO Auto-generated method stub
 				return null;

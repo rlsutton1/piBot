@@ -91,6 +91,9 @@ public class MapUI extends JPanel
 		sources.add(source);
 	}
 
+	Double lastYCenter = new Double(0);
+	Double lastXCenter = new Double(0);;
+
 	public void render(double xOffset, double yOffset, double scale)
 	{
 
@@ -107,9 +110,19 @@ public class MapUI extends JPanel
 
 			}
 		}
+		if (lastXCenter.isNaN() || lastXCenter.isInfinite())
+		{
+			lastXCenter = 0.0;
+		}
+		if (lastYCenter.isNaN() || lastYCenter.isInfinite())
+		{
+			lastYCenter = 0.0;
+		}
+		double xCenter = ((totalX / ctr2) * 0.25) + (lastXCenter * 0.75);
+		double yCenter = ((totalY / ctr2) * 0.25) + (lastYCenter * 0.75);
 
-		double xCenter = totalX / ctr2;
-		double yCenter = totalY / ctr2;
+		lastYCenter = yCenter;
+		lastXCenter = xCenter;
 
 		this.scale = scale;
 

@@ -5,7 +5,6 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 
-import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
@@ -40,18 +39,6 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 		}
 		this.pf = pf;
 		pf.addListener(this);
-	}
-
-	@Override
-	public double getHeading()
-	{
-		return pf.getHeading();
-	}
-
-	@Override
-	public double getStdDev()
-	{
-		return pf.getStdDev();
 	}
 
 	@Override
@@ -98,33 +85,9 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 	}
 
 	@Override
-	public Double getBestScanMatchScore()
-	{
-		return pf.getBestScanMatchScore();
-	}
-
-	@Override
-	public DistanceXY getXyPosition()
-	{
-		return pf.getXyPosition();
-	}
-
-	@Override
 	public void addPendingScan(ParticleFilterObservationSet par)
 	{
 		pf.addPendingScan(par);
-	}
-
-	@Override
-	public List<Particle> getParticles()
-	{
-		return pf.getParticles();
-	}
-
-	@Override
-	public Double getBestRawScore()
-	{
-		return pf.getBestRawScore();
 	}
 
 	@Override
@@ -148,11 +111,11 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 
 	@Override
 	public void update(DistanceXY averagePosition, Angle averageHeading, double stdDev,
-			List<ScanObservation> particleFilterObservationSet)
+			List<ScanObservation> particleFilterObservationSet, ParticleFilterStatus status)
 	{
 		for (ParticleFilterListener listener : listeners)
 		{
-			listener.update(averagePosition, averageHeading, stdDev, particleFilterObservationSet);
+			listener.update(averagePosition, averageHeading, stdDev, particleFilterObservationSet, status);
 
 		}
 
@@ -163,12 +126,6 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 	{
 		listeners.remove(listener);
 
-	}
-
-	@Override
-	public ParticleFilterStatus getParticleFilterStatus()
-	{
-		return pf.getParticleFilterStatus();
 	}
 
 }

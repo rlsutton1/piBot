@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.kalman.RobotPoseSourceNoop;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -42,7 +43,7 @@ public class ParticleFilterLiveTest
 	// final AtomicDouble currentDeadReconingHeading = new AtomicDouble();
 
 	RobotInterface robot = new RobotImple();
-	ParticleFilterImpl pf;
+	RobotPoseSource pf;
 
 	@Test
 	public void test() throws InterruptedException
@@ -54,7 +55,8 @@ public class ParticleFilterLiveTest
 		ui.addDataSource(world, new Color(255, 255, 255));
 
 		double headingNoise = 1.0; // degrees/second
-		pf = new ParticleFilterImpl(world, 1000, 0.75, headingNoise, StartPosition.RANDOM, robot, null);
+		pf = new RobotPoseSourceNoop(
+				new ParticleFilterImpl(world, 1000, 0.75, headingNoise, StartPosition.RANDOM, robot, null));
 		// pf.dumpTextWorld(KitchenMapBuilder.buildKitchenMap());
 
 		setupDataSources(ui, pf);
@@ -208,42 +210,10 @@ public class ParticleFilterLiveTest
 
 	}
 
-	private void setupDataSources(MapDrawingWindow ui, final ParticleFilterImpl pf)
+	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)
 	{
 		ui.addDataSource(pf.getParticlePointSource(), new Color(255, 0, 0));
 		ui.addDataSource(pf.getHeadingMapDataSource());
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + pf.getStdDev();
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "StdDev";
-			}
-		});
-
-		ui.addStatisticSource(new DataSourceStatistic()
-		{
-
-			@Override
-			public String getValue()
-			{
-				return "" + pf.getBestScanMatchScore();
-			}
-
-			@Override
-			public String getLabel()
-			{
-				return "Best Match";
-			}
-		});
 
 		ui.addStatisticSource(new DataSourceStatistic()
 		{
@@ -319,7 +289,7 @@ public class ParticleFilterLiveTest
 
 	}
 
-	private void setupRoutePlanner(MapDrawingWindow ui, final ParticleFilterImpl pf, final RoutePlanner routePlanner)
+	private void setupRoutePlanner(MapDrawingWindow ui, final RobotPoseSource pf, final RoutePlanner routePlanner)
 	{
 
 		ui.addDataSource(new DataSourcePoint()
