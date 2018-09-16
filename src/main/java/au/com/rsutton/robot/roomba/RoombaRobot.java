@@ -43,11 +43,16 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 	public void configure(Config config) throws Exception
 	{
 
-		roomba630 = new Roomba630();
+		String lidarPort = config.loadSetting(RPLidarAdaptor.RPLIDAR_USB_PORT, "/dev/ttyUSB0");
+		String roombaPort = config.loadSetting(Roomba630.ROOMBA_USB_PORT, "/dev/ttyUSB1");
 		lidar = new RPLidarAdaptor(this);
+		roomba630 = new Roomba630();
 
-		roomba630.configure(config);
-		lidar.configure(config);
+		System.out.println(roombaPort + " " + lidarPort);
+
+		roomba630.configure(config, roombaPort);
+
+		lidar.configure(config, lidarPort);
 
 		SetMotion message = new SetMotion();
 		message.addMessageListener(this);

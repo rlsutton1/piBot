@@ -1,6 +1,7 @@
 package au.com.rsutton.robot.roomba;
 
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.maschel.roomba.RoombaJSSC;
@@ -24,6 +25,7 @@ public class Roomba630 implements Runnable
 
 	// publish deltas
 
+	static final String ROOMBA_USB_PORT = "roomba usb port";
 	private static final int ALARM_SONG = 0;
 	private static final int STRAIGHT = 32768;
 	// enact commands
@@ -38,19 +40,22 @@ public class Roomba630 implements Runnable
 	int turnRadius;
 
 	private volatile long commandExpires;
+	private ScheduledFuture<?> future;
 
 	Roomba630()
 	{
 
 	}
 
-	void configure(Config config) throws InterruptedException
+	void configure(Config config, String port) throws InterruptedException
 	{
 		synchronized (sync)
 		{
 			roomba = new RoombaJSSCSerial();
 
-			roomba.connect(config.loadSetting("roomba usb port", "/dev/ttyUSB0"));
+			String loadSetting = config.loadSetting(ROOMBA_USB_PORT, "/dev/ttyUSB0");
+			System.out.println("Using " + loadSetting);
+			roomba.connect(loadSetting);
 			// Use
 			// portList()
 			// to
@@ -88,6 +93,7 @@ public class Roomba630 implements Runnable
 				}
 				if (ctr > 30)
 				{
+					shutdown();
 					System.exit(-1);
 					throw new RuntimeException("Out of here");
 				}
@@ -102,7 +108,8 @@ public class Roomba630 implements Runnable
 
 			alarm();
 		}
-		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this, 200, 100, TimeUnit.MILLISECONDS);
+		future = Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this, 200, 100,
+				TimeUnit.MILLISECONDS);
 
 	}
 
@@ -245,6 +252,10 @@ public class Roomba630 implements Runnable
 
 					if (roomba.batteryVoltage() < 12000)
 					{
+						// stop !!!
+						roomba.driveDirect(0, 0);
+						future.cancel(false);
+						shutdown();
 						System.out.println("Battery is flat");
 						System.exit(-1);
 					}

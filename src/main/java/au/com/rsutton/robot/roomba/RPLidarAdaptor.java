@@ -9,9 +9,11 @@ import ev3dev.sensors.slamtec.model.Scan;
 public class RPLidarAdaptor implements Runnable
 {
 
+	public static final String RPLIDAR_USB_PORT = "rplidar usb port";
 	RPLidarProvider lidar = null;
 	// configure platform.
 	final private RPLidarAdaptorListener listener;
+	private volatile boolean stop;
 
 	// publish scan data
 
@@ -22,10 +24,12 @@ public class RPLidarAdaptor implements Runnable
 		this.listener = listener;
 	}
 
-	void configure(Config config) throws RPLidarA1ServiceException, InterruptedException
+	void configure(Config config, String port) throws RPLidarA1ServiceException, InterruptedException
 	{
 
-		final String USBPort = config.loadSetting("rplidar usb port", "/dev/ttyUSB0");
+		String USBPort = config.loadSetting(RPLIDAR_USB_PORT, "/dev/ttyUSB0");
+		System.out.println("Using " + USBPort);
+
 		lidar = new RPLidarA1(USBPort);
 		lidar.init();
 
@@ -40,7 +44,7 @@ public class RPLidarAdaptor implements Runnable
 	{
 		// publish scan data
 
-		while (true)
+		while (!stop)
 		{
 			try
 			{
@@ -56,11 +60,17 @@ public class RPLidarAdaptor implements Runnable
 
 	}
 
-	void commandListener()
+	public void shutdown()
 	{
-		// supported commands
-		// stop
-		// start
-
+		stop = true;
+		try
+		{
+			lidar.close();
+		} catch (RPLidarA1ServiceException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
+
 }
