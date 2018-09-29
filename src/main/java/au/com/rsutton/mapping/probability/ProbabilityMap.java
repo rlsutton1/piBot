@@ -18,13 +18,13 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 {
 
 	private int blockSize;
-	private SparseArray world;
+	private SparseArray<Double> world;
 	private double defaultValue = 0.5;
 
 	public ProbabilityMap(int blockSize)
 	{
 
-		world = new Dynamic2dSparseArray(defaultValue);
+		world = new Dynamic2dSparseArray<>(defaultValue);
 
 		this.blockSize = blockSize;
 	}
@@ -459,7 +459,14 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 	@Override
 	public void erase()
 	{
-		world = new Dynamic2dSparseArray(defaultValue);
+		world = new Dynamic2dSparseArray<>(defaultValue);
 
+	}
+
+	public void writeRadius(int x, int y, double value, int radius)
+	{
+		for (int ox = -radius; ox < radius; ox += blockSize)
+			for (int oy = -radius; oy < radius; oy += blockSize)
+				world.set((x + ox) / blockSize, (y + oy) / blockSize, value);
 	}
 }

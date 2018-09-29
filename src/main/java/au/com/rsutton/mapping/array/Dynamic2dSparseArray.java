@@ -1,11 +1,12 @@
 package au.com.rsutton.mapping.array;
 
-public class Dynamic2dSparseArray implements SparseArray
+public class Dynamic2dSparseArray<T> implements SparseArray<T>
 {
 
 	private int cellSize;
 
-	Sparse2dSegment[][] maps = new Sparse2dSegment[2][2];
+	@SuppressWarnings("unchecked")
+	Sparse2dSegment<T>[][] maps = new Sparse2dSegment[2][2];
 
 	private int minY = Integer.MAX_VALUE;
 
@@ -15,9 +16,9 @@ public class Dynamic2dSparseArray implements SparseArray
 
 	private int minX = Integer.MAX_VALUE;
 
-	private final double defaultValue;
+	private final T defaultValue;
 
-	public Dynamic2dSparseArray(double defaultValue)
+	public Dynamic2dSparseArray(T defaultValue)
 	{
 		// +-(50^3) is the maximum array size
 		this.cellSize = 50;
@@ -25,49 +26,57 @@ public class Dynamic2dSparseArray implements SparseArray
 
 		this.defaultValue = defaultValue;
 
-		maps[0][0] = new Sparse2dSegment(cellSize, levels, defaultValue);
-		maps[0][1] = new Sparse2dSegment(cellSize, levels, defaultValue);
-		maps[1][0] = new Sparse2dSegment(cellSize, levels, defaultValue);
-		maps[1][1] = new Sparse2dSegment(cellSize, levels, defaultValue);
+		maps[0][0] = new Sparse2dSegment<>(cellSize, levels, defaultValue);
+		maps[0][1] = new Sparse2dSegment<>(cellSize, levels, defaultValue);
+		maps[1][0] = new Sparse2dSegment<>(cellSize, levels, defaultValue);
+		maps[1][1] = new Sparse2dSegment<>(cellSize, levels, defaultValue);
 
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#getDefaultValue()
 	 */
 	@Override
-	public double getDefaultValue()
+	public T getDefaultValue()
 	{
 		return defaultValue;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#get(int, int)
 	 */
 	@Override
-	public double get(int x, int y)
+	public T get(int x, int y)
 	{
-		Sparse2dSegment map = maps[(int) Math.max(0, Math.signum(x))][(int) Math.max(0, Math.signum(y))];
+		Sparse2dSegment<T> map = maps[(int) Math.max(0, Math.signum(x))][(int) Math.max(0, Math.signum(y))];
 		return map.get(Math.abs(x), Math.abs(y));
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#set(int, int, double)
 	 */
 	@Override
-	public void set(int x, int y, double value)
+	public void set(int x, int y, T value)
 	{
 		minX = Math.min(minX, x);
 		minY = Math.min(minY, y);
 		maxX = Math.max(maxX, x);
 		maxY = Math.max(maxY, y);
 
-		Sparse2dSegment map = maps[(int) Math.max(0, Math.signum(x))][(int) Math.max(0, Math.signum(y))];
+		Sparse2dSegment<T> map = maps[(int) Math.max(0, Math.signum(x))][(int) Math.max(0, Math.signum(y))];
 		map.set(Math.abs(x), Math.abs(y), value);
 
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#getMinY()
 	 */
 	@Override
@@ -76,7 +85,9 @@ public class Dynamic2dSparseArray implements SparseArray
 		return minY;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#getMaxY()
 	 */
 	@Override
@@ -85,7 +96,9 @@ public class Dynamic2dSparseArray implements SparseArray
 		return maxY;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#getMaxX()
 	 */
 	@Override
@@ -94,7 +107,9 @@ public class Dynamic2dSparseArray implements SparseArray
 		return maxX;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.mapping.array.SparseArray#getMinX()
 	 */
 	@Override

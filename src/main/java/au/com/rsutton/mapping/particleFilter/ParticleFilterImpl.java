@@ -268,13 +268,13 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		int resolution = 5;
 
-		SparseArray array = Dynamic2dSparseArrayFactory.getDynamic2dSparseArray(0.0);
+		SparseArray<Double> array = Dynamic2dSparseArrayFactory.getDynamic2dSparseArray(0.0);
 		for (ScanObservation obs : observationList)
 		{
 			// 5cm resolution
 			int x = obs.getX() / resolution;
 			int y = obs.getY() / resolution;
-			array.set(x, y, 1);
+			array.set(x, y, 1.0);
 		}
 
 		int maxX = array.getMaxX();

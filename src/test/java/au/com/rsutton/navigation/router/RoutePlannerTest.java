@@ -17,6 +17,7 @@ public class RoutePlannerTest
 
 		ExpansionPoint lastTarget = null;
 		ExpansionPoint target = new ExpansionPoint(-40, 70, 0);
+		int ctr = 0;
 		do
 		{
 			target = planner.getRouteForLocation(target.getX(), target.getY());
@@ -29,7 +30,8 @@ public class RoutePlannerTest
 				break;
 			}
 			lastTarget = target;
-		} while (target != null);
+			ctr++;
+		} while (target != null && ctr < 100);
 
 	}
 

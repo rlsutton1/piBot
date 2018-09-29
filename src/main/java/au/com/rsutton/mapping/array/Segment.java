@@ -1,9 +1,9 @@
 package au.com.rsutton.mapping.array;
 
-public interface Segment
+public interface Segment<T>
 {
 
-	double get(int x, int y);
-	
-	void set(int x , int y , double value);
+	T get(int x, int y);
+
+	void set(int x, int y, T value);
 }

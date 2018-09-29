@@ -20,10 +20,10 @@ public class Dynamic2dSparseArrayTest
 		int max = 999999;
 
 		Stopwatch timer = Stopwatch.createStarted();
-		SparseArray map = Dynamic2dSparseArrayFactory.getDynamic2dSparseArray(0.5);
+		SparseArray<Double> map = Dynamic2dSparseArrayFactory.getDynamic2dSparseArray(0.5);
 		for (int i = min; i < max; i++)
 		{
-			map.set(i, i, i);
+			map.set(i, i, (double) i);
 			// System.out.println(i);
 		}
 

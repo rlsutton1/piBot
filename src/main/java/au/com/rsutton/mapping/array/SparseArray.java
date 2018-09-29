@@ -1,13 +1,13 @@
 package au.com.rsutton.mapping.array;
 
-public interface SparseArray
+public interface SparseArray<T>
 {
 
-	double getDefaultValue();
+	T getDefaultValue();
 
-	double get(int x, int y);
+	T get(int x, int y);
 
-	void set(int x, int y, double value);
+	void set(int x, int y, T value);
 
 	int getMinY();
 

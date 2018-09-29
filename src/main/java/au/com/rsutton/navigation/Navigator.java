@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import au.com.rsutton.depthcamera.PointCloudUI;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -95,7 +96,7 @@ public class Navigator implements Runnable, NavigatorControl
 		obsticleAvoidance = new ObsticleAvoidance(robot, pf);
 		ui.addDataSource(obsticleAvoidance.getHeadingMapDataSource(pf, robot));
 
-		setupRoutePlanner();
+		setupRoutePlanner(map2);
 
 		setupRobotListener();
 
@@ -243,7 +244,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
-	private void setupRoutePlanner()
+	private void setupRoutePlanner(ProbabilityMapIIFc worldMap)
 	{
 
 		ui.addDataSource(new DataSourcePoint()
@@ -282,6 +283,53 @@ public class Navigator implements Runnable, NavigatorControl
 			}
 
 		}, new Color(255, 255, 0));
+
+		ui.addDataSource(new DataSourcePoint()
+		{
+
+			@Override
+			public List<Point> getOccupiedPoints()
+			{
+
+				// determine the route from the current possition
+				DistanceXY pos = pf.getXyPosition();
+				double x = pos.getX().convert(DistanceUnit.CM);
+				double y = pos.getY().convert(DistanceUnit.CM);
+
+				List<Point> points = new LinkedList<>();
+				if (routePlanner.hasPlannedRoute())
+				{
+
+					LastMeterPlanner planner = new LastMeterPlanner();
+
+					List<XY> wp = new LinkedList<>();
+					for (int i = 0; i < 25; i++)
+					{
+						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
+						double dx = (x - next.getX()) * 5;
+						x -= dx;
+						double dy = (y - next.getY()) * 5;
+						y -= dy;
+						if (dx == 0 && dy == 0)
+						{
+							// reached the target
+							break;
+						}
+
+						wp.add(new XY(next.getX(), next.getY()));
+
+					}
+
+					for (XY p : planner.getPath(wp, worldMap))
+					{
+						points.add(new Point(p.getX(), p.getY()));
+					}
+				}
+
+				return points;
+			}
+
+		}, new Color(255, 0, 255));
 	}
 
 	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)
@@ -340,9 +388,8 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public void calculateRouteTo(int x, int y, Double heading, RouteOption routeOption)
 	{
-		routePlanner.createRoute(x, y, routeOption);
+		reachedDestination = !routePlanner.createRoute(x, y, routeOption);
 		targetHeading = heading;
-		reachedDestination = false;
 
 	}
 

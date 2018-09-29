@@ -1,15 +1,16 @@
 package au.com.rsutton.mapping.array;
 
-public class Sparse2dSegment implements Segment
+public class Sparse2dSegment<T> implements Segment<T>
 {
 
-	private Segment[][] map;
+	private Segment<T>[][] map;
 	private int level;
 	private int size;
 	private int divisor;
-	private double defaultValue;
+	private T defaultValue;
 
-	Sparse2dSegment(int size, int levels, double defaultValue)
+	@SuppressWarnings("unchecked")
+	Sparse2dSegment(int size, int levels, T defaultValue)
 	{
 		this.level = levels;
 		divisor = (int) Math.pow(size, level);
@@ -19,42 +20,44 @@ public class Sparse2dSegment implements Segment
 
 	}
 
-	public double get(int x, int y)
+	@Override
+	public T get(int x, int y)
 	{
 		int xi = x / divisor;
 		int yi = y / divisor;
 
-		Segment location = getLocation(xi, yi);
+		Segment<T> location = getLocation(xi, yi);
 
 		return location.get(x - (xi * divisor), y - (yi * divisor));
 	}
 
-	public void set(int x, int y, double value)
+	@Override
+	public void set(int x, int y, T value)
 	{
 		int xi = x / divisor;
 		int yi = y / divisor;
 
-		Segment location = getLocation(xi, yi);
+		Segment<T> location = getLocation(xi, yi);
 
 		location.set(x - (xi * divisor), y - (yi * divisor), value);
 
 	}
 
-	private Segment getLocation(int xi, int yi)
+	private Segment<T> getLocation(int xi, int yi)
 	{
 
 		if (map[xi][yi] == null)
 		{
 			if (level > 1)
 			{
-				map[xi][yi] = new Sparse2dSegment(size, level - 1,defaultValue);
+				map[xi][yi] = new Sparse2dSegment<>(size, level - 1, defaultValue);
 			} else
 			{
-				map[xi][yi] = new Sparse2dSegmentBase(size,defaultValue);
+				map[xi][yi] = new Sparse2dSegmentBase<>(size, defaultValue);
 			}
 		}
 
-		Segment location = map[xi][yi];
+		Segment<T> location = map[xi][yi];
 		return location;
 	}
 

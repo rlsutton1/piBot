@@ -1,15 +1,13 @@
 package au.com.rsutton.mapping.array;
 
-public class Sparse2dSegmentBase implements Segment
+public class Sparse2dSegmentBase<T> implements Segment<T>
 {
 
-	private int size;
-	private double[][] map;
+	private Object[][] map;
 
-	Sparse2dSegmentBase(int size, double defaultValue)
+	Sparse2dSegmentBase(int size, T defaultValue)
 	{
-		this.size = size;
-		map = new double[size][size];
+		map = new Object[size][size];
 		for (int x = 0; x < size; x++)
 		{
 			for (int y = 0; y < size; y++)
@@ -19,14 +17,15 @@ public class Sparse2dSegmentBase implements Segment
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public double get(int x, int y)
+	public T get(int x, int y)
 	{
-		return map[x][y];
+		return (T) map[x][y];
 	}
 
 	@Override
-	public void set(int x, int y, double value)
+	public void set(int x, int y, T value)
 	{
 		map[x][y] = value;
 

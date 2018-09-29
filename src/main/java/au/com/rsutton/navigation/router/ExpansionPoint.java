@@ -2,13 +2,13 @@ package au.com.rsutton.navigation.router;
 
 public final class ExpansionPoint implements Comparable<ExpansionPoint>
 {
-	private Double rating;
+	private Double totalCost;
 
-	public ExpansionPoint(int x2, int y2, double rating)
+	public ExpansionPoint(int x2, int y2, double totalCost)
 	{
 		x = x2;
 		y = y2;
-		this.rating = rating;
+		this.totalCost = totalCost;
 	}
 
 	@Override
@@ -30,9 +30,9 @@ public final class ExpansionPoint implements Comparable<ExpansionPoint>
 		return y;
 	}
 
-	public Double getRating()
+	public Double getTotalCost()
 	{
-		return rating;
+		return totalCost;
 	}
 
 	@Override
@@ -65,6 +65,6 @@ public final class ExpansionPoint implements Comparable<ExpansionPoint>
 	@Override
 	public int compareTo(ExpansionPoint o)
 	{
-		return rating.compareTo(o.rating);
+		return totalCost.compareTo(o.totalCost);
 	}
 }
