@@ -129,38 +129,44 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 				// calculate distance of the point observed
 				double distance = Vector3D.distance(Vector3D.ZERO, point);
 
-				if (distance < maxUsableDistance)
+				// we have an issue with the RPLidar reporting something close
+				// by behind the robot consistently, so eliminate it by
+				// rejecting anything closer than 50cm
+				if (distance > 50)
 				{
-					clearPoints(Vector3D.ZERO, point);
-					perimiter.add(point);
-					world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75,
-							gausianRadius);
-				}
-
-				if (lastPoint == null)
-				{
-					lastPoint = point;
-				}
-				double p2p = Vector3D.distance(point, lastPoint);
-				if (p2p > 1 && p2p < 20)
-				{
-					// draw a line between the to endpoints
-					double x1 = point.getX();
-					double x2 = lastPoint.getX();
-					double y1 = point.getY();
-					double y2 = lastPoint.getY();
-
-					// interpolate
-					for (double i = 0; i < 1; i += 0.1)
+					if (distance < maxUsableDistance)
 					{
-						double x = (x1 * i) + (x2 * (1.0 - i));
-						double y = (y1 * i) + (y2 * (1.0 - i));
-						world.updatePoint((int) (x), (int) (y), Occupancy.OCCUPIED, 0.75, gausianRadius);
+						clearPoints(Vector3D.ZERO, point);
+						perimiter.add(point);
+						world.updatePoint((int) (point.getX()), (int) (point.getY()), Occupancy.OCCUPIED, 0.75,
+								gausianRadius);
 					}
 
-				}
+					if (lastPoint == null)
+					{
+						lastPoint = point;
+					}
+					double p2p = Vector3D.distance(point, lastPoint);
+					if (p2p > 1 && p2p < 20)
+					{
+						// draw a line between the to endpoints
+						double x1 = point.getX();
+						double x2 = lastPoint.getX();
+						double y1 = point.getY();
+						double y2 = lastPoint.getY();
 
-				lastPoint = point;
+						// interpolate
+						for (double i = 0; i < 1; i += 0.1)
+						{
+							double x = (x1 * i) + (x2 * (1.0 - i));
+							double y = (y1 * i) + (y2 * (1.0 - i));
+							world.updatePoint((int) (x), (int) (y), Occupancy.OCCUPIED, 0.75, gausianRadius);
+						}
+
+					}
+
+					lastPoint = point;
+				}
 			}
 			scansRemaining--;
 		}

@@ -59,9 +59,9 @@ public class MapBuilder
 
 	private static final int MIN_TARGET_SEPARATION = (int) (RANGE_LIMIT_FOR_ADD * 0.4);
 
-	private static final double DISTANCE_NOISE = 0.5;
+	private static final double DISTANCE_NOISE = 1;
 
-	private static final double HEADING_NOISE = 0.5;
+	private static final double HEADING_NOISE = 1;
 
 	private static final int CHANGE_COUNTER_ADD_MAP = 0;
 	private static final int CHANGE_COUNTER_RESET = 10;
@@ -169,8 +169,8 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = true;
-	int maxSpeed = 30;
+	final boolean simulator = false;
+	int maxSpeed = 50;
 
 	public void test() throws InterruptedException
 	{
