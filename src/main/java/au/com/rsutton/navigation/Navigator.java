@@ -24,8 +24,9 @@ import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
+import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlannerImpl;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -90,7 +91,7 @@ public class Navigator implements Runnable, NavigatorControl
 		// dl4j.train();
 		// ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
 
-		routePlanner = new RoutePlanner(map2);
+		routePlanner = new RoutePlannerImpl(map2);
 		this.robot = robot;
 
 		obsticleAvoidance = new ObsticleAvoidance(robot, pf);

@@ -11,8 +11,9 @@ import org.junit.Test;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
+import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlannerImpl;
 import au.com.rsutton.robot.lidar.LidarObservation;
 
 public class ParticleTest
@@ -24,7 +25,7 @@ public class ParticleTest
 		ProbabilityMapIIFc map = KitchenMapBuilder.buildKitchenMap();
 		map.dumpTextWorld();
 
-		RoutePlanner routePlanner = new RoutePlanner(map);
+		RoutePlanner routePlanner = new RoutePlannerImpl(map);
 		int x = -100;
 		int y = 300;
 

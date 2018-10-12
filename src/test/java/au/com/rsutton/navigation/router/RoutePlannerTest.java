@@ -10,7 +10,7 @@ public class RoutePlannerTest
 	@Test
 	public void test()
 	{
-		RoutePlanner planner = new RoutePlanner(KitchenMapBuilder.buildKitchenMap());
+		RoutePlannerImpl planner = new RoutePlannerImpl(KitchenMapBuilder.buildKitchenMap());
 
 		planner.createRoute(30, -140, RouteOption.ROUTE_THROUGH_UNEXPLORED);
 		planner.dumpRoute();

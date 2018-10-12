@@ -19,8 +19,9 @@ import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
+import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlannerImpl;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -62,7 +63,7 @@ public class ParticleFilterLiveTest
 		setupDataSources(ui, pf);
 		setupRobotListener();
 
-		RoutePlanner routePlanner = new RoutePlanner(world);
+		RoutePlanner routePlanner = new RoutePlannerImpl(world);
 		setupRoutePlanner(ui, pf, routePlanner);
 
 		Integer initialX = null;

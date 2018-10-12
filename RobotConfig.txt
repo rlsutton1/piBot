@@ -1,3 +1,4 @@
 #
-#Sun Aug 12 08:16:15 AEST 2018
+#Sat Sep 29 20:55:51 AEST 2018
 roomba\ usb\ port=/dev/ttyUSB0
+rplidar\ usb\ port=/dev/ttyUSB0
