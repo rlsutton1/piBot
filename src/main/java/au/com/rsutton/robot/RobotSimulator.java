@@ -262,7 +262,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 				double absDelta = Math.abs(requestedDeltaHeading);
 
 				// max rate of turn is 90 degrees per second
-				double delta = Math.min(absDelta, 90.0 / hz) * Math.signum(requestedDeltaHeading);
+				double delta = Math.min(absDelta, 45.0 / hz) * Math.signum(requestedDeltaHeading);
 
 				internalTurn(delta);
 			}

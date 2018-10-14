@@ -5,8 +5,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
+
+import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.array.SparseArray;
@@ -30,7 +34,7 @@ public class RoutePlannerImpl implements RoutePlanner
 
 	private int targetY;
 
-	private int minimumClearance = 10;
+	private int minimumClearance = 5;
 
 	private int desiredClearance = 25;
 
@@ -56,12 +60,16 @@ public class RoutePlannerImpl implements RoutePlanner
 		this.sourceMap = world;
 	}
 
-	/* (non-Javadoc)
-	 * @see au.com.rsutton.navigation.router.Route#createRoute(int, int, au.com.rsutton.navigation.router.RouteOption)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see au.com.rsutton.navigation.router.Route#createRoute(int, int,
+	 * au.com.rsutton.navigation.router.RouteOption)
 	 */
 	@Override
 	public boolean createRoute(int toX, int toY, RouteOption routeOption)
 	{
+		Stopwatch timer = Stopwatch.createStarted();
 		wallChecks.clear();
 
 		augmentedMap = createAugmentedMap(sourceMap);
@@ -97,7 +105,10 @@ public class RoutePlannerImpl implements RoutePlanner
 				e.printStackTrace();
 			}
 		}
-		dumpRoute();
+		// dumpRoute();
+
+		LogManager.getLogger().error("Route plan took " + timer.elapsed(TimeUnit.MILLISECONDS) + "ms");
+
 		return true;
 
 	}
@@ -285,7 +296,9 @@ public class RoutePlannerImpl implements RoutePlanner
 		return target;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.navigation.router.Route#getRouteForLocation(int, int)
 	 */
 	@Override
@@ -321,7 +334,9 @@ public class RoutePlannerImpl implements RoutePlanner
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.navigation.router.Route#hasPlannedRoute()
 	 */
 	@Override
@@ -330,7 +345,9 @@ public class RoutePlannerImpl implements RoutePlanner
 		return route != null;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see au.com.rsutton.navigation.router.Route#getDistanceToTarget(int, int)
 	 */
 	@Override

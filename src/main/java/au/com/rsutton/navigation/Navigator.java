@@ -19,14 +19,13 @@ import org.apache.logging.log4j.Logger;
 import au.com.rsutton.depthcamera.PointCloudUI;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
-import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RouteOption;
-import au.com.rsutton.navigation.router.RoutePlannerImpl;
+import au.com.rsutton.navigation.router.RoutePlanner;
+import au.com.rsutton.navigation.router.RoutePlannerLastMeter;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -91,7 +90,7 @@ public class Navigator implements Runnable, NavigatorControl
 		// dl4j.train();
 		// ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
 
-		routePlanner = new RoutePlannerImpl(map2);
+		routePlanner = new RoutePlannerLastMeter(map2, robot, pf);
 		this.robot = robot;
 
 		obsticleAvoidance = new ObsticleAvoidance(robot, pf);
@@ -166,6 +165,14 @@ public class Navigator implements Runnable, NavigatorControl
 				logger.debug(next + " " + dx + " " + dy);
 
 				double da = 5;
+				if (Math.abs(dx) < 1 && Math.abs(dy) < 1)
+				{
+					speed = 0;
+					robot.freeze(true);
+					robot.publishUpdate();
+					Thread.sleep(500);
+				} else
+
 				if (distanceToTarget > 20)
 				{
 					// follow the route to the target
@@ -278,35 +285,11 @@ public class Navigator implements Runnable, NavigatorControl
 							break;
 						}
 					}
-				}
-
-				return points;
-			}
-
-		}, new Color(255, 255, 0));
-
-		ui.addDataSource(new DataSourcePoint()
-		{
-
-			@Override
-			public List<Point> getOccupiedPoints()
-			{
-
-				// determine the route from the current possition
-				DistanceXY pos = pf.getXyPosition();
-				double x = pos.getX().convert(DistanceUnit.CM);
-				double y = pos.getY().convert(DistanceUnit.CM);
-
-				List<Point> points = new LinkedList<>();
-				if (routePlanner.hasPlannedRoute())
-				{
-
-					LastMeterPlanner planner = new LastMeterPlanner();
-
-					List<XY> wp = new LinkedList<>();
-					for (int i = 0; i < 25; i++)
+					for (int i = 0; i < 300; i++)
 					{
-						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
+						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
+								(int) y);
+						points.add(new Point(next.getX(), next.getY()));
 						double dx = (x - next.getX()) * 5;
 						x -= dx;
 						double dy = (y - next.getY()) * 5;
@@ -316,21 +299,14 @@ public class Navigator implements Runnable, NavigatorControl
 							// reached the target
 							break;
 						}
-
-						wp.add(new XY(next.getX(), next.getY()));
-
-					}
-
-					for (XY p : planner.getPath(wp, worldMap))
-					{
-						points.add(new Point(p.getX(), p.getY()));
 					}
 				}
 
 				return points;
 			}
 
-		}, new Color(255, 0, 255));
+		}, new Color(255, 255, 0));
+
 	}
 
 	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)

@@ -50,15 +50,15 @@ public class WrapperForObservedMapInMapUI implements DataSourceMap
 		Color color = new Color((int) (value * 255), (int) (value * 255), (int) (value * 255));
 
 		graphics.setColor(color);
-		if (value > .998)
-		{
-			graphics.setColor(new Color(255, 0, 0));
-		}
-		if (value < 0.00001)
-		{
-			graphics.setColor(Color.YELLOW);
-
-		}
+		// if (value > .998)
+		// {
+		// graphics.setColor(new Color(255, 0, 0));
+		// }
+		// if (value < 0.00001)
+		// {
+		// graphics.setColor(Color.YELLOW);
+		//
+		// }
 
 		graphics.drawLine((int) (pointOriginX), (int) (pointOriginY), (int) ((pointOriginX + 1)),
 				(int) ((pointOriginY + 1)));
