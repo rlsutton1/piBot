@@ -132,4 +132,10 @@ public class ProbabilityMapProxy implements ProbabilityMapIIFc
 		map.erase();
 
 	}
+
+	@Override
+	public void convertToDenseOffsetArray()
+	{
+		map.convertToDenseOffsetArray();
+	}
 }

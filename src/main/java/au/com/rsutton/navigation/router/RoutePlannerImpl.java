@@ -24,7 +24,7 @@ public class RoutePlannerImpl implements RoutePlanner
 
 	private ProbabilityMapIIFc augmentedMap;
 
-	static final int WALL = 1000000;
+	static final int WALL = Integer.MAX_VALUE;
 
 	int blockSize = 5;
 
@@ -91,7 +91,7 @@ public class RoutePlannerImpl implements RoutePlanner
 		int x = toX / blockSize;
 		int y = toY / blockSize;
 
-		immediatePoints.add(new ExpansionPoint(x, y, 0));
+		immediatePoints.add(new ExpansionPoint(x, y, 0, null));
 
 		while (!immediatePoints.isEmpty())
 		{
@@ -99,7 +99,7 @@ public class RoutePlannerImpl implements RoutePlanner
 			try
 			{
 				point = immediatePoints.take();
-				immediatePoints.addAll(expandPoints(point, WALL, routeOption));
+				immediatePoints.addAll(expandPoints(point, routeOption));
 			} catch (InterruptedException e)
 			{
 				e.printStackTrace();
@@ -132,6 +132,11 @@ public class RoutePlannerImpl implements RoutePlanner
 		int maxX = source.getMaxX();
 		int minY = source.getMinY();
 		int maxY = source.getMaxY();
+		matchMap.writeRadius(minX, minY, 1, 1);
+		matchMap.writeRadius(minX, maxY, 1, 1);
+		matchMap.writeRadius(maxX, maxY, 1, 1);
+		matchMap.writeRadius(maxX, minY, 1, 1);
+		matchMap.convertToDenseOffsetArray();
 
 		for (int x = minX; x < maxX + 1; x++)
 		{
@@ -163,34 +168,34 @@ public class RoutePlannerImpl implements RoutePlanner
 
 	/**
 	 * 
-	 * @param imme
 	 * @param routeOption
 	 *            diatePoints
+	 * @param imme
 	 * @return a list of deferred points
 	 */
-	private List<ExpansionPoint> expandPoints(ExpansionPoint point, int wall, RouteOption routeOption)
+	private List<ExpansionPoint> expandPoints(ExpansionPoint point, RouteOption routeOption)
 	{
 		List<ExpansionPoint> tempPoints = new LinkedList<>();
 
 		// add expands to return list
 
-		rateAndCreatePoint(tempPoints, point.x + 1, point.y, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x - 1, point.y, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x, point.y - 1, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x, point.y + 1, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x + 1, point.y + 1, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x - 1, point.y - 1, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x + 1, point.y - 1, routeOption, point.getTotalCost(), wall);
-		rateAndCreatePoint(tempPoints, point.x - 1, point.y + 1, routeOption, point.getTotalCost(), wall);
+		rateAndCreatePoint(tempPoints, point.x + 1, point.y, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x - 1, point.y, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x, point.y - 1, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x, point.y + 1, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x + 1, point.y + 1, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x - 1, point.y - 1, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x + 1, point.y - 1, routeOption, point.getTotalCost(), point);
+		rateAndCreatePoint(tempPoints, point.x - 1, point.y + 1, routeOption, point.getTotalCost(), point);
 
 		return tempPoints;
 	}
 
 	private void rateAndCreatePoint(List<ExpansionPoint> tempPoints, int x, int y, RouteOption routeOption,
-			double distanceToTarget, int wall)
+			double distanceToTarget, ExpansionPoint parentPoint)
 	{
 
-		ExpansionPoint temp = new ExpansionPoint(x, y, 0);
+		ExpansionPoint temp = new ExpansionPoint(x, y, 0, parentPoint);
 		if (isPointWithinWorldBountries(temp))
 			if (routeOption.isPointRoutable(augmentedMap.get(temp.x * blockSize, temp.y * blockSize))
 					&& route.get(temp.x, temp.y).totalCost > distanceToTarget)
@@ -202,14 +207,60 @@ public class RoutePlannerImpl implements RoutePlanner
 				double distanceToWall = doWallCheck(temp, radius);
 				int penalty = (int) ((radius - distanceToWall) * 10);
 
+				penalty += getTurnCost(temp);
+
 				int totalCost = (int) (distanceToTarget + 1 + penalty);
 				if (route.get(temp.x, temp.y).totalCost > totalCost)
 				{
 					route.set(temp.x, temp.y, new RouteDataPoint(totalCost));
 
-					tempPoints.add(new ExpansionPoint(x, y, totalCost));
+					ExpansionPoint expansionPoint = new ExpansionPoint(x, y, totalCost, parentPoint);
+					expansionPoint.setAngularVelocity(temp.getPathAngularVelocity());
+					expansionPoint.setPathAngle(temp.getPathAngle());
+					tempPoints.add(expansionPoint);
 				}
 			}
+
+	}
+
+	private int getTurnCost(ExpansionPoint point)
+	{
+
+		ExpansionPoint child = point;
+		double parentPathAngle = 0;
+		double parentPathAngularVelocity = 0;
+		ExpansionPoint parent = point.getParent();
+		double angleFromParentToChild = 0;
+
+		if (parent == null || parent.getPathAngle() == null || parent.getPathAngularVelocity() == null)
+		{
+		} else
+		{
+			parentPathAngle = parent.getPathAngle();
+			parentPathAngularVelocity = parent.getPathAngularVelocity();
+			angleFromParentToChild = Math.toDegrees(new Vector3D(child.x - parent.x, child.y - parent.y, 0).getNorm());
+		}
+		// calculate cost of child for parent
+
+		double expectedAngle = parentPathAngle + parentPathAngularVelocity;
+		double da = angleFromParentToChild - expectedAngle;
+
+		double accel = 1.5;
+		double decel = 0.9;
+		double newAngularVelocity = (parentPathAngularVelocity + (da * accel)) * decel;
+
+		child.setPathAngle(parentPathAngle + newAngularVelocity);
+		child.setAngularVelocity(newAngularVelocity);
+
+		double costScalar = 4;
+
+		// return 1;
+		int abs = (int) Math.abs((da * costScalar));
+		// if (abs > 10)
+		// {
+		// System.out.println("Abs value " + abs);
+		// }
+		return abs;
 
 	}
 
@@ -239,14 +290,14 @@ public class RoutePlannerImpl implements RoutePlanner
 		for (int radius = 1; radius <= size; radius++)
 		{
 			List<ExpansionPoint> points = new LinkedList<>();
-			points.add(new ExpansionPoint(radius, 0, 0));
-			points.add(new ExpansionPoint(radius, radius, 0));
-			points.add(new ExpansionPoint(radius, -radius, 0));
-			points.add(new ExpansionPoint(0, radius, 0));
-			points.add(new ExpansionPoint(0, -radius, 0));
-			points.add(new ExpansionPoint(-radius, 0, 0));
-			points.add(new ExpansionPoint(-radius, radius, 0));
-			points.add(new ExpansionPoint(-radius, -radius, 0));
+			points.add(new ExpansionPoint(radius, 0, 0, epoint));
+			points.add(new ExpansionPoint(radius, radius, 0, epoint));
+			points.add(new ExpansionPoint(radius, -radius, 0, epoint));
+			points.add(new ExpansionPoint(0, radius, 0, epoint));
+			points.add(new ExpansionPoint(0, -radius, 0, epoint));
+			points.add(new ExpansionPoint(-radius, 0, 0, epoint));
+			points.add(new ExpansionPoint(-radius, radius, 0, epoint));
+			points.add(new ExpansionPoint(-radius, -radius, 0, epoint));
 
 			for (ExpansionPoint radiusPoint : points)
 			{
@@ -269,14 +320,14 @@ public class RoutePlannerImpl implements RoutePlanner
 		int ry = y / blockSize;
 
 		List<ExpansionPoint> points = new LinkedList<>();
-		points.add(new ExpansionPoint(radius, 0, 0));
-		points.add(new ExpansionPoint(radius, radius, 0));
-		points.add(new ExpansionPoint(radius, -radius, 0));
-		points.add(new ExpansionPoint(0, radius, 0));
-		points.add(new ExpansionPoint(0, -radius, 0));
-		points.add(new ExpansionPoint(-radius, 0, 0));
-		points.add(new ExpansionPoint(-radius, radius, 0));
-		points.add(new ExpansionPoint(-radius, -radius, 0));
+		points.add(new ExpansionPoint(radius, 0, 0, null));
+		points.add(new ExpansionPoint(radius, radius, 0, null));
+		points.add(new ExpansionPoint(radius, -radius, 0, null));
+		points.add(new ExpansionPoint(0, radius, 0, null));
+		points.add(new ExpansionPoint(0, -radius, 0, null));
+		points.add(new ExpansionPoint(-radius, 0, 0, null));
+		points.add(new ExpansionPoint(-radius, radius, 0, null));
+		points.add(new ExpansionPoint(-radius, -radius, 0, null));
 
 		ExpansionPoint target = null;
 		RouteDataPoint min = route.get(rx, ry);
@@ -287,7 +338,7 @@ public class RoutePlannerImpl implements RoutePlanner
 			if (value.isTotalCostLessThan(min))
 			{
 				min = value;
-				target = new ExpansionPoint(x + point.x, y + point.y, 0);
+				target = new ExpansionPoint(x + point.x, y + point.y, 0, null);
 			}
 		}
 
@@ -316,7 +367,7 @@ public class RoutePlannerImpl implements RoutePlanner
 		}
 		if (result == null)
 		{
-			result = new ExpansionPoint(x, y, 0);
+			result = new ExpansionPoint(x, y, 0, null);
 		}
 		return result;
 	}

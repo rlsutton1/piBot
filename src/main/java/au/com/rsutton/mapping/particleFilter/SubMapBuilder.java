@@ -68,6 +68,9 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 		robot.removeMessageListener(this);
 
 		cleanupMap();
+
+		world.convertToDenseOffsetArray();
+
 		panel.dispose();
 		return world;
 

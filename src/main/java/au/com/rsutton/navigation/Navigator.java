@@ -3,6 +3,7 @@ package au.com.rsutton.navigation;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
@@ -144,7 +145,12 @@ public class Navigator implements Runnable, NavigatorControl
 				}
 				lastAngle = pf.getHeading();
 
-				ExpansionPoint next = new ExpansionPoint(pfX, pfY, 0);
+				ExpansionPoint next = new ExpansionPoint(pfX, pfY, 0, null);
+
+				List<Point2D> vals = new LinkedList<>();
+
+				int tx = pfX;
+				int ty = pfY;
 				if (routePlanner.hasPlannedRoute())
 				{
 					// get a point on the route 25 steps from where we are, we
@@ -152,17 +158,29 @@ public class Navigator implements Runnable, NavigatorControl
 					// stable
 					next = routePlanner.getRouteForLocation(pfX, pfY);
 
-					for (int i = 0; i < 25; i++)
+					int i = 0;
+					for (; i < 300; i++)
+					{
 						next = routePlanner.getRouteForLocation(next.getX(), next.getY());
+						if (i == 0 || i % 50 == 0)
+						{
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
+						}
+					}
+					vals.add(new Point2D.Double(next.getX(), next.getY()));
+
+					Point2D t = Bezier.parabolic2D(vals, Math.min(1.0, 30.0 / i));
+					tx = (int) t.getX();
+					ty = (int) t.getY();
+
 				}
 				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
 
 				// slow as we approach the target
 				speed = Math.min(Math.max(3, distanceToTarget), speed);
 
-				double dx = next.getX() - pfX;
-				double dy = next.getY() - pfY;
-				logger.debug(next + " " + dx + " " + dy);
+				double dx = tx - pfX;
+				double dy = ty - pfY;
 
 				double da = 5;
 				if (Math.abs(dx) < 1 && Math.abs(dy) < 1)
@@ -267,46 +285,94 @@ public class Navigator implements Runnable, NavigatorControl
 				double x = pos.getX().convert(DistanceUnit.CM);
 				double y = pos.getY().convert(DistanceUnit.CM);
 
+				List<Point2D> vals = new LinkedList<>();
+
+				List<Point> points2 = new LinkedList<>();
 				List<Point> points = new LinkedList<>();
 				if (routePlanner.hasPlannedRoute())
 				{
 
-					for (int i = 0; i < 300; i++)
+					for (int i = 0; i < 3000; i++)
 					{
 						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
 						points.add(new Point(next.getX(), next.getY()));
-						double dx = (x - next.getX()) * 5;
+
+						if (i % 20 == 0)
+						{
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
+						}
+
+						double dx = (x - next.getX());
 						x -= dx;
-						double dy = (y - next.getY()) * 5;
+						double dy = (y - next.getY());
 						y -= dy;
 						if (dx == 0 && dy == 0)
 						{
 							// reached the target
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
 							break;
 						}
 					}
-					for (int i = 0; i < 300; i++)
+
+					for (double i = 0.0; i <= 1.0; i += 0.01)
+					{
+						Point2D t = Bezier.parabolic2D(vals, i);
+						points2.add(new Point((int) t.getX(), (int) t.getY()));
+					}
+
+				}
+
+				return points2;
+			}
+
+		}, new Color(255, 0, 0));
+		ui.addDataSource(new DataSourcePoint()
+		{
+
+			@Override
+			public List<Point> getOccupiedPoints()
+			{
+
+				// determine the route from the current possition
+				DistanceXY pos = pf.getXyPosition();
+				double x = pos.getX().convert(DistanceUnit.CM);
+				double y = pos.getY().convert(DistanceUnit.CM);
+
+				List<Point> points = new LinkedList<>();
+				if (routePlanner.hasPlannedRoute())
+				{
+					List<Point2D> vals = new LinkedList<>();
+
+					for (int i = 0; i < 3000; i++)
 					{
 						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
 								(int) y);
-						points.add(new Point(next.getX(), next.getY()));
-						double dx = (x - next.getX()) * 5;
+						if (i % 50 == 0 || vals.size() == 0)
+						{
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
+						}
+						double dx = (x - next.getX());
 						x -= dx;
-						double dy = (y - next.getY()) * 5;
+						double dy = (y - next.getY());
 						y -= dy;
 						if (dx == 0 && dy == 0)
 						{
 							// reached the target
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
 							break;
 						}
+					}
+					for (double i = 0.0; i <= 1.0; i += 0.01)
+					{
+						Point2D t = Bezier.parabolic2D(vals, i);
+						points.add(new Point((int) t.getX(), (int) t.getY()));
 					}
 				}
 
 				return points;
 			}
 
-		}, new Color(255, 255, 0));
-
+		}, new Color(0, 255, 0));
 	}
 
 	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)

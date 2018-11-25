@@ -53,4 +53,6 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 
 	void erase();
 
+	void convertToDenseOffsetArray();
+
 }

@@ -3,12 +3,24 @@ package au.com.rsutton.navigation.router;
 public final class ExpansionPoint implements Comparable<ExpansionPoint>
 {
 	private Double totalCost;
+	private ExpansionPoint parent;
 
-	public ExpansionPoint(int x2, int y2, double totalCost)
+	private Double pathAngle;
+	private Double pathAngularVelocity = 0.0;
+	private int stepsSinceLastAngleBreach = 0;
+
+	public ExpansionPoint(int x2, int y2, double totalCost, ExpansionPoint parent)
 	{
 		x = x2;
 		y = y2;
 		this.totalCost = totalCost;
+		this.parent = parent;
+
+	}
+
+	public ExpansionPoint getParent()
+	{
+		return parent;
 	}
 
 	@Override
@@ -66,5 +78,25 @@ public final class ExpansionPoint implements Comparable<ExpansionPoint>
 	public int compareTo(ExpansionPoint o)
 	{
 		return totalCost.compareTo(o.totalCost);
+	}
+
+	public Double getPathAngularVelocity()
+	{
+		return pathAngularVelocity;
+	}
+
+	public Double getPathAngle()
+	{
+		return pathAngle;
+	}
+
+	public void setPathAngle(double d)
+	{
+		pathAngle = d;
+	}
+
+	public void setAngularVelocity(double newAngularVelocity)
+	{
+		pathAngularVelocity = newAngularVelocity;
 	}
 }

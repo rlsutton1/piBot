@@ -33,6 +33,21 @@ public class Dynamic2dSparseArray<T> implements SparseArray<T>
 
 	}
 
+	public DenseOffsetArray<T> copyAsDenseOffsetArray()
+	{
+		DenseOffsetArray<T> ret = new DenseOffsetArray<>(minX, maxX, minY, maxY, defaultValue);
+
+		for (int x = minX; x <= maxX; x++)
+		{
+			for (int y = minY; y <= maxY; y++)
+			{
+				ret.set(x, y, get(x, y));
+			}
+		}
+
+		return ret;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 

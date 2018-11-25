@@ -65,7 +65,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				return result;
 			}
 		}
-		return new ExpansionPoint(x, y, 0);
+		return new ExpansionPoint(x, y, 0, null);
 	}
 
 	public ExpansionPoint getMasterRouteForLocation(int x, int y)
@@ -92,7 +92,9 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		{
 			return lp.getDistanceToTarget(pfX, pfY);
 		}
-		return basePlanner.getDistanceToTarget(pfX, pfY);
+		// the navigator slows down as we reach the target, as we dont have a
+		// safe route, report the distance as zero
+		return 0;
 	}
 
 	RateLimiter rateLimiter = RateLimiter.create(1);
@@ -110,7 +112,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				return;
 			}
 
-			new Thread(() -> worker(observations, 100)).start();
+			new Thread(() -> worker(observations, 150)).start();
 		}
 	}
 
@@ -142,7 +144,12 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
 		for (ScanObservation obs : observations)
 		{
-			if (obs.getDisctanceCm() > 40)
+			if (obs.getDisctanceCm() < 50 && Math.toDegrees(obs.getAngleRadians()) > 160
+					&& Math.toDegrees(obs.getAngleRadians()) < 200)
+			{
+				// ignore some dodgy points coming from the LIDAR close by,
+				// immediately behind the robot
+			} else
 			{
 				Vector3D point = obs.getVector();
 				Vector3D spot = rotation.applyTo(point).add(offset);

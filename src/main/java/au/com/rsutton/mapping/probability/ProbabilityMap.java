@@ -469,4 +469,10 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 			for (int oy = -radius; oy < radius; oy += blockSize)
 				world.set((x + ox) / blockSize, (y + oy) / blockSize, value);
 	}
+
+	@Override
+	public void convertToDenseOffsetArray()
+	{
+		world = ((Dynamic2dSparseArray<Double>) world).copyAsDenseOffsetArray();
+	}
 }

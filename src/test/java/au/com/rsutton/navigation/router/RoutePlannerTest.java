@@ -16,7 +16,7 @@ public class RoutePlannerTest
 		planner.dumpRoute();
 
 		ExpansionPoint lastTarget = null;
-		ExpansionPoint target = new ExpansionPoint(-40, 70, 0);
+		ExpansionPoint target = new ExpansionPoint(-40, 70, 0, null);
 		int ctr = 0;
 		do
 		{
