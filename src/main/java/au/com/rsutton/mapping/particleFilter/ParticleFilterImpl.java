@@ -340,6 +340,14 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			{
 				particleFilterStatus = ParticleFilterStatus.POOR_MATCH;
 			}
+		} else
+		{
+			poorMatches = Math.max(0, poorMatches - 1);
+		}
+		poorMatches = Math.min(poorMatches, 5);
+		if (poorMatches == 0 && particleFilterStatus == ParticleFilterStatus.POOR_MATCH)
+		{
+			particleFilterStatus = ParticleFilterStatus.LOCALIZED;
 		}
 
 		for (Particle selectedParticle : particles)
@@ -531,6 +539,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		{
 			particleFilterStatus = ParticleFilterStatus.LOCALIZED;
 		}
+
+		new DataLogValue("ParticleFilterStatus", "" + particleFilterStatus).publish();
 
 		return dev;
 	}

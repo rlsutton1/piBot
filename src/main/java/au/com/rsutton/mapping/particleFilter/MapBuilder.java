@@ -501,6 +501,7 @@ public class MapBuilder
 		particleFilterProxy.changeParticleFilter(
 				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
 		poseAdjuster.setPose(currentSubMap.getMapPose());
+		currentMapIsWorldMap = false;
 
 	}
 
@@ -575,8 +576,16 @@ public class MapBuilder
 
 	private boolean complete = false;
 
+	private boolean currentMapIsWorldMap;
+
 	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
 	{
+
+		if (currentMapIsWorldMap)
+		{
+			return;
+		}
+
 		navigatorSuspended = true;
 
 		robot.freeze(true);
@@ -620,12 +629,13 @@ public class MapBuilder
 		double angle1 = HeadingHelper.getChangeInHeading(currentHeading, map.getMapPose().heading);
 		Vector3D pos = new Vector3D(currentXY.getX().convert(DistanceUnit.CM),
 				currentXY.getY().convert(DistanceUnit.CM), 0);
-		Pose pose = new Pose(map.getMapPose().applyInverseTo(pos).getX(), map.getMapPose().applyInverseTo(pos).getY(),
-				angle1);
+		Pose pose = new Pose(currentXY.getX().convert(DistanceUnit.CM), currentXY.getY().convert(DistanceUnit.CM),
+				currentHeading);
 
-		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(map.map, 1000, DISTANCE_NOISE, HEADING_NOISE,
+		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE,
 				StartPosition.USE_POSE, robot, pose));
-		poseAdjuster.setPose(map.getMapPose());
+		poseAdjuster.setPose(new Pose(0, 0, 0));
+		currentMapIsWorldMap = true;
 
 		while (poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZING)
 		{
@@ -735,6 +745,12 @@ public class MapBuilder
 				|| targetElapsedMinutes > 2 || nextTarget != null)
 		{
 			navigatorControl.stop();
+
+			if (isUnexplored(poseAdjuster.getXyPosition().getVector(DistanceUnit.CM), 0))
+			{
+				addMap(poseAdjuster);
+			}
+
 			if (nextTarget != null)
 			{
 				navigatorControl.calculateRouteTo((int) nextTarget.getX(), (int) nextTarget.getY(), null,
