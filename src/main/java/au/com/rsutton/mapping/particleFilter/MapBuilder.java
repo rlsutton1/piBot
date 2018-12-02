@@ -236,8 +236,10 @@ public class MapBuilder
 				}
 			});
 
-			MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0, 600, 1000);
-			slamPanel.addDataSource(new WrapperForObservedMapInMapUI(slamWorld));
+			// MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0,
+			// 600, 1000);
+			// slamPanel.addDataSource(new
+			// WrapperForObservedMapInMapUI(slamWorld));
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
@@ -502,6 +504,8 @@ public class MapBuilder
 				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
 		poseAdjuster.setPose(currentSubMap.getMapPose());
 		currentMapIsWorldMap = false;
+
+		setupForSubMapTraversal(currentSubMap);
 
 	}
 
