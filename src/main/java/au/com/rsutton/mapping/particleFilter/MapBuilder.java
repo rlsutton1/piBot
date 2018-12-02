@@ -33,11 +33,6 @@ import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
-import au.com.rsutton.navigation.graphslam.v3.GraphSlamConstraint;
-import au.com.rsutton.navigation.graphslam.v3.GraphSlamNodeConstructor;
-import au.com.rsutton.navigation.graphslam.v3.GraphSlamNodeImpl;
-import au.com.rsutton.navigation.graphslam.v3.GraphSlamV3;
-import au.com.rsutton.navigation.graphslam.v3.PoseWithMathOperators;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
@@ -75,8 +70,6 @@ public class MapBuilder
 
 	ProbabilityMapIIFc world = new ProbabilityMap(5);
 
-	ProbabilityMapIIFc slamWorld = new ProbabilityMap(5);
-
 	private NavigatorControl navigatorControl;
 
 	private PoseAdjuster poseAdjuster;
@@ -98,15 +91,7 @@ public class MapBuilder
 
 		Pose getMapPose()
 		{
-			if (node == null)
-			{
-				return mapPose;
-			}
-			// if (node.getConstraints().size() > 10)
-			// {
-			// return new Pose(node.getPosition().getX(),
-			// node.getPosition().getY(), node.getPosition().getAngle());
-			// }
+
 			return mapPose;
 		}
 
@@ -122,12 +107,7 @@ public class MapBuilder
 
 		private Pose mapPose;
 		ProbabilityMapIIFc map;
-		GraphSlamNodeImpl<PoseWithMathOperators> node;
 
-		public Pose getSlamMapPose()
-		{
-			return new Pose(node.getPosition().getX(), node.getPosition().getY(), node.getPosition().getAngle());
-		}
 	}
 
 	List<SubMapHolder> subMaps = new LinkedList<>();
@@ -137,34 +117,6 @@ public class MapBuilder
 	private ParticleFilterProxy particleFilterProxy;
 
 	SubMapHolder currentMap;
-
-	GraphSlamV3<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> slam = new GraphSlamV3<>(
-			getCtorPose());
-
-	private PoseWithMathOperators createPoseValue(double x, double y, double angle)
-	{
-		return new PoseWithMathOperators(x, y, angle);
-	}
-
-	private GraphSlamNodeConstructor<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> getCtorPose()
-	{
-		return new GraphSlamNodeConstructor<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators>()
-		{
-
-			@Override
-			public PoseWithMathOperators zero()
-			{
-				return new PoseWithMathOperators(0, 0, 0);
-			}
-
-			@Override
-			public GraphSlamNodeImpl<PoseWithMathOperators> construct(String name,
-					PoseWithMathOperators initialPosition)
-			{
-				return new GraphSlamNodeImpl<>(name, initialPosition, zero());
-			}
-		};
-	}
 
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
@@ -236,11 +188,6 @@ public class MapBuilder
 				}
 			});
 
-			// MapDrawingWindow slamPanel = new MapDrawingWindow("Slam map", 0,
-			// 600, 1000);
-			// slamPanel.addDataSource(new
-			// WrapperForObservedMapInMapUI(slamWorld));
-
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
 			particleFilterProxy = new ParticleFilterProxy(null);
@@ -292,15 +239,6 @@ public class MapBuilder
 					Vector3D here = new Vector3D(x, y, 0);
 					if (here.distance(current) > here.distance(nearest) + 20 && changeCounter < CHANGE_COUNTER_SWAP_MAP)
 					{
-						slam.solve();
-						for (SubMapHolder map : subMaps)
-						{
-							PoseWithMathOperators nodePosition = map.node.getPosition();
-							Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
-									nodePosition.getAngle());
-							logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.getMapPose());
-
-						}
 
 						setupForSubMapTraversal(nearestmap);
 						changeCounter = CHANGE_COUNTER_RESET;
@@ -325,28 +263,6 @@ public class MapBuilder
 					if (addMap)
 					{
 						addMap(poseAdjuster);
-					}
-					slam.solve();
-					for (SubMapHolder map : subMaps)
-					{
-						PoseWithMathOperators nodePosition = map.node.getPosition();
-						Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
-								nodePosition.getAngle());
-						logger.error("Slam Pose: " + graphSlamPose + " actual pose -> " + map.getMapPose());
-					}
-
-					for (SubMapHolder sm : subMaps)
-					{
-						PoseWithMathOperators nodePosition = sm.node.getPosition();
-						Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(),
-								nodePosition.getAngle());
-						logger.error("*********** Slam Pose: " + graphSlamPose + " actual pose -> " + sm.getMapPose());
-						logger.error("node: " + sm.node);
-						for (GraphSlamConstraint<PoseWithMathOperators> c : sm.node.getConstraints())
-						{
-							logger.error("Node constraint: " + c);
-						}
-
 					}
 
 					navigatorSuspended = false;
@@ -447,57 +363,10 @@ public class MapBuilder
 				pose.getXyPosition().getY().convert(DistanceUnit.CM), pose.getHeading()), map);
 		subMaps.add(currentSubMap);
 
-		// TODO: angles are correct, X/Y are broken on slam calculations
-
-		PoseWithMathOperators slamPose = createPoseValue(currentSubMap.getMapPose().getX(),
-				currentSubMap.getMapPose().getY(), currentSubMap.getMapPose().getHeading());
-
-		if (currentMap == null)
-		{
-			currentSubMap.node = slam.getRoot();
-			// slam.addNode("nodeid-" + nodeSeed.incrementAndGet(), slamPose,
-			// slamPose, 1,
-			// slam.getRoot());
-
-		} else
-		{
-			// get relative XY for map
-			Vector3D xy = new Vector3D((currentSubMap.getMapPose().getX() - currentMap.getMapPose().getX()),
-					(currentSubMap.getMapPose().getY() - currentMap.getMapPose().getY()), 0);
-
-			// rotate the relative XY as if it were observed from the current
-			// map
-			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0,
-					Math.toRadians(currentMap.getMapPose().getHeading()));
-			xy = rotation.applyInverseTo(xy);
-
-			// create the pose object
-			PoseWithMathOperators slamPoseOffset = createPoseValue(xy.getX(), xy.getY(),
-					AngleUtil.delta(currentMap.getMapPose().getHeading(), currentSubMap.getMapPose().getHeading()));
-
-			// add the node to slam
-			currentSubMap.node = slam.addNode("nodeid-" + nodeSeed.incrementAndGet(), slamPose, slamPoseOffset, 1,
-					currentMap.node);
-		}
-		slam.solve();
-		for (SubMapHolder sm : subMaps)
-		{
-			PoseWithMathOperators nodePosition = sm.node.getPosition();
-			Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(), nodePosition.getAngle());
-			logger.error("*********** Slam Pose: " + graphSlamPose + " actual pose -> " + sm.getMapPose());
-			logger.error("node: " + sm.node);
-			for (GraphSlamConstraint<PoseWithMathOperators> c : sm.node.getConstraints())
-			{
-				logger.error("Node constraint: " + c);
-			}
-
-		}
-
 		currentMap = currentSubMap;
 
-		CountDownLatch latch = new CountDownLatch(2);
-		regernateWorld(world, false, latch);
-		regernateWorld(slamWorld, true, latch);
+		CountDownLatch latch = new CountDownLatch(1);
+		regernateWorld(world, latch);
 		latch.await();
 
 		particleFilterProxy.changeParticleFilter(
@@ -509,7 +378,7 @@ public class MapBuilder
 
 	}
 
-	private void regernateWorld(final ProbabilityMapIIFc targetWorld, final boolean useSlam, final CountDownLatch latch)
+	private void regernateWorld(final ProbabilityMapIIFc targetWorld, final CountDownLatch latch)
 	{
 		Runnable runner = new Runnable()
 		{
@@ -538,14 +407,8 @@ public class MapBuilder
 							// adjust magnetude to 0 to 0.5
 							magnetude /= 2.0;
 
-							Pose pose;
-							if (!useSlam)
-							{
-								pose = subMap.getMapPose();
-							} else
-							{
-								pose = subMap.getSlamMapPose();
-							}
+							Pose pose = subMap.getMapPose();
+
 							vector = pose.applyTo(vector);
 
 							double targetWorldValue = targetWorld.get((int) vector.getX(), (int) vector.getY());
@@ -684,37 +547,13 @@ public class MapBuilder
 		double delta = AngleUtil.normalize(mapDelta - deltaHeading);
 
 		logger.error("Final delta " + delta);
-		PoseWithMathOperators slamPoseOffset = createPoseValue(xy.getX(), xy.getY(), delta);
 
 		// add the node to slam
 
 		double certainty = Math.min(0.75, 1.0 / Math.max(1.0, Math.abs(deltaHeading / 1.5)));
 		logger.error("Certainty :" + certainty);
 
-		currentMap.node.addConstraint(map.node, slamPoseOffset, certainty);
-
 		currentMap = map;
-
-		slam.solve();
-		for (SubMapHolder sm : subMaps)
-		{
-			PoseWithMathOperators nodePosition = sm.node.getPosition();
-			Pose graphSlamPose = new Pose(nodePosition.getX(), nodePosition.getY(), nodePosition.getAngle());
-			logger.error("*********** Slam Pose: " + graphSlamPose + " actual pose -> " + sm.getMapPose());
-			logger.error("node: " + sm.node);
-			for (GraphSlamConstraint<PoseWithMathOperators> c : sm.node.getConstraints())
-			{
-				logger.error("Node constraint: " + c);
-			}
-
-		}
-
-		CountDownLatch latch = new CountDownLatch(1);
-		regernateWorld(slamWorld, true, latch);
-
-		// TODO: one day we will want to wait when using the map for navigation
-
-		// latch.await();
 
 		navigatorSuspended = false;
 	}
