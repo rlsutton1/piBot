@@ -1,5 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -121,7 +122,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = true;
+	final boolean simulator = false;
 	int maxSpeed = 50;
 
 	public void test() throws InterruptedException
@@ -432,6 +433,12 @@ public class MapBuilder
 						}
 					}
 				}
+
+				File file = new File("maps/" + System.currentTimeMillis() + ".bmp");
+				file.mkdirs();
+				targetWorld.save(file);
+				logger.error("World saved as " + file.getAbsolutePath());
+
 				latch.countDown();
 			}
 		};

@@ -1,9 +1,16 @@
 package au.com.rsutton.mapping.probability;
 
+import java.awt.Color;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -474,5 +481,50 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 	public void convertToDenseOffsetArray()
 	{
 		world = ((Dynamic2dSparseArray<Double>) world).copyAsDenseOffsetArray();
+	}
+
+	@Override
+	public void save(File file)
+	{
+		int sizeX = world.getMaxX() - world.getMinX();
+		sizeX += 4;
+
+		int sizeY = world.getMaxY() - world.getMinY();
+		sizeY += 4;
+
+		final BufferedImage res = new BufferedImage(sizeX, sizeY, BufferedImage.TYPE_INT_RGB);
+		for (int x = world.getMinX() - 1; x < world.getMaxX() + 1; x += 1)
+		{
+			for (int y = world.getMinY() - 1; y < world.getMaxY() + 1; y += 1)
+			{
+				if (world.get(x, y) >= RobotSimulator.REQUIRED_POINT_CERTAINTY)
+				{
+					res.setRGB(2 + x - world.getMinX(), 2 + y - world.getMinY(), new Color(255, 255, 255).getRGB());
+				} else if (world.get(x, y) < 0.5)
+				{
+					// write un-occupied
+					res.setRGB(2 + x - world.getMinX(), 2 + y - world.getMinY(), 0);
+				} else
+				{
+					// write unexplored
+					res.setRGB(2 + x - world.getMinX(), 2 + y - world.getMinY(), new Color(64, 64, 64).getRGB());
+				}
+			}
+
+		}
+
+		try
+		{
+			RenderedImage rendImage = res;
+			ImageIO.write(rendImage, "bmp", file);
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	void load(String filename)
+	{
+
 	}
 }

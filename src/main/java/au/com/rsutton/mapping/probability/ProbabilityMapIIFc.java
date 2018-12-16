@@ -1,6 +1,7 @@
 package au.com.rsutton.mapping.probability;
 
 import java.awt.Point;
+import java.io.File;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
@@ -54,5 +55,7 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 	void erase();
 
 	void convertToDenseOffsetArray();
+
+	void save(File file);
 
 }

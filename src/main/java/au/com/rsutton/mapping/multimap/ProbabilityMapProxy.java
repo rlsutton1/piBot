@@ -1,6 +1,7 @@
 package au.com.rsutton.mapping.multimap;
 
 import java.awt.Point;
+import java.io.File;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
@@ -137,5 +138,12 @@ public class ProbabilityMapProxy implements ProbabilityMapIIFc
 	public void convertToDenseOffsetArray()
 	{
 		map.convertToDenseOffsetArray();
+	}
+
+	@Override
+	public void save(File file)
+	{
+		map.save(file);
+
 	}
 }

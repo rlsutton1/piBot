@@ -35,6 +35,7 @@ public class DataPanel extends JPanel implements MessageListener<DataLogValue>, 
 		pool = Executors.newScheduledThreadPool(1);
 
 		pool.scheduleWithFixedDelay(this, 500, 500, TimeUnit.MILLISECONDS);
+		setVisible(true);
 
 	}
 
