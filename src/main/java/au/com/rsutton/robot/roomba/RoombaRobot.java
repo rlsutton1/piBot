@@ -40,15 +40,18 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 
 	volatile double nearestObsticle;
 
+	private PointCloudProcessor pointCloudProcessor = null;
+
 	public void configure(Config config) throws Exception
 	{
 
 		String lidarPort = config.loadSetting(RPLidarAdaptor.RPLIDAR_USB_PORT, "/dev/ttyUSB0");
 		String roombaPort = config.loadSetting(Roomba630.ROOMBA_USB_PORT, "/dev/ttyUSB1");
+
+		System.out.println("Found Roomba on port: " + roombaPort + " Lidar on port: " + lidarPort);
+
 		lidar = new RPLidarAdaptor(this);
 		roomba630 = new Roomba630();
-
-		System.out.println(roombaPort + " " + lidarPort);
 
 		roomba630.configure(config, roombaPort);
 
@@ -56,8 +59,6 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 
 		SetMotion message = new SetMotion();
 		message.addMessageListener(this);
-
-		// new PointCloudProcessor();
 
 	}
 
@@ -181,6 +182,15 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 	public void shutdown()
 	{
 		roomba630.shutdown();
+		if (pointCloudProcessor != null)
+		{
+			pointCloudProcessor.stop();
+		}
+	}
+
+	public void startDepthCamera()
+	{
+		pointCloudProcessor = new PointCloudProcessor();
 
 	}
 

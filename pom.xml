@@ -88,6 +88,13 @@
 			<artifactId>RPLidar4J</artifactId>
 			<version>0.8.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.openni</groupId>
+			<artifactId>OpenNI2</artifactId>
+			<version>2</version>
+
+		</dependency>
+		
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

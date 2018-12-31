@@ -42,6 +42,8 @@ public enum HazelCastInstance
 			tcpIpConfig.addMember("192.168.0." + i);
 		}
 		tcpIpConfig.addMember("10.10.0.41");
+		tcpIpConfig.addMember("192.168.43.14");
+		tcpIpConfig.addMember("192.168.43.160");
 
 		h = Hazelcast.newHazelcastInstance(config);
 

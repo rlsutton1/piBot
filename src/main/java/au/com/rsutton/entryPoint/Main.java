@@ -39,6 +39,8 @@ public class Main
 
 		System.out.println("Press 8 to launch Map Builder UI");
 
+		System.out.println("Press 9 to start the rover with Depth Camera Support");
+
 		int ch = br.read();
 		// if (ch == '0')
 		// {
@@ -47,6 +49,13 @@ public class Main
 		{
 			Config config = new Config();
 			RoombaRobot robot = new RoombaRobot();
+			robot.configure(config);
+		}
+		if (ch == '9')
+		{
+			Config config = new Config();
+			RoombaRobot robot = new RoombaRobot();
+			robot.startDepthCamera();
 			robot.configure(config);
 		}
 		if (ch == '1')
