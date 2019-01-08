@@ -12,7 +12,10 @@ import org.apache.logging.log4j.LogManager;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.RateLimiter;
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
 
+import au.com.rsutton.hazelcast.PointCloudMessage;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
@@ -37,6 +40,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private ProbabilityMapIIFc world;
 
+	private final AtomicReference<PointCloudMessage> lastPointCloudMessage = new AtomicReference<>();
+
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot, RobotPoseSource robotPoseSource)
 	{
 		basePlanner = new RoutePlannerImpl(world);
@@ -44,6 +49,22 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		this.robotPoseSource = robotPoseSource;
 		robot.addMessageListener(this);
 
+		new PointCloudMessage().addMessageListener(getPointCloudMessageListener());
+
+	}
+
+	private MessageListener<PointCloudMessage> getPointCloudMessageListener()
+	{
+		return new MessageListener<PointCloudMessage>()
+		{
+
+			@Override
+			public void onMessage(Message<PointCloudMessage> message)
+			{
+				lastPointCloudMessage.set(message.getMessageObject());
+
+			}
+		};
 	}
 
 	@Override
@@ -154,6 +175,25 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				Vector3D point = obs.getVector();
 				Vector3D spot = rotation.applyTo(point).add(offset);
 				localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+			}
+		}
+
+		// overlay point cloud from depth camera
+		PointCloudMessage pointCloud = lastPointCloudMessage.get();
+		if (pointCloud != null && pointCloud.getTime() > System.currentTimeMillis() - 200L)
+		{
+			for (Vector3D obs : pointCloud.getPoints())
+			{
+				if (obs.getNorm() < 50)
+				{
+					// ignore some dodgy points coming from close by,
+					// immediately behind the robot
+				} else
+				{
+					Vector3D point = obs;
+					Vector3D spot = rotation.applyTo(point).add(offset);
+					localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+				}
 			}
 		}
 

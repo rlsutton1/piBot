@@ -3,6 +3,7 @@ package au.com.rsutton.ui;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
@@ -120,43 +121,8 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 	private WindowListener getWindowCloseListener()
 	{
-		return new WindowListener()
+		return new WindowAdapter()
 		{
-
-			@Override
-			public void windowOpened(WindowEvent e)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void windowIconified(WindowEvent e)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void windowDeiconified(WindowEvent e)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void windowDeactivated(WindowEvent e)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void windowClosing(WindowEvent e)
-			{
-				// TODO Auto-generated method stub
-
-			}
 
 			@Override
 			public void windowClosed(WindowEvent e)
@@ -165,12 +131,6 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 			}
 
-			@Override
-			public void windowActivated(WindowEvent e)
-			{
-				// TODO Auto-generated method stub
-
-			}
 		};
 	}
 }

@@ -1,5 +1,7 @@
 package au.com.rsutton.robot.roomba;
 
+import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.LinkedList;
@@ -48,14 +50,77 @@ public class PointCloudProvider
 
 		device = Device.open(uri);
 
-		VideoStream mVideoStream = VideoStream.create(device, SensorType.DEPTH);
+		VideoStream depthStream = VideoStream.create(device, SensorType.DEPTH);
+		List<VideoMode> supportedDepthModes = depthStream.getSensorInfo().getSupportedVideoModes();
+		depthStream.setVideoMode(listener.chooseDepthMode(supportedDepthModes));
+		depthStream.start();
+		depthStream.addNewFrameListener(colorFrameListener(listener, depthStream));
 
-		List<VideoMode> supportedModes = mVideoStream.getSensorInfo().getSupportedVideoModes();
+		VideoStream colorStream = VideoStream.create(device, SensorType.COLOR);
+		List<VideoMode> supportedColorModes = colorStream.getSensorInfo().getSupportedVideoModes();
+		colorStream.setVideoMode(listener.chooseColorMode(supportedColorModes));
+		colorStream.start();
+		colorStream.addNewFrameListener(pointCloudFrameListener(listener, colorStream));
 
-		mVideoStream.setVideoMode(listener.chooseVideoMode(supportedModes));
-		mVideoStream.start();
+	}
 
-		mVideoStream.addNewFrameListener(new NewFrameListener()
+	private NewFrameListener colorFrameListener(PointCloudListener listener, VideoStream colorStream)
+	{
+		return new NewFrameListener()
+		{
+			long lastTime = System.currentTimeMillis();
+
+			@Override
+			public void onFrameReady(VideoStream stream)
+			{
+				VideoFrameRef frame = stream.readFrame();
+
+				PixelFormat pixelFormat = frame.getVideoMode().getPixelFormat();
+
+				if (pixelFormat != PixelFormat.RGB888)
+				{
+					System.out.println("Pixel Fromat is not the expeceted DEPTH_1_MM, actual is :" + pixelFormat);
+				}
+
+				final BufferedImage res = new BufferedImage(frame.getWidth(), frame.getHeight(),
+						BufferedImage.TYPE_INT_RGB);
+
+				int width = frame.getWidth();
+				int height = frame.getHeight();
+				ByteBuffer frameData = frame.getData().order(ByteOrder.LITTLE_ENDIAN);
+
+				int pos = 0;
+
+				while (frameData.remaining() > 0)
+				{
+					int red = frameData.get() & 0xFF;
+					int green = frameData.get() & 0xFF;
+					int blue = frameData.get() & 0xFF;
+					int rgb = 0xFF000000 | (red << 16) | (green << 8) | blue;
+					res.setRGB(pos % height, pos / width, rgb);
+					pos++;
+				}
+
+				frame.release();
+				try
+				{
+					listener.evaluateColorFrame(res);
+				} catch (HazelcastInstanceNotActiveException e)
+				{
+					// we've been shut down
+					stopStream();
+				}
+				// System.out.println("ms per frame " +
+				// (System.currentTimeMillis() - lastTime));
+				lastTime = System.currentTimeMillis();
+
+			}
+		};
+	}
+
+	private NewFrameListener pointCloudFrameListener(final PointCloudListener listener, VideoStream mVideoStream)
+	{
+		return new NewFrameListener()
 		{
 			long lastTime = System.currentTimeMillis();
 
@@ -113,8 +178,7 @@ public class PointCloudProvider
 				lastTime = System.currentTimeMillis();
 
 			}
-		});
-
+		};
 	}
 
 	void stopStream()
@@ -164,9 +228,23 @@ public class PointCloudProvider
 			}
 
 			@Override
-			public VideoMode chooseVideoMode(List<VideoMode> supportedModes)
+			public VideoMode chooseDepthMode(List<VideoMode> supportedModes)
 			{
 				return supportedModes.get(0);
+			}
+
+			@Override
+			public void evaluateColorFrame(BufferedImage res)
+			{
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public VideoMode chooseColorMode(List<VideoMode> supportedColorModes)
+			{
+				// TODO Auto-generated method stub
+				return null;
 			}
 		});
 

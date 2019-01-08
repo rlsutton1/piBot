@@ -41,6 +41,7 @@ import au.com.rsutton.ui.CoordinateClickListener;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.ui.VideoWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
@@ -55,9 +56,9 @@ public class MapBuilder
 
 	private static final int MIN_TARGET_SEPARATION = (int) (RANGE_LIMIT_FOR_ADD * 0.4);
 
-	private static final double DISTANCE_NOISE = 1;
+	private static final double DISTANCE_NOISE = 3;
 
-	private static final double HEADING_NOISE = 1;
+	private static final double HEADING_NOISE = 3;
 
 	private static final int CHANGE_COUNTER_ADD_MAP = 0;
 	private static final int CHANGE_COUNTER_RESET = 10;
@@ -122,7 +123,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = false;
+	final boolean simulator = true;
 	int maxSpeed = 50;
 
 	public void test() throws InterruptedException
@@ -132,9 +133,11 @@ public class MapBuilder
 
 			Configurator.setRootLevel(Level.ERROR);
 			new DataWindow();
+			new VideoWindow("Video Feed", 600, 600);
 
 			if (simulator)
 			{
+
 				maxSpeed = 50;
 				boolean useKitchenMap = true;
 				RobotSimulator robotS;

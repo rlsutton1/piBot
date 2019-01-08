@@ -47,7 +47,7 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 	{
 		try
 		{
-			if (robotLocation.getTime() > System.currentTimeMillis() - 250)
+			if (robotLocation.getTime() > System.currentTimeMillis() - 450)
 			{
 
 				Angle angle = robotLocation.getDeadReaconingHeading();
@@ -83,7 +83,8 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 				logger.warn("Recieved and dispatched RobotLocation");
 			} else
 			{
-				logger.error("Discarded old RobotLocation message");
+				logger.error("Discarded old RobotLocation message "
+						+ Math.abs(robotLocation.getTime() - System.currentTimeMillis()));
 			}
 		} catch (Exception e)
 		{

@@ -1,5 +1,7 @@
 package au.com.rsutton.robot.roomba;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,6 +11,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.openni.Point3D;
 import org.openni.VideoMode;
 
+import au.com.rsutton.hazelcast.ImageMessage;
 import au.com.rsutton.hazelcast.PointCloudMessage;
 
 public class PointCloudProcessor implements PointCloudListener
@@ -45,7 +48,7 @@ public class PointCloudProcessor implements PointCloudListener
 	}
 
 	@Override
-	public VideoMode chooseVideoMode(List<VideoMode> supportedModes)
+	public VideoMode chooseDepthMode(List<VideoMode> supportedModes)
 	{
 		return supportedModes.get(0);
 	}
@@ -54,5 +57,38 @@ public class PointCloudProcessor implements PointCloudListener
 	{
 		provider.stopStream();
 
+	}
+
+	@Override
+	public void evaluateColorFrame(BufferedImage image)
+	{
+		ImageMessage pcMessage = new ImageMessage();
+		try
+		{
+			pcMessage.setImage(image);
+
+			pcMessage.setTopic();
+			pcMessage.publish();
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public VideoMode chooseColorMode(List<VideoMode> supportedColorModes)
+	{
+		VideoMode mode = supportedColorModes.get(0);
+
+		for (VideoMode vm : supportedColorModes)
+		{
+			if (vm.getResolutionX() >= 640 && vm.getResolutionX() < 1024)
+			{
+				mode = vm;
+			}
+		}
+
+		return mode;
 	}
 }

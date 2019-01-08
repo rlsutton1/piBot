@@ -8,7 +8,6 @@ import com.hazelcast.core.MessageListener;
 public abstract class MessageBase<M> implements Serializable
 {
 
-	
 	private static final long serialVersionUID = 1130437880736641457L;
 	protected transient ITopic<M> topicInstance;
 	final transient private HcTopic topic;
@@ -21,7 +20,7 @@ public abstract class MessageBase<M> implements Serializable
 	@SuppressWarnings("unchecked")
 	public void publish()
 	{
-		if (topicInstance==null)
+		if (topicInstance == null)
 		{
 			this.topicInstance = HazelCastInstance.getInstance().getTopic(topic.toString());
 
@@ -29,13 +28,28 @@ public abstract class MessageBase<M> implements Serializable
 		topicInstance.publish((M) this);
 	}
 
-	public void addMessageListener(MessageListener<M> listener)
+	/**
+	 * 
+	 * @param listener
+	 * @return registrationId for use when calling removeMessageListener
+	 */
+	public String addMessageListener(MessageListener<M> listener)
 	{
-		if (topicInstance==null)
+		if (topicInstance == null)
 		{
 			this.topicInstance = HazelCastInstance.getInstance().getTopic(topic.toString());
 
 		}
-		topicInstance.addMessageListener(listener);
+		return topicInstance.addMessageListener(listener);
+	}
+
+	public void removeMessageListener(String registrationId)
+	{
+		if (topicInstance == null)
+		{
+			this.topicInstance = HazelCastInstance.getInstance().getTopic(topic.toString());
+
+		}
+		topicInstance.removeMessageListener(registrationId);
 	}
 }
