@@ -1,10 +1,11 @@
 package au.com.rsutton.navigation.graphslam.v3;
 
-import org.junit.Test;
-
 import static junit.framework.TestCase.fail;
 
-public class GraphSlamV3TestRotation {
+import org.junit.Test;
+
+public class GraphSlamV3TestRotation
+{
 
 	@Test
 	public void test4()
@@ -17,8 +18,7 @@ public class GraphSlamV3TestRotation {
 
 		slam.addConstraint(createPoseValue(10, 0, 95), node1, 1, slam.getRoot());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two", createPoseValue(10, 0, 90),
-				createPoseValue(10, 0, 90), 1, node1);
+		slam.addNode("two", createPoseValue(10, 0, 90), createPoseValue(10, 0, 90), 1, node1);
 
 		// slam.addConstraint(createPoseValue(9, 0, 9), node1, 1,
 		// slam.getRoot());

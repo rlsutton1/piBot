@@ -55,8 +55,8 @@ public class GraphSlamTest
 	{
 		GraphSlam slam = new GraphSlam(0);
 
-		int pos = slam.addNode(10, 1);
-		int pos2 = slam.addNode(20, 1);
+		slam.addNode(10, 1);
+		slam.addNode(20, 1);
 		slam.dumpAllData();
 
 	}

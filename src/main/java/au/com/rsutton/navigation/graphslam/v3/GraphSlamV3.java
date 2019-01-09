@@ -70,7 +70,7 @@ public class GraphSlamV3<N extends GraphSlamNode<V>, V extends MathOperators<V>>
 		while (ctr < 1000)
 		{
 			ctr++;
-			V error = updatePositions();
+			updatePositions();
 
 		}
 		if (ctr > 4)

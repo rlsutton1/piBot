@@ -6,7 +6,6 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.openni.CoordinateConverter;
 import org.openni.Device;
@@ -110,8 +109,7 @@ public class PointCloudProvider
 					// we've been shut down
 					stopStream();
 				}
-				// System.out.println("ms per frame " +
-				// (System.currentTimeMillis() - lastTime));
+				System.out.println("ms per color frame " + (System.currentTimeMillis() - lastTime));
 				lastTime = System.currentTimeMillis();
 
 			}
@@ -173,8 +171,7 @@ public class PointCloudProvider
 					// we've been shut down
 					stopStream();
 				}
-				// System.out.println("ms per frame " +
-				// (System.currentTimeMillis() - lastTime));
+				System.out.println("ms per depth frame " + (System.currentTimeMillis() - lastTime));
 				lastTime = System.currentTimeMillis();
 
 			}
@@ -185,72 +182,6 @@ public class PointCloudProvider
 	{
 		device.close();
 		OpenNI.shutdown();
-
-	}
-
-	public static void main(String s[]) throws InterruptedException
-	{
-
-		System.out.println(System.getProperty("java.library.path"));
-		PointCloudProvider test = new PointCloudProvider();
-		test.startStream(s, new PointCloudListener()
-		{
-
-			@Override
-			public void evaluatePointCloud(List<Point3D<Float>> pointCloud)
-			{
-				boolean[][] flatWorld = new boolean[80][40];
-				for (Point3D<Float> point : pointCloud)
-				{
-					int x = (int) (point.getX() / 100) + 40;
-					int y = (int) (point.getZ() / 100);
-					if (x >= 0 && x < 80 && y >= 0 && y < 40)
-					{
-						flatWorld[x][y] = true;
-					}
-				}
-
-				for (int x = 0; x < 80; x++)
-				{
-					for (int y = 0; y < 40; y++)
-					{
-						if (flatWorld[x][y])
-						{
-							System.out.print("X");
-						} else
-						{
-							System.out.print(" ");
-						}
-					}
-					System.out.println("");
-				}
-
-			}
-
-			@Override
-			public VideoMode chooseDepthMode(List<VideoMode> supportedModes)
-			{
-				return supportedModes.get(0);
-			}
-
-			@Override
-			public void evaluateColorFrame(BufferedImage res)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public VideoMode chooseColorMode(List<VideoMode> supportedColorModes)
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-		});
-
-		TimeUnit.SECONDS.sleep(100);
-
-		test.stopStream();
 
 	}
 

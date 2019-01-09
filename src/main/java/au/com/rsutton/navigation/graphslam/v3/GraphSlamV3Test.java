@@ -42,8 +42,7 @@ public class GraphSlamV3Test
 		GraphSlamNodeImpl<DoubleWithMathOperators> node1 = slam.addNode("one", createValue(10), createValue(10), 1,
 				slam.getRoot());
 
-		GraphSlamNodeImpl<DoubleWithMathOperators> node2 = slam.addNode("two", createValue(13), createValue(3), 1,
-				node1);
+		slam.addNode("two", createValue(13), createValue(3), 1, node1);
 
 		System.out.println("Start Solve");
 		slam.solve();
@@ -136,8 +135,7 @@ public class GraphSlamV3Test
 		GraphSlamV3<GraphSlamNodeImpl<PoseWithMathOperators>, PoseWithMathOperators> slam = new GraphSlamV3<>(
 				getCtorPose());
 
-		GraphSlamNodeImpl<PoseWithMathOperators> node1 = slam.addNode("one", createPoseValue(10, 0, 90),
-				createPoseValue(10, 0, 90), 1, slam.getRoot());
+		slam.addNode("one", createPoseValue(10, 0, 90), createPoseValue(10, 0, 90), 1, slam.getRoot());
 
 		// GraphSlamNodeImpl<PoseWithMathOperators> node2 = slam.addNode("two",
 		// createPoseValue(10, 0, 90), 1, node1);

@@ -502,10 +502,7 @@ public class MapBuilder
 		Vector3D vector1 = new Vector3D(currentXY.getX().convert(DistanceUnit.CM) - currentMap.getMapPose().getX(),
 				currentXY.getY().convert(DistanceUnit.CM) - currentMap.getMapPose().getY(), 0);
 
-		// calculate new post to initialise particle filter
-		double angle1 = HeadingHelper.getChangeInHeading(currentHeading, map.getMapPose().heading);
-		Vector3D pos = new Vector3D(currentXY.getX().convert(DistanceUnit.CM),
-				currentXY.getY().convert(DistanceUnit.CM), 0);
+		// calculate new pose to initialise particle filter
 		Pose pose = new Pose(currentXY.getX().convert(DistanceUnit.CM), currentXY.getY().convert(DistanceUnit.CM),
 				currentHeading);
 

@@ -7,7 +7,6 @@ public final class ExpansionPoint implements Comparable<ExpansionPoint>
 
 	private Double pathAngle;
 	private Double pathAngularVelocity = 0.0;
-	private int stepsSinceLastAngleBreach = 0;
 
 	public ExpansionPoint(int x2, int y2, double totalCost, ExpansionPoint parent)
 	{

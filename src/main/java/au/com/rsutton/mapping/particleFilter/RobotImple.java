@@ -22,7 +22,7 @@ public class RobotImple implements RobotInterface
 
 	public RobotImple()
 	{
-		RobotLocationDeltaMessagePump robotDataBus = new RobotLocationDeltaMessagePump(new RobotLocationDeltaListener()
+		new RobotLocationDeltaMessagePump(new RobotLocationDeltaListener()
 		{
 
 			@Override

@@ -6,7 +6,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -55,7 +54,6 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 		int W = (radius * 2) + 1;
 		double[][] kernel = new double[W][W];
 		double mean = W / 2;
-		double sum = 0.0; // For accumulating the kernel values
 		double max = 0.0;
 		for (int x = 0; x < W; ++x)
 			for (int y = 0; y < W; ++y)
@@ -63,8 +61,6 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 				kernel[x][y] = Math.exp(-0.5 * (Math.pow((x - mean) / sigma, 2.0) + Math.pow((y - mean) / sigma, 2.0)))
 						/ (2 * Math.PI * sigma * sigma);
 
-				// Accumulate the kernel values
-				sum += kernel[x][y];
 				max = Math.max(max, kernel[x][y]);
 			}
 
@@ -191,92 +187,6 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 
 			updatePoint((int) x, (int) y, occupancy, certainty, radius);
 		}
-	}
-
-	/**
-	 * 
-	 * @param occupancyProbability
-	 * @param xShiftAmount
-	 *            between -0.5 and 0.5
-	 * @param yShiftAmount
-	 *            between -0.5 and 0.5
-	 * @return
-	 */
-	private double[][] shiftProbability(double[][] occupancyProbability, double xShiftAmount, double yShiftAmount)
-	{
-
-		int shiftMatrixSize = 3;
-
-		double[][] shift = createShiftMatrix(xShiftAmount, yShiftAmount);
-
-		double[][] result = Arrays.copyOf(occupancyProbability, occupancyProbability.length);
-
-		for (int x = 0; x < occupancyProbability[0].length; x++)
-		{
-			for (int y = 0; y < occupancyProbability.length; y++)
-			{
-
-				for (int xs = 0; xs < shiftMatrixSize; xs++)
-				{
-					for (int ys = 0; ys < shiftMatrixSize; ys++)
-					{
-						int xi = x + xs - 1;
-						int yi = y + ys - 1;
-						if (xi > 0 && yi > 0 && xi < result[0].length && yi < result.length)
-							result[x][y] += result[xi][yi] * shift[xs][ys];
-					}
-				}
-			}
-		}
-		return result;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * au.com.rsutton.mapping.probability.ProbabilityMapIIFc#createShiftMatrix(
-	 * double, double)
-	 */
-	private double[][] createShiftMatrix(double xShiftAmount, double yShiftAmount)
-	{
-		// System.out.println("xs: " + xShiftAmount + " ys: " + yShiftAmount);
-		int shiftMatrixSize = 3;
-
-		double[][] shift = new double[shiftMatrixSize][shiftMatrixSize];
-
-		double xc = (1.0 - Math.abs(xShiftAmount));
-		double yc = (1.0 - Math.abs(yShiftAmount));
-
-		double xl = Math.max(0.0, 0.0 - xShiftAmount);
-		double yt = Math.max(0.0, 0.0 - yShiftAmount);
-
-		double xr = Math.max(0.0, 0.0 + xShiftAmount);
-		double yb = Math.max(0.0, 0.0 + yShiftAmount);
-
-		shift = new double[][] {
-				{
-						xl * yt, yt * xc, xr * yt },
-				{
-						xl * yc, yc * xc, xr * yc },
-				{
-						xl * yb, yb * xc, xr * yb } };
-
-		double total = 0.0;
-		for (int xs = 0; xs < shiftMatrixSize; xs++)
-		{
-			for (int ys = 0; ys < shiftMatrixSize; ys++)
-			{
-				// System.out.print(shift[xs][ys] + " ");
-				total += shift[xs][ys];
-			}
-			// System.out.println("");
-		}
-		if (Math.abs(1.0 - total) > 0.01)
-		{
-			// System.out.println("Error total probability is " + total);
-		}
-		return shift;
 	}
 
 	private void updatePoint(int x, int y, Occupancy occupied, double certainty)
