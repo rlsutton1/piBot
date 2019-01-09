@@ -96,7 +96,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 		robot.addMessageListener(observer);
 
-		ui = new MapDrawingWindow("Particle Filter", 1200, 0, 250);
+		ui = new MapDrawingWindow("Particle Filter", 1200, 0, 250, true);
 		addDataSoures(ui);
 		ui.addDataSource(map, new Color(255, 255, 255));
 	}

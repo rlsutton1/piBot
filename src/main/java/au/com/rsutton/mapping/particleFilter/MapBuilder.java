@@ -176,7 +176,7 @@ public class MapBuilder
 
 			vistedLocations.add(new XY(0, 0));
 
-			panel = new MapDrawingWindow("Map Builder (Clickable)", 0, 0, 1000);
+			panel = new MapDrawingWindow("Map Builder (Clickable)", 0, 0, 1000, true);
 
 			panel.setCoordinateClickListener(new CoordinateClickListener()
 			{

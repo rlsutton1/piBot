@@ -1,5 +1,6 @@
 package au.com.rsutton.ui;
 
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
@@ -49,7 +50,7 @@ public class VideoWindow extends JFrame implements MessageListener<ImageMessage>
 
 		this.setLayout(experimentLayout);
 
-		setSize(700, 700);
+		setSize(500, 500);
 		setLocation(x, y);
 		setVisible(true);
 
@@ -61,9 +62,27 @@ public class VideoWindow extends JFrame implements MessageListener<ImageMessage>
 			protected void paintComponent(Graphics g)
 			{
 				super.paintComponent(g);
-				Graphics2D g2 = (Graphics2D) g;
-				g2.drawImage(currentImage.get(), 0, 0, this);
 
+				Container parent = this.getParent();
+				if (parent != null)
+				{
+					Graphics2D g2 = (Graphics2D) g;
+
+					double xScale = (double) parent.getWidth() / (double) currentImage.get().getWidth();
+					double yScale = parent.getHeight() / (double) currentImage.get().getHeight();
+
+					this.setBounds(0, 0, parent.getWidth(), parent.getHeight());
+
+					double aScale = Math.min(xScale, yScale);
+					if (Math.abs(0 - aScale) < 0.01)
+					{
+						aScale = 1.0;
+					}
+
+					g2.drawImage(currentImage.get(), 0, 0, (int) (currentImage.get().getWidth() * aScale),
+							(int) (currentImage.get().getHeight() * aScale), this);
+
+				}
 			}
 
 		};

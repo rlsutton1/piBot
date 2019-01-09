@@ -71,7 +71,7 @@ public class Navigator implements Runnable, NavigatorControl
 	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot, int maxSpeed)
 	{
 		this.MAX_SPEED = maxSpeed;
-		ui = new MapDrawingWindow("Navigator", 600, 0, 250);
+		ui = new MapDrawingWindow("Navigator", 600, 0, 250, true);
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
 		// add data source from depth camera

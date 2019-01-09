@@ -28,7 +28,7 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 	private long refreshIntervalMs;
 
-	public MapDrawingWindow(String string, int x, int y, long refreshIntervalMs)
+	public MapDrawingWindow(String string, int x, int y, long refreshIntervalMs, boolean autoScale)
 	{
 		this.refreshIntervalMs = refreshIntervalMs;
 		if (StringUtils.isNotBlank(string))
@@ -41,11 +41,11 @@ public class MapDrawingWindow extends JFrame implements Runnable
 
 		this.setLayout(experimentLayout);
 
-		graph = new MapUI();
+		graph = new MapUI(autoScale);
 		graph.setPreferredSize(new Dimension(750, 750));
 		this.add(graph);
 
-		setSize(700, 700);
+		setSize(600, 600);
 		setLocation(x, y);
 		setVisible(true);
 
@@ -60,9 +60,9 @@ public class MapDrawingWindow extends JFrame implements Runnable
 		graph.setCoordinateClickListener(listener);
 	}
 
-	public MapDrawingWindow(int x, int y, long refreshIntervalMs)
+	public MapDrawingWindow(int x, int y, long refreshIntervalMs, boolean autoScale)
 	{
-		this("", x, y, refreshIntervalMs);
+		this("", x, y, refreshIntervalMs, autoScale);
 	}
 
 	public void addDataSource(DataSourcePoint map, Color color)

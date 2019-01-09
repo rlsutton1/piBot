@@ -19,8 +19,8 @@ import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RoutePlannerImpl;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.ui.DataSourceMap;
@@ -50,7 +50,7 @@ public class ParticleFilterLiveTest
 	public void test() throws InterruptedException
 	{
 
-		MapDrawingWindow ui = new MapDrawingWindow(0, 0, 250);
+		MapDrawingWindow ui = new MapDrawingWindow(0, 0, 250, true);
 
 		final ProbabilityMap world = KitchenMapBuilder.buildKitchenMap();
 		ui.addDataSource(world, new Color(255, 255, 255));

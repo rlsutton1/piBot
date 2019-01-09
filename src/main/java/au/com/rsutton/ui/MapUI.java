@@ -1,11 +1,12 @@
 package au.com.rsutton.ui;
 
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -16,6 +17,7 @@ import javax.swing.JPanel;
 public class MapUI extends JPanel
 {
 
+	private static final long serialVersionUID = 1L;
 	private List<DataSourceMap> sources = new CopyOnWriteArrayList<>();
 	private List<DataSourceStatistic> statisticSources = new CopyOnWriteArrayList<>();
 	private List<DataSourcePaintRegion> paintSources = new CopyOnWriteArrayList<>();
@@ -26,57 +28,57 @@ public class MapUI extends JPanel
 	private double xOff;
 	private double yOff;
 	private double scale;
+	private boolean autoScale;
+	private double aScale;
+
+	MapUI(boolean autoScale)
+	{
+		this.autoScale = autoScale;
+	}
 
 	@Override
 	protected void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
-		Graphics2D g2 = (Graphics2D) g;
-		g2.drawImage(currentImage.get(), 0, 0, this);
+		Container parent = this.getParent();
+		if (parent != null)
+		{
+			Graphics2D g2 = (Graphics2D) g;
+			double xScale = (double) parent.getWidth() / (double) currentImage.get().getWidth();
+			double yScale = parent.getHeight() / (double) currentImage.get().getHeight();
+			this.setBounds(0, 0, parent.getWidth(), parent.getHeight());
+
+			aScale = Math.min(xScale, yScale);
+			if (Math.abs(0 - aScale) < 0.01)
+			{
+				aScale = 1.0;
+			}
+
+			if (!autoScale)
+			{
+				g2.drawImage(currentImage.get(), 0, 0, this);
+			} else
+			{
+				g2.drawImage(currentImage.get(), 0, 0, (int) (currentImage.get().getWidth() * aScale),
+						(int) (currentImage.get().getHeight() * aScale), this);
+			}
+		}
 
 	}
 
 	public void setCoordinateClickListener(CoordinateClickListener listener)
 	{
 		this.clickListener = listener;
-		this.addMouseListener(new MouseListener()
+		this.addMouseListener(new MouseAdapter()
 		{
-
-			@Override
-			public void mouseReleased(MouseEvent arg0)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void mousePressed(MouseEvent arg0)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void mouseExited(MouseEvent arg0)
-			{
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent arg0)
-			{
-				// TODO Auto-generated method stub
-
-			}
 
 			@Override
 			public void mouseClicked(MouseEvent arg0)
 			{
 				if (clickListener != null)
 				{
-					int x = (int) ((arg0.getX() - xOff) / scale);
-					int y = (int) ((arg0.getY() - yOff) / scale);
+					int x = (int) ((((arg0.getX() / aScale) - xOff) / scale));
+					int y = (int) ((((arg0.getY() / aScale) - yOff) / scale));
 
 					clickListener.clickAt(x, y);
 					arg0.consume();
@@ -126,9 +128,11 @@ public class MapUI extends JPanel
 
 		this.scale = scale;
 
-		xOff = (((xOffset - xCenter) * scale)) + 350;
-		yOff = (((yOffset - yCenter) * scale)) + 350;
-		BufferedImage image = new BufferedImage(700, 700, BufferedImage.TYPE_INT_RGB);
+		int imageSize = 1000;
+
+		xOff = (((xOffset - xCenter) * scale)) + (imageSize / 2.0);
+		yOff = (((yOffset - yCenter) * scale)) + (imageSize / 2.0);
+		BufferedImage image = new BufferedImage(imageSize, imageSize, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g2 = image.createGraphics();
 		g2.setColor(new Color(255, 255, 255));
 
