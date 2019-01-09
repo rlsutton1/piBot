@@ -64,7 +64,6 @@ public class Navigator implements Runnable, NavigatorControl
 	private Double targetHeading;
 
 	double speed = 0;
-	private RobotPoseSource slam;
 
 	// private Double initialHeading = null;
 
@@ -80,17 +79,6 @@ public class Navigator implements Runnable, NavigatorControl
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
-		// FeatureExtractor extractor = new FeatureExtractorSpike(null);
-		// ui.addDataSource(extractor.getHeadingMapDataSource(pf, robot));
-		//
-		// FeatureExtractor extractor2 = new FeatureExtractorCorner(null);
-		// ui.addDataSource(extractor2.getHeadingMapDataSource(pf, robot));
-
-		// FeatureExtractionTestFullWold dl4j = new
-		// FeatureExtractionTestFullWold();
-		// dl4j.train();
-		// ui.addDataSource(dl4j.getHeadingMapDataSource(pf, robot));
-
 		routePlanner = new RoutePlannerLastMeter(map2, robot, pf);
 		this.robot = robot;
 
@@ -105,11 +93,6 @@ public class Navigator implements Runnable, NavigatorControl
 
 		pool.scheduleWithFixedDelay(this, 500, 500, TimeUnit.MILLISECONDS);
 
-	}
-
-	public RobotPoseSource getSlam()
-	{
-		return slam;
 	}
 
 	@Override

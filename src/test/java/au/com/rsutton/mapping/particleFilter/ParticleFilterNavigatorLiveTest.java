@@ -1,8 +1,5 @@
 package au.com.rsutton.mapping.particleFilter;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.junit.Test;
 
 import au.com.rsutton.kalman.RobotPoseSourceNoop;
@@ -16,7 +13,6 @@ import au.com.rsutton.robot.RobotInterface;
 public class ParticleFilterNavigatorLiveTest
 {
 
-	List<Tuple<Double, Double>> headingTuples = new CopyOnWriteArrayList<>();
 	ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
 	RobotInterface robot = getRobot();
 
