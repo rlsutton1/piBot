@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.openni.PixelFormat;
 import org.openni.Point3D;
 import org.openni.VideoMode;
 
@@ -50,7 +51,20 @@ public class PointCloudProcessor implements PointCloudListener
 	@Override
 	public VideoMode chooseDepthMode(List<VideoMode> supportedModes)
 	{
-		return supportedModes.get(0);
+		VideoMode mode = supportedModes.get(0);
+
+		for (VideoMode vm : supportedModes)
+		{
+			if (vm.getResolutionX() >= 300 && vm.getResolutionX() < 490)
+			{
+				if (vm.getPixelFormat() == PixelFormat.DEPTH_1_MM && vm.getFps() < 11)
+				{
+					mode = vm;
+				}
+			}
+		}
+
+		return mode;
 	}
 
 	public void stop()
@@ -83,9 +97,12 @@ public class PointCloudProcessor implements PointCloudListener
 
 		for (VideoMode vm : supportedColorModes)
 		{
-			if (vm.getResolutionX() >= 640 && vm.getResolutionX() < 1024)
+			if (vm.getResolutionX() >= 300 && vm.getResolutionX() < 490)
 			{
-				mode = vm;
+				if (vm.getPixelFormat() == PixelFormat.RGB888 && vm.getFps() < 11)
+				{
+					mode = vm;
+				}
 			}
 		}
 

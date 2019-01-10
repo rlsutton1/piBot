@@ -53,13 +53,13 @@ public class PointCloudProvider
 		List<VideoMode> supportedDepthModes = depthStream.getSensorInfo().getSupportedVideoModes();
 		depthStream.setVideoMode(listener.chooseDepthMode(supportedDepthModes));
 		depthStream.start();
-		depthStream.addNewFrameListener(colorFrameListener(listener, depthStream));
+		depthStream.addNewFrameListener(pointCloudFrameListener(listener, depthStream));
 
 		VideoStream colorStream = VideoStream.create(device, SensorType.COLOR);
 		List<VideoMode> supportedColorModes = colorStream.getSensorInfo().getSupportedVideoModes();
 		colorStream.setVideoMode(listener.chooseColorMode(supportedColorModes));
 		colorStream.start();
-		colorStream.addNewFrameListener(pointCloudFrameListener(listener, colorStream));
+		colorStream.addNewFrameListener(colorFrameListener(listener, colorStream));
 
 	}
 
@@ -96,7 +96,7 @@ public class PointCloudProvider
 					int green = frameData.get() & 0xFF;
 					int blue = frameData.get() & 0xFF;
 					int rgb = 0xFF000000 | (red << 16) | (green << 8) | blue;
-					res.setRGB(pos % height, pos / width, rgb);
+					res.setRGB(pos % width, pos / width, rgb);
 					pos++;
 				}
 

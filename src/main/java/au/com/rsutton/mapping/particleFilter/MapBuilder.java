@@ -133,7 +133,6 @@ public class MapBuilder
 
 			Configurator.setRootLevel(Level.ERROR);
 			new DataWindow();
-			new VideoWindow("Video Feed", 600, 600);
 
 			if (simulator)
 			{
@@ -155,6 +154,8 @@ public class MapBuilder
 				this.robot = robotS;
 			} else
 			{
+				new VideoWindow("Video Feed", 600, 600);
+
 				this.robot = new RobotImple();
 			}
 

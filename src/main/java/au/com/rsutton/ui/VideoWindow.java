@@ -64,7 +64,7 @@ public class VideoWindow extends JFrame implements MessageListener<ImageMessage>
 				super.paintComponent(g);
 
 				Container parent = this.getParent();
-				if (parent != null)
+				if (parent != null && currentImage.get() != null)
 				{
 					Graphics2D g2 = (Graphics2D) g;
 
