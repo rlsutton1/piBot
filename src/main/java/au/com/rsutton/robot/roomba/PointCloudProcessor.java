@@ -19,7 +19,7 @@ public class PointCloudProcessor implements PointCloudListener
 {
 	PointCloudProvider provider;
 
-	Rotation cameraAngle = new Rotation(RotationOrder.XYZ, Math.toRadians(25), 0, 0);
+	Rotation cameraAngle = new Rotation(RotationOrder.XYZ, Math.toRadians(15), 0, 0);
 
 	PointCloudProcessor()
 	{
@@ -55,7 +55,7 @@ public class PointCloudProcessor implements PointCloudListener
 
 		for (VideoMode vm : supportedModes)
 		{
-			if (vm.getResolutionX() >= 300 && vm.getResolutionX() < 490)
+			if (vm.getResolutionX() >= 600 && vm.getResolutionX() < 800)
 			{
 				if (vm.getPixelFormat() == PixelFormat.DEPTH_1_MM && vm.getFps() < 11)
 				{
@@ -97,7 +97,7 @@ public class PointCloudProcessor implements PointCloudListener
 
 		for (VideoMode vm : supportedColorModes)
 		{
-			if (vm.getResolutionX() >= 300 && vm.getResolutionX() < 490)
+			if (vm.getResolutionX() >= 600 && vm.getResolutionX() < 800)
 			{
 				if (vm.getPixelFormat() == PixelFormat.RGB888 && vm.getFps() < 11)
 				{

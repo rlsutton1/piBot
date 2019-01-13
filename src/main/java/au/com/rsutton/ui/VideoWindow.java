@@ -50,7 +50,7 @@ public class VideoWindow extends JFrame implements MessageListener<ImageMessage>
 
 		this.setLayout(experimentLayout);
 
-		setSize(500, 500);
+		setSize((int) ((16.0 / 9.0) * 500), 500);
 		setLocation(x, y);
 		setVisible(true);
 

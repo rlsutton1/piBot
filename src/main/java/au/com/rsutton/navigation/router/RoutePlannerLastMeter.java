@@ -49,7 +49,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		this.robotPoseSource = robotPoseSource;
 		robot.addMessageListener(this);
 
-		new PointCloudMessage().addMessageListener(getPointCloudMessageListener());
+		// new
+		// PointCloudMessage().addMessageListener(getPointCloudMessageListener());
 
 	}
 

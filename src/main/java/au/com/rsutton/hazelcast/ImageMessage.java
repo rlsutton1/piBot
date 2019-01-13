@@ -41,7 +41,7 @@ public class ImageMessage extends MessageBase<ImageMessage>
 	public void setImage(BufferedImage image) throws IOException
 	{
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ImageIO.write(image, "png", baos);
+		ImageIO.write(image, "jpg", baos);
 		bytes = baos.toByteArray();
 	}
 

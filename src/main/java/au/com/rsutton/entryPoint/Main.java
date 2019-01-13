@@ -6,8 +6,10 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.SetMotion;
+import au.com.rsutton.mapping.particleFilter.DataWindow;
 import au.com.rsutton.mapping.particleFilter.MapBuilder;
 import au.com.rsutton.robot.roomba.RoombaRobot;
+import au.com.rsutton.ui.VideoWindow;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
@@ -31,7 +33,7 @@ public class Main
 
 		System.out.println("Press 4 turn on the spot");
 
-		System.out.println("Press 5 to perform straight line test");
+		System.out.println("Press 5 to video test");
 
 		System.out.println("Press 6 to perform circle test");
 
@@ -133,6 +135,11 @@ public class Main
 			TimeUnit.SECONDS.sleep(1);
 			robot.shutdown();
 			return;
+		}
+		if (ch == '5')
+		{
+			new VideoWindow("Video Test", 0, 0);
+			new DataWindow();
 		}
 		if (ch == '8')
 		{

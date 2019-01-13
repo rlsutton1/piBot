@@ -7,7 +7,9 @@ import java.nio.ShortBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.openni.CoordinateConverter;
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.openni.Device;
 import org.openni.DeviceInfo;
 import org.openni.OpenNI;
@@ -20,6 +22,8 @@ import org.openni.VideoStream;
 import org.openni.VideoStream.NewFrameListener;
 
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
+
+import au.com.rsutton.hazelcast.DataLogValue;
 
 public class PointCloudProvider
 {
@@ -53,17 +57,17 @@ public class PointCloudProvider
 		List<VideoMode> supportedDepthModes = depthStream.getSensorInfo().getSupportedVideoModes();
 		depthStream.setVideoMode(listener.chooseDepthMode(supportedDepthModes));
 		depthStream.start();
-		depthStream.addNewFrameListener(pointCloudFrameListener(listener, depthStream));
+		depthStream.addNewFrameListener(pointCloudFrameListener(listener));
 
 		VideoStream colorStream = VideoStream.create(device, SensorType.COLOR);
 		List<VideoMode> supportedColorModes = colorStream.getSensorInfo().getSupportedVideoModes();
 		colorStream.setVideoMode(listener.chooseColorMode(supportedColorModes));
 		colorStream.start();
-		colorStream.addNewFrameListener(colorFrameListener(listener, colorStream));
+		colorStream.addNewFrameListener(colorFrameListener(listener));
 
 	}
 
-	private NewFrameListener colorFrameListener(PointCloudListener listener, VideoStream colorStream)
+	private NewFrameListener colorFrameListener(PointCloudListener listener)
 	{
 		return new NewFrameListener()
 		{
@@ -116,7 +120,7 @@ public class PointCloudProvider
 		};
 	}
 
-	private NewFrameListener pointCloudFrameListener(final PointCloudListener listener, VideoStream mVideoStream)
+	private NewFrameListener pointCloudFrameListener(final PointCloudListener listener)
 	{
 		return new NewFrameListener()
 		{
@@ -126,6 +130,9 @@ public class PointCloudProvider
 			public void onFrameReady(VideoStream stream)
 			{
 				VideoFrameRef frame = stream.readFrame();
+
+				new DataLogValue("FOV h", "" + stream.getHorizontalFieldOfView()).publish();
+				new DataLogValue("FOV v", "" + stream.getVerticalFieldOfView()).publish();
 
 				PixelFormat pixelFormat = frame.getVideoMode().getPixelFormat();
 				if (pixelFormat != PixelFormat.DEPTH_1_MM)
@@ -155,7 +162,12 @@ public class PointCloudProvider
 						}
 						if (z > 0)
 						{
-							Point3D<Float> point = CoordinateConverter.convertDepthToWorld(mVideoStream, x, y, z);
+							// broken with RealSense D435 <br>
+							// Point3D<Float> point =
+							// CoordinateConverter.convertDepthToWorld(stream,
+							// x, y, z);
+
+							Point3D<Float> point = convertDepthToWorld(stream, x, y, z);
 
 							pointCloud.add(point);
 						}
@@ -176,6 +188,25 @@ public class PointCloudProvider
 
 			}
 		};
+	}
+
+	Point3D<Float> convertDepthToWorld(VideoStream stream, int x, int y, int z)
+	{
+		float hfov = stream.getHorizontalFieldOfView();
+		float vfov = stream.getVerticalFieldOfView();
+
+		VideoMode videoMode = stream.getVideoMode();
+		Double xResolution = new Double(videoMode.getResolutionX());
+		Double yResolution = new Double(videoMode.getResolutionY());
+
+		double halfX = xResolution / 2.0;
+		double yAxisRotation = -hfov * ((x - halfX) / xResolution);
+		double halfY = yResolution / 2.0;
+		double xAxisRotation = vfov * ((y - halfY) / yResolution);
+
+		Vector3D vector = new Rotation(RotationOrder.XYZ, xAxisRotation, yAxisRotation, 0)
+				.applyTo(new Vector3D(x, y, z));
+		return new Point3D<>(new Float(vector.getX()), new Float(vector.getY()), new Float(vector.getZ()));
 	}
 
 	void stopStream()
