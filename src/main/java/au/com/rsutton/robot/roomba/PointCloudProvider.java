@@ -10,6 +10,8 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openni.Device;
 import org.openni.DeviceInfo;
 import org.openni.OpenNI;
@@ -29,6 +31,8 @@ public class PointCloudProvider
 {
 
 	private Device device;
+
+	Logger logger = LogManager.getLogger();
 
 	void startStream(String s[], final PointCloudListener listener)
 	{
@@ -113,7 +117,7 @@ public class PointCloudProvider
 					// we've been shut down
 					stopStream();
 				}
-				System.out.println("ms per color frame " + (System.currentTimeMillis() - lastTime));
+				logger.debug("ms per color frame " + (System.currentTimeMillis() - lastTime));
 				lastTime = System.currentTimeMillis();
 
 			}
@@ -135,9 +139,11 @@ public class PointCloudProvider
 				new DataLogValue("FOV v", "" + stream.getVerticalFieldOfView()).publish();
 
 				PixelFormat pixelFormat = frame.getVideoMode().getPixelFormat();
-				if (pixelFormat != PixelFormat.DEPTH_1_MM)
+				PixelFormat expectedFormat = PixelFormat.DEPTH_1_MM;
+				if (pixelFormat != expectedFormat)
 				{
-					System.out.println("Pixel Fromat is not the expeceted DEPTH_1_MM, actual is :" + pixelFormat);
+					System.out.println(
+							"Pixel Fromat is not the expeceted " + expectedFormat + ", actual is :" + pixelFormat);
 				}
 
 				int width = frame.getWidth();
@@ -183,7 +189,7 @@ public class PointCloudProvider
 					// we've been shut down
 					stopStream();
 				}
-				System.out.println("ms per depth frame " + (System.currentTimeMillis() - lastTime));
+				logger.debug("ms per depth frame " + (System.currentTimeMillis() - lastTime));
 				lastTime = System.currentTimeMillis();
 
 			}
@@ -192,7 +198,9 @@ public class PointCloudProvider
 
 	Point3D<Float> convertDepthToWorld(VideoStream stream, int x, int y, int z)
 	{
-		float hfov = stream.getHorizontalFieldOfView();
+		float scaling = 1.35f;
+
+		float hfov = (stream.getHorizontalFieldOfView());
 		float vfov = stream.getVerticalFieldOfView();
 
 		VideoMode videoMode = stream.getVideoMode();
@@ -205,7 +213,7 @@ public class PointCloudProvider
 		double xAxisRotation = vfov * ((y - halfY) / yResolution);
 
 		Vector3D vector = new Rotation(RotationOrder.XYZ, xAxisRotation, yAxisRotation, 0)
-				.applyTo(new Vector3D(x, y, z));
+				.applyTo(new Vector3D(0, 0, z * scaling));
 		return new Point3D<>(new Float(vector.getX()), new Float(vector.getY()), new Float(vector.getZ()));
 	}
 

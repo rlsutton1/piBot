@@ -4,6 +4,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.maschel.roomba.RoombaJSSC;
 import com.maschel.roomba.RoombaJSSCSerial;
 import com.maschel.roomba.song.RoombaNote;
@@ -32,6 +35,8 @@ public class Roomba630 implements Runnable
 	final private DistanceUnit distUnit = DistanceUnit.MM;
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
 	private RoombaJSSC roomba;
+
+	Logger logger = LogManager.getLogger();
 
 	final Object sync = new Object();
 
@@ -229,7 +234,7 @@ public class Roomba630 implements Runnable
 						// speed
 						currentSpeed = targetSpeed;
 					}
-					System.out.println("current/target speed " + currentSpeed + " " + targetSpeed);
+					logger.debug("current/target speed " + currentSpeed + " " + targetSpeed);
 
 					roomba.drive(currentSpeed, turnRadius);
 

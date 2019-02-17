@@ -44,24 +44,40 @@ public class RPLidarAdaptor implements Runnable
 	{
 		// publish scan data
 
-		while (!stop)
-		{
-			try
-			{
-				Scan scan = lidar.getNextScan();
-				listener.receiveLidarScan(scan);
+		System.out.println("Start listening for scans");
 
-			} catch (RPLidarA1ServiceException | InterruptedException e)
+		try
+		{
+			while (!stop)
 			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try
+				{
+					Scan scan = lidar.getNextScan();
+					if (scan == null)
+					{
+						lidar.close();
+						lidar.init();
+						lidar.continuousScanning();
+					}
+					System.out.println("Scan Received");
+					listener.receiveLidarScan(scan);
+
+				} catch (Exception e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
+		} finally
+		{
+			System.out.println("Continous scanning exiting...");
 		}
 
 	}
 
 	public void shutdown()
 	{
+		System.out.println("RPLidarAdaptor - SHUTDOWN called");
 		stop = true;
 		try
 		{

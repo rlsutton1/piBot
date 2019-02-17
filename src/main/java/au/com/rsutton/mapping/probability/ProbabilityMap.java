@@ -437,4 +437,10 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 	{
 
 	}
+
+	public void setValue(double x, double y, double value)
+	{
+		world.set((int) x / blockSize, (int) y / blockSize, value);
+
+	}
 }

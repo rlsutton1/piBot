@@ -18,6 +18,7 @@ import com.hazelcast.core.MessageListener;
 import au.com.rsutton.hazelcast.PointCloudMessage;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.robot.roomba.PointCloudProcessor;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.DistanceUnit;
 
@@ -66,7 +67,7 @@ public class PointCloudUI implements DataSourceMap, MessageListener<PointCloudMe
 	@Override
 	public void onMessage(Message<PointCloudMessage> message)
 	{
-		vectors.set(message.getMessageObject().getPoints());
+		vectors.set(PointCloudProcessor.removeGroundPlane(message.getMessageObject().getPoints()));
 
 	}
 }

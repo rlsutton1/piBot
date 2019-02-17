@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>au.com.rsutton</groupId>
@@ -47,12 +48,12 @@
 			<version>3.4.1</version>
 		</dependency>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.testng</groupId>
@@ -69,6 +70,12 @@
 			<groupId>com.maschel</groupId>
 			<artifactId>roombajssc</artifactId>
 			<version>1.1.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 
@@ -94,16 +101,29 @@
 			<version>2</version>
 
 		</dependency>
-		
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>RELEASE</version>
-        </dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j-impl</artifactId>
+			<version>2.8.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-1.2-api</artifactId>
+			<version>2.8.2</version>
+		</dependency>
 
 
-        <!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j
-            -DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
+
+		<!-- mvn install:install-file -Dfile=v4l4j.jar -DgroupId=au.edu.jcu.v4l4j 
+			-DartifactId=v4l4j -Dversion=0.9.1 -Dpackaging=jar -->
 	</dependencies>
 	<build>
 		<plugins>

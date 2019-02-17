@@ -8,6 +8,8 @@ import com.hazelcast.core.Message;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.hazelcast.ImageMessage;
+import au.com.rsutton.hazelcast.PointCloudMessage;
 import au.com.rsutton.hazelcast.RobotLocation;
 
 public class DataLogReader
@@ -35,7 +37,7 @@ public class DataLogReader
 		long messageReferenceTime = 0;
 		try
 		{
-			fout = new FileInputStream("robotFlightRecord-1516399920364.obj");
+			fout = new FileInputStream("robotFlightRecord-2019-01-28-10-50-10.obj");
 			oos = new ObjectInputStream(fout);
 			boolean canContinue = true;
 
@@ -88,6 +90,35 @@ public class DataLogReader
 					}
 
 					locationMessage.setTime(System.currentTimeMillis());
+
+					locationMessage.publish();
+				}
+
+				if (messageObject.getMessageObject() instanceof PointCloudMessage)
+				{
+					PointCloudMessage locationMessage = (PointCloudMessage) messageObject.getMessageObject();
+					if (locationMessage == null)
+					{
+						canContinue = false;
+						break;
+					}
+
+					locationMessage.setTime(System.currentTimeMillis());
+					locationMessage.setTopic();
+					locationMessage.publish();
+				}
+
+				if (messageObject.getMessageObject() instanceof ImageMessage)
+				{
+					ImageMessage locationMessage = (ImageMessage) messageObject.getMessageObject();
+					if (locationMessage == null)
+					{
+						canContinue = false;
+						break;
+					}
+
+					locationMessage.setTime(System.currentTimeMillis());
+					locationMessage.setTopic();
 
 					locationMessage.publish();
 				}
