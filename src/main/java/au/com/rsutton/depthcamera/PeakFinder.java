@@ -36,7 +36,8 @@ public class PeakFinder
 		double e = findNonVoid(center, x, y, image, 1, 0, voidValue);
 		double w = findNonVoid(center, x, y, image, -1, 0, voidValue);
 
-		System.out.println(x + " " + y + " " + n + " " + s + " " + e + " " + w);
+		// System.out.println(x + " " + y + " " + n + " " + s + " " + e + " " +
+		// w);
 
 		double ne = findNonVoid(center, x, y, image, 1, 1, voidValue);
 		double sw = findNonVoid(center, x, y, image, -1, -1, voidValue);

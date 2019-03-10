@@ -155,11 +155,12 @@ public class PointCloudProvider
 				sb.rewind();
 				int z = 0;
 
-				List<Point3D<Float>> pointCloud = new LinkedList<>();
+				List<Vector3D> pointCloud = new LinkedList<>();
 
-				for (int y = 0; y < height; y += 10)
+				for (int x = 0; x < width; x += 10)
 				{
-					for (int x = 0; x < width; x += 10)
+					ColumnEvaluator columnEvaluator = new ColumnEvaluator(stream, x);
+					for (int y = 0; y < height; y += 1)
 					{
 						z = sb.get(x + (y * width));
 						if (z < 0)
@@ -173,10 +174,14 @@ public class PointCloudProvider
 							// CoordinateConverter.convertDepthToWorld(stream,
 							// x, y, z);
 
-							Point3D<Float> point = convertDepthToWorld(stream, x, y, z);
+							columnEvaluator.addPoint(y, z);
 
-							pointCloud.add(point);
 						}
+					}
+					Vector3D object = columnEvaluator.findObjects(3);
+					if (object != null)
+					{
+						pointCloud.add(object);
 					}
 				}
 
@@ -213,7 +218,7 @@ public class PointCloudProvider
 		double xAxisRotation = vfov * ((y - halfY) / yResolution);
 
 		Vector3D vector = new Rotation(RotationOrder.XYZ, xAxisRotation, yAxisRotation, 0)
-				.applyTo(new Vector3D(0, 0, z * scaling));
+				.applyTo(new Vector3D(0, 0, z)).scalarMultiply(scaling);
 		return new Point3D<>(new Float(vector.getX()), new Float(vector.getY()), new Float(vector.getZ()));
 	}
 

@@ -48,11 +48,13 @@ public class PointCloudUI implements DataSourceMap, MessageListener<PointCloudMe
 	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale, double originalX,
 			double originalY)
 	{
+		List<Vector3D> tmp = vectors.get();
+
 		Graphics graphics = image.getGraphics();
 
-		graphics.setColor(new Color(255, 255, 0));
+		graphics.setColor(Color.BLUE);
 
-		for (Vector3D sp : vectors.get())
+		for (Vector3D sp : tmp)
 		{
 			Vector3D line = new Vector3D(sp.getX() * scale, sp.getY() * scale, 0);
 			line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading())).applyTo(line);
@@ -62,12 +64,31 @@ public class PointCloudUI implements DataSourceMap, MessageListener<PointCloudMe
 			graphics.drawRect(x, y, 1, 1);
 		}
 
+		graphics.setColor(Color.ORANGE);
+		try
+		{
+			tmp = PointCloudProcessor.removeGroundPlane(tmp);
+
+			for (Vector3D sp : tmp)
+			{
+				Vector3D line = new Vector3D(sp.getX() * scale, sp.getY() * scale, 0);
+				line = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading())).applyTo(line);
+
+				int x = (int) (pointOriginX + line.getX());
+				int y = (int) (pointOriginY + line.getY());
+				graphics.drawRect(x, y, 1, 1);
+			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
 	}
 
 	@Override
 	public void onMessage(Message<PointCloudMessage> message)
 	{
-		vectors.set(PointCloudProcessor.removeGroundPlane(message.getMessageObject().getPoints()));
+		vectors.set(message.getMessageObject().getPoints());
 
 	}
 }

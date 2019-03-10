@@ -2,7 +2,6 @@ package au.com.rsutton.robot.roomba;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -31,15 +30,14 @@ public class PointCloudProcessor implements PointCloudListener
 	}
 
 	@Override
-	public void evaluatePointCloud(List<Point3D<Float>> pointCloud)
+	public void evaluatePointCloud(List<Vector3D> pointCloud)
 	{
 		List<Vector3D> source = new LinkedList<>();
 
-		for (Point3D<Float> point : pointCloud)
+		for (Vector3D point : pointCloud)
 		{
 			// swap Z and Y to conform to a more robotic convention
-			Vector3D rotatedVector = cameraAngle
-					.applyTo(new Vector3D(point.getX() / 10.0, point.getZ() / 10.0, point.getY() / 10.0));
+			Vector3D rotatedVector = cameraAngle.applyTo(new Vector3D(point.getX(), point.getY(), point.getZ()));
 
 			// Vector3D rotatedVector = cameraAngle.applyInverseTo(vector);
 			source.add(rotatedVector);
@@ -48,6 +46,11 @@ public class PointCloudProcessor implements PointCloudListener
 		pcMessage.setPoints(source);
 		pcMessage.setTopic();
 		pcMessage.publish();
+
+	}
+
+	void evaluateColumn(List<Point3D<Float>> pointCloud)
+	{
 
 	}
 
@@ -60,27 +63,20 @@ public class PointCloudProcessor implements PointCloudListener
 	 */
 	public static List<Vector3D> removeGroundPlane(List<Vector3D> points)
 	{
-		Iterator<Vector3D> itr = points.iterator();
-		while (itr.hasNext())
-		{
-			Vector3D next = itr.next();
-			if (next.getZ() < 30)
-			{
-				itr.remove();
-			}
-		}
+
 		return points;
 	}
 
-	public static List<Vector3D> removeGroundPlanePrototype(List<Vector3D> points)
+	public static List<Vector3D> removeGroundPlaneBuggy(List<Vector3D> points)
 	{
 
 		PeakFinder peakFinder = new PeakFinder();
 
-		double expectedDeviation = 8;
-		double voidValue = 0;
+		double expectedDeviation = 1;
+		double voidValue = -1000;
 
 		ProbabilityMap world = new ProbabilityMap(5);
+		world.setDefaultValue(-1000);
 
 		for (Vector3D vector : points)
 		{
@@ -102,7 +98,7 @@ public class PointCloudProcessor implements PointCloudListener
 		for (int x = 0; x < width; x++)
 			for (int y = 0; y < height; y++)
 				if (result[x][y] > 0)
-					pset.add(new Vector3D((x * 2) + world.getMinX(), (y * 2) + world.getMinY(), 1));
+					pset.add(new Vector3D((x) + world.getMinX(), (y) + world.getMinY(), 1));
 
 		return pset;
 	}

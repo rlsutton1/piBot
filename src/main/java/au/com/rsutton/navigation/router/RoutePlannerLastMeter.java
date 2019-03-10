@@ -1,5 +1,7 @@
 package au.com.rsutton.navigation.router;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +51,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		this.robotPoseSource = robotPoseSource;
 		robot.addMessageListener(this);
 
-		// new
-		// PointCloudMessage().addMessageListener(getPointCloudMessageListener());
+		new PointCloudMessage().addMessageListener(getPointCloudMessageListener());
 
 	}
 
@@ -138,6 +139,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		}
 	}
 
+	List<Vector3D> pointMemory = new LinkedList<>();
+
 	private void worker(final List<ScanObservation> observations, int radius)
 	{
 
@@ -179,21 +182,42 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			}
 		}
 
+		Vector3D robotLocation = new Vector3D(x, y, 0);
+		Iterator<Vector3D> itr = pointMemory.iterator();
+		while (itr.hasNext())
+
+		{
+			Vector3D spot = itr.next();
+			if (spot.distance(robotLocation) > 150 && pointMemory.size() > 1000)
+			{
+				itr.remove();
+			} else
+			{
+				localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+			}
+		}
+
 		// overlay point cloud from depth camera
 		PointCloudMessage pointCloud = lastPointCloudMessage.get();
 		if (pointCloud != null && pointCloud.getTime() > System.currentTimeMillis() - 200L)
 		{
 			for (Vector3D obs : pointCloud.getPoints())
 			{
-				if (obs.getNorm() < 50)
+				if (obs.getNorm() < 30)
 				{
 					// ignore some dodgy points coming from close by,
 					// immediately behind the robot
 				} else
 				{
+
 					Vector3D point = obs;
 					Vector3D spot = rotation.applyTo(point).add(offset);
 					localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+					pointMemory.add(spot);
+					if (pointMemory.size() > 1000)
+					{
+						pointMemory.remove(0);
+					}
 				}
 			}
 		}
