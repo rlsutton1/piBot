@@ -17,6 +17,12 @@ public class HeadingHelper
 		// return normalizedHeading % 360;
 	}
 
+	/**
+	 * 
+	 * @param newHeading
+	 * @param oldHeading
+	 * @return change in heading in the range of -180 to +180
+	 */
 	static public double getChangeInHeading(double newHeading, double oldHeading)
 	{
 		double newNormalHeading = normalizeHeading(newHeading);

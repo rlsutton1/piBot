@@ -7,7 +7,7 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 public class KitchenMapBuilder
 {
 
-	public static ProbabilityMap buildKitchenMap()
+	public static ProbabilityMap buildMap()
 	{
 		ProbabilityMap world = new ProbabilityMap(5);
 

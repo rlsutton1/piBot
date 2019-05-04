@@ -98,4 +98,10 @@ public final class ExpansionPoint implements Comparable<ExpansionPoint>
 	{
 		pathAngularVelocity = newAngularVelocity;
 	}
+
+	public int distanceTo(int pfX, int pfY)
+	{
+		// pythagoras
+		return (int) Math.sqrt(Math.pow(pfX - x, 2) + Math.pow(pfY - y, 2));
+	}
 }

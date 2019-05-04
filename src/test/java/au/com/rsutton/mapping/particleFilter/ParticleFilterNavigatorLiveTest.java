@@ -13,7 +13,7 @@ import au.com.rsutton.robot.RobotInterface;
 public class ParticleFilterNavigatorLiveTest
 {
 
-	ProbabilityMap map = KitchenMapBuilder.buildKitchenMap();
+	ProbabilityMap map = KitchenMapBuilder.buildMap();
 	RobotInterface robot = getRobot();
 
 	@Test

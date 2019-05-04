@@ -10,7 +10,7 @@ public interface RobotInterface
 
 	void setSpeed(Speed speed);
 
-	void turn(double normalizeHeading);
+	void setTurnRadius(double normalizeHeading);
 
 	void publishUpdate();
 
@@ -18,6 +18,8 @@ public interface RobotInterface
 
 	void removeMessageListener(RobotLocationDeltaListener listener);
 
-	double getRadius();
+	double getPlatformRadius();
+
+	void setStraight(String calledBy);
 
 }

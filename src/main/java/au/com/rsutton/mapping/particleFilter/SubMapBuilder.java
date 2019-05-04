@@ -46,7 +46,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 	{
 		robot.freeze(true);
 		robot.setSpeed(Speed.ZERO);
-		robot.turn(0);
+		// robot.setStraight();
 
 		robot.publishUpdate();
 		TimeUnit.MILLISECONDS.sleep(500);
@@ -57,7 +57,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 			TimeUnit.MILLISECONDS.sleep(100);
 			robot.freeze(true);
 			robot.setSpeed(Speed.ZERO);
-			robot.turn(0);
+			robot.setStraight("SubMapBuilder");
 
 			robot.publishUpdate();
 		}

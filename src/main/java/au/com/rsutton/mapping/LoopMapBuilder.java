@@ -9,7 +9,7 @@ public class LoopMapBuilder
 
 	private static final int MULTIPLIER = 50;
 
-	public static ProbabilityMap buildKitchenMap()
+	public static ProbabilityMap buildMap()
 	{
 		ProbabilityMap world = new ProbabilityMap(5);
 

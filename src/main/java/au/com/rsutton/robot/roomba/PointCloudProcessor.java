@@ -12,10 +12,8 @@ import org.openni.PixelFormat;
 import org.openni.Point3D;
 import org.openni.VideoMode;
 
-import au.com.rsutton.depthcamera.PeakFinder;
 import au.com.rsutton.hazelcast.ImageMessage;
 import au.com.rsutton.hazelcast.PointCloudMessage;
-import au.com.rsutton.mapping.probability.ProbabilityMap;
 
 public class PointCloudProcessor implements PointCloudListener
 {
@@ -52,55 +50,6 @@ public class PointCloudProcessor implements PointCloudListener
 	void evaluateColumn(List<Point3D<Float>> pointCloud)
 	{
 
-	}
-
-	/**
-	 * simple test code, remove all points where z < 0, should look a lot like a
-	 * 2D lidar scan at the height of the camera
-	 * 
-	 * @param points
-	 * @return
-	 */
-	public static List<Vector3D> removeGroundPlane(List<Vector3D> points)
-	{
-
-		return points;
-	}
-
-	public static List<Vector3D> removeGroundPlaneBuggy(List<Vector3D> points)
-	{
-
-		PeakFinder peakFinder = new PeakFinder();
-
-		double expectedDeviation = 1;
-		double voidValue = -1000;
-
-		ProbabilityMap world = new ProbabilityMap(5);
-		world.setDefaultValue(-1000);
-
-		for (Vector3D vector : points)
-		{
-			double currentValue = world.get(vector.getX(), vector.getY());
-			world.setValue(vector.getX(), vector.getY(), Math.max(currentValue, vector.getZ()));
-		}
-
-		int width = world.getMaxX() - world.getMinX();
-		int height = world.getMaxY() - world.getMinY();
-		double[][] image = new double[width][height];
-		for (int x = world.getMinX(); x < world.getMaxX(); x += world.getBlockSize())
-			for (int y = world.getMinY(); y < world.getMaxY(); y += world.getBlockSize())
-				image[x - world.getMinX()][y - world.getMinY()] = world.get(x, y);
-
-		double[][] result = peakFinder.findPeaks(image, expectedDeviation, voidValue);
-		// double[][] result = image;
-
-		List<Vector3D> pset = new LinkedList<>();
-		for (int x = 0; x < width; x++)
-			for (int y = 0; y < height; y++)
-				if (result[x][y] > 0)
-					pset.add(new Vector3D((x) + world.getMinX(), (y) + world.getMinY(), 1));
-
-		return pset;
 	}
 
 	@Override

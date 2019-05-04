@@ -16,7 +16,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.RobotLocation;
 import au.com.rsutton.mapping.particleFilter.Particle;
@@ -25,6 +24,7 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
 import au.com.rsutton.robot.lidar.LidarObservation;
+import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -47,15 +47,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 	double totalDistanceTravelled = 0;
 
-	volatile double headingOffset = random.nextInt(360);
-
 	double heading;
 	private volatile boolean freeze;
 	private double rspeed;
 	private List<RobotLocationDeltaListener> listeners = new CopyOnWriteArrayList<>();
 	boolean freezeSet = false;
 
-	private double requestedDeltaHeading;
+	private double turnRadius;
 
 	private RobotLocationDeltaMessagePump messsagePump;
 
@@ -76,15 +74,29 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 		{
 			return 0;
 		}
+
+		distance = Math.min(Math.abs(distance), Math.abs(turnRadius / 4.0)) * Math.signum(distance);
+
 		if (Math.abs(distance - 0.0) > 0.2)
 		{
+			// add noise to distance moved
 			distance -= Math.abs(distance * (random.nextGaussian() * 0.5));
+		}
+
+		// degrees turned as a result of this move
+		double turned = Math.toDegrees(distance / turnRadius);
+		if (Math.abs(turned) >= Roomba630.STRAIGHT || Double.isNaN(turned))
+		{
+			turned = 0;
 		}
 
 		Vector3D unit = new Vector3D(0, distance, 0);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
+
 		Vector3D location = new Vector3D(x, y, 0);
 		Vector3D newLocation = location.add(rotation.applyTo(unit));
+
+		heading += turned;
 
 		double nx = newLocation.getX();
 		double ny = newLocation.getY();
@@ -100,28 +112,12 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 		} else
 		{
 			logger.info("Avoiding wall");
-			bump = true;
+			if (distance > 0)
+			{
+				// don't register bump going backwards
+				bump = true;
+			}
 			return 0;
-		}
-
-	}
-
-	public void internalTurn(double angle)
-	{
-		if (freeze)
-		{
-			return;
-		}
-		double noise = Math.abs((random.nextGaussian() * 1.5) * (1.0 / hz));
-		double delta = angle + noise;
-		heading -= delta;
-		if (heading < 0)
-		{
-			heading += 360.0;
-		}
-		if (heading > 360)
-		{
-			heading -= 360.0;
 		}
 
 	}
@@ -217,17 +213,23 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void turn(double delta)
+	public void setTurnRadius(double turnRadius)
 	{
+		double minTurnRadius = 5;
 
-		new DataLogValue("Simulator-Requested angle change", "" + delta).publish();
+		turnRadius = -1.0 * turnRadius;
 
-		requestedDeltaHeading = HeadingHelper.normalizeHeading(delta);
-		if (requestedDeltaHeading > 180)
+		if (Math.abs(turnRadius) < minTurnRadius)
 		{
-			requestedDeltaHeading -= 360;
+			// lower limit for the simulator is 30cm, as the simulators math is
+			// broken at small radius
+			turnRadius = Math.signum(turnRadius) * minTurnRadius;
 		}
-		logger.info("Requested delta " + delta);
+
+		new DataLogValue("Simulator-Requested turnRadius", "" + turnRadius).publish();
+
+		this.turnRadius = turnRadius;
+		logger.info("Requested turnRadius " + turnRadius);
 
 	}
 
@@ -236,7 +238,11 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	{
 		if (!freezeSet)
 		{
-			freeze = false;
+			if (freeze == true)
+			{
+				System.out.println("Clearning freeze flag");
+				freeze = false;
+			}
 		}
 
 		freezeSet = false;
@@ -259,12 +265,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 				logger.info("speed " + rspeed);
 				logger.info("Delta distance " + deltaDistance);
 
-				double absDelta = Math.abs(requestedDeltaHeading);
-
-				// max rate of turn is 90 degrees per second
-				double delta = Math.min(absDelta, 45.0 / hz) * Math.signum(requestedDeltaHeading);
-
-				internalTurn(delta);
 			}
 			long to = (long) ((lastScan + (100.0 / hz)));
 			if (to > 100)
@@ -326,9 +326,17 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public double getRadius()
+	public double getPlatformRadius()
 	{
 		return 15;
 	}
 
+	@Override
+	public void setStraight(String calledBy)
+	{
+		turnRadius = Roomba630.STRAIGHT;
+
+		new DataLogValue("Simulator-Requested turnRadius", "STRAIGHT " + calledBy).publish();
+
+	}
 }

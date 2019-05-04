@@ -46,17 +46,23 @@ public class Sparse2dSegment<T> implements Segment<T>
 	private Segment<T> getLocation(int xi, int yi)
 	{
 
-		if (map[xi][yi] == null)
+		try
 		{
-			if (level > 1)
+			if (map[xi][yi] == null)
 			{
-				map[xi][yi] = new Sparse2dSegment<>(size, level - 1, defaultValue);
-			} else
-			{
-				map[xi][yi] = new Sparse2dSegmentBase<>(size, defaultValue);
+				if (level > 1)
+				{
+					map[xi][yi] = new Sparse2dSegment<>(size, level - 1, defaultValue);
+				} else
+				{
+					map[xi][yi] = new Sparse2dSegmentBase<>(size, defaultValue);
+				}
 			}
+		} catch (Exception e)
+		{
+			System.out.println(xi + " " + yi + " " + divisor);
+			throw e;
 		}
-
 		Segment<T> location = map[xi][yi];
 		return location;
 	}

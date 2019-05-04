@@ -12,7 +12,7 @@ public class ParticleFilterNavigatorTest extends ParticleFilterNavigatorLiveTest
 	protected RobotSimulator getRobot()
 	{
 
-		RobotSimulator robot = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
+		RobotSimulator robot = new RobotSimulator(KitchenMapBuilder.buildMap());
 		robot.setLocation(-150, 300, new Random().nextInt(360));
 		return robot;
 	}

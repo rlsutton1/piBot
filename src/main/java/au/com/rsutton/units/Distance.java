@@ -60,4 +60,9 @@ public class Distance implements Serializable
 	{
 		return new Distance(distanceBetween.convert(units) + value, units);
 	}
+
+	public static Distance cm(int centimeters)
+	{
+		return new Distance(centimeters, DistanceUnit.CM);
+	}
 }

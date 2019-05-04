@@ -22,7 +22,7 @@ public class ParticleTest
 	@Test
 	public void test()
 	{
-		ProbabilityMapIIFc map = KitchenMapBuilder.buildKitchenMap();
+		ProbabilityMapIIFc map = KitchenMapBuilder.buildMap();
 		map.dumpTextWorld();
 
 		RoutePlanner routePlanner = new RoutePlannerImpl(map);

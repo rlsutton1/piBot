@@ -178,7 +178,7 @@ public class PointCloudProvider
 
 						}
 					}
-					Vector3D object = columnEvaluator.findObjects(3);
+					Vector3D object = columnEvaluator.findObjects(4);
 					if (object != null)
 					{
 						pointCloud.add(object);
@@ -194,7 +194,7 @@ public class PointCloudProvider
 					// we've been shut down
 					stopStream();
 				}
-				logger.debug("ms per depth frame " + (System.currentTimeMillis() - lastTime));
+				logger.warn("ms per depth frame " + (System.currentTimeMillis() - lastTime));
 				lastTime = System.currentTimeMillis();
 
 			}

@@ -8,10 +8,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -20,11 +17,9 @@ import org.apache.logging.log4j.core.config.Configurator;
 
 import com.google.common.base.Stopwatch;
 
-import au.com.rsutton.angle.AngleUtil;
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.kalman.RobotPoseSourceNoop;
+import au.com.rsutton.mapping.BoxMapBuilder;
 import au.com.rsutton.mapping.KitchenMapBuilder;
-import au.com.rsutton.mapping.LoopMapBuilder;
 import au.com.rsutton.mapping.XY;
 import au.com.rsutton.mapping.multimap.ParticleFilterProxy;
 import au.com.rsutton.mapping.probability.Occupancy;
@@ -62,9 +57,6 @@ public class MapBuilder
 
 	private static final int CHANGE_COUNTER_ADD_MAP = 0;
 	private static final int CHANGE_COUNTER_RESET = 10;
-	private static final int CHANGE_COUNTER_SWAP_MAP = 5;
-
-	double maxUsableDistance = 1000;
 
 	Logger logger = LogManager.getLogger();
 
@@ -78,8 +70,6 @@ public class MapBuilder
 	RobotInterface robot;
 
 	Set<XY> vistedLocations = new HashSet<>();
-
-	AtomicLong nodeSeed = new AtomicLong();
 
 	boolean addMap = true;
 
@@ -118,13 +108,11 @@ public class MapBuilder
 
 	private ParticleFilterProxy particleFilterProxy;
 
-	SubMapHolder currentMap;
-
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
 	final boolean simulator = false;
-	int maxSpeed = 50;
+	int maxSpeed = 25;
 
 	public void test() throws InterruptedException
 	{
@@ -142,14 +130,16 @@ public class MapBuilder
 				RobotSimulator robotS;
 				if (useKitchenMap)
 				{
-					robotS = new RobotSimulator(KitchenMapBuilder.buildKitchenMap());
+					robotS = new RobotSimulator(KitchenMapBuilder.buildMap());
 
 					robotS.setLocation(-150, 100, new Random().nextInt(360));
 				} else
 				{
-					robotS = new RobotSimulator(LoopMapBuilder.buildKitchenMap());
+					// robotS = new RobotSimulator(LoopMapBuilder.buildMap());
 
-					robotS.setLocation(130, 50, new Random().nextInt(360));
+					robotS = new RobotSimulator(BoxMapBuilder.buildMap());
+
+					robotS.setLocation(400, 400, new Random().nextInt(360));
 				}
 				this.robot = robotS;
 			} else
@@ -199,7 +189,9 @@ public class MapBuilder
 			this.poseAdjuster = new PoseAdjuster(new Pose(0, 0, 0), new RobotPoseSourceNoop(particleFilterProxy));
 
 			addMap(getZeroPose());
-			currentMap = subMaps.get(0);
+
+			particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE,
+					StartPosition.ZERO, robot, new Pose(0, 0, 0)));
 
 			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot), maxSpeed);
 
@@ -219,10 +211,10 @@ public class MapBuilder
 
 					for (int i = 0; i < 40; i++)
 					{
-						robot.setSpeed(new Speed(new Distance(-3, DistanceUnit.CM), Time.perSecond()));
-						robot.turn(0);
-						robot.publishUpdate();
+						robot.setSpeed(new Speed(new Distance(-10, DistanceUnit.CM), Time.perSecond()));
+						robot.setStraight("crash -backup");
 						robot.freeze(false);
+						robot.publishUpdate();
 						TimeUnit.MILLISECONDS.sleep(100);
 					}
 					robot.freeze(true);
@@ -233,22 +225,6 @@ public class MapBuilder
 				}
 
 				update();
-
-				double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
-				double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
-				SubMapHolder nearestmap = findNearestSubMap(x, y);
-				if (nearestmap != currentMap && nearestmap != null)
-				{
-					Vector3D nearest = new Vector3D(nearestmap.getMapPose().getX(), nearestmap.getMapPose().getY(), 0);
-					Vector3D current = new Vector3D(currentMap.getMapPose().getX(), currentMap.getMapPose().getY(), 0);
-					Vector3D here = new Vector3D(x, y, 0);
-					if (here.distance(current) > here.distance(nearest) + 20 && changeCounter < CHANGE_COUNTER_SWAP_MAP)
-					{
-
-						setupForSubMapTraversal(nearestmap);
-						changeCounter = CHANGE_COUNTER_RESET;
-					}
-				}
 
 				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZED)
 				{
@@ -271,7 +247,6 @@ public class MapBuilder
 					}
 
 					navigatorSuspended = false;
-					localized = false;
 					changeCounter = CHANGE_COUNTER_RESET;
 
 				}
@@ -318,11 +293,11 @@ public class MapBuilder
 			}
 
 			@Override
-			public void turn(double normalizeHeading)
+			public void setTurnRadius(double turnRadius)
 			{
 				if (!navigatorSuspended)
 				{
-					robot2.turn(normalizeHeading);
+					robot2.setTurnRadius(turnRadius);
 				} else
 				{
 					logger.warn("Suspended");
@@ -354,9 +329,16 @@ public class MapBuilder
 			}
 
 			@Override
-			public double getRadius()
+			public double getPlatformRadius()
 			{
-				return robot2.getRadius();
+				return robot2.getPlatformRadius();
+			}
+
+			@Override
+			public void setStraight(String calledBy)
+			{
+				robot2.setStraight("MapBuilder 12");
+
 			}
 		};
 	}
@@ -368,18 +350,10 @@ public class MapBuilder
 				pose.getXyPosition().getY().convert(DistanceUnit.CM), pose.getHeading()), map);
 		subMaps.add(currentSubMap);
 
-		currentMap = currentSubMap;
-
 		CountDownLatch latch = new CountDownLatch(1);
 		regernateWorld(world, latch);
 		latch.await();
-
-		particleFilterProxy.changeParticleFilter(
-				new ParticleFilterImpl(map, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO, robot, null));
-		poseAdjuster.setPose(currentSubMap.getMapPose());
-		currentMapIsWorldMap = false;
-
-		setupForSubMapTraversal(currentSubMap);
+		particleFilterProxy.updateMap(world);
 
 	}
 
@@ -450,141 +424,7 @@ public class MapBuilder
 		new Thread(runner).start();
 	}
 
-	int lastHeading = 0;
-
 	private boolean complete = false;
-
-	private boolean currentMapIsWorldMap;
-
-	private void setupForSubMapTraversal(SubMapHolder map) throws InterruptedException
-	{
-
-		if (currentMapIsWorldMap)
-		{
-			return;
-		}
-
-		navigatorSuspended = true;
-
-		robot.freeze(true);
-		robot.publishUpdate();
-
-		boolean stable = false;
-		double x = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
-		double y = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
-		double z = poseAdjuster.getHeading();
-		while (!stable)
-		{
-			TimeUnit.MILLISECONDS.sleep(250);
-			double x1 = poseAdjuster.getXyPosition().getX().convert(DistanceUnit.CM);
-			double y1 = poseAdjuster.getXyPosition().getY().convert(DistanceUnit.CM);
-			double z1 = poseAdjuster.getHeading();
-
-			double totalDelta = Math.abs(x - x1) + Math.abs(y - y1) + Math.abs(HeadingHelper.getChangeInHeading(z, z1));
-			z = z1;
-			y = y1;
-			x = x1;
-			if (totalDelta < 5)
-			{
-				stable = true;
-			} else
-			{
-				logger.error("Total Delta: " + totalDelta);
-			}
-
-		}
-
-		final DistanceXY currentXY = poseAdjuster.getXyPosition();
-		double currentHeading = poseAdjuster.getHeading();
-
-		double initialHeading = currentHeading;
-
-		// vector from current map origin to current position
-		Vector3D vector1 = new Vector3D(currentXY.getX().convert(DistanceUnit.CM) - currentMap.getMapPose().getX(),
-				currentXY.getY().convert(DistanceUnit.CM) - currentMap.getMapPose().getY(), 0);
-
-		// calculate new pose to initialise particle filter
-		Pose pose = new Pose(currentXY.getX().convert(DistanceUnit.CM), currentXY.getY().convert(DistanceUnit.CM),
-				currentHeading);
-
-		particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE,
-				StartPosition.USE_POSE, robot, pose));
-		poseAdjuster.setPose(new Pose(0, 0, 0));
-		currentMapIsWorldMap = true;
-
-		while (poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZING)
-		{
-			TimeUnit.MILLISECONDS.sleep(250);
-			robot.freeze(true);
-			robot.publishUpdate();
-		}
-
-		for (int ctr = 0; ctr < 3; ctr++)
-		{
-			TimeUnit.MILLISECONDS.sleep(100);
-			robot.freeze(true);
-			robot.publishUpdate();
-		}
-
-		// TODO:
-		// DistanceXY newXY = currentXY;
-		DistanceXY newXY = poseAdjuster.getXyPosition();
-
-		// vector from newly localized position to origin of new map
-		Vector3D vector2 = new Vector3D(map.getMapPose().getX() - newXY.getX().convert(DistanceUnit.CM),
-				map.getMapPose().getY() - newXY.getY().convert(DistanceUnit.CM), 0);
-
-		// get relative XY for map
-		Vector3D xy = vector1.add(vector2);
-
-		// rotate the relative XY as if it were observed from the current
-		// map
-		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(currentMap.getMapPose().getHeading()));
-		xy = rotation.applyInverseTo(xy);
-
-		double finalHeading = poseAdjuster.getHeading();
-
-		// create the pose object
-		double deltaHeading = AngleUtil.delta(initialHeading, finalHeading);
-		logger.error("Initial, final " + initialHeading + " " + finalHeading);
-		logger.error("Delta heading is " + deltaHeading);
-		double mapDelta = AngleUtil.delta(currentMap.getMapPose().getHeading(), map.getMapPose().getHeading());
-		logger.error("map delta " + mapDelta);
-
-		// TODO:
-		double delta = AngleUtil.normalize(mapDelta - deltaHeading);
-
-		logger.error("Final delta " + delta);
-
-		// add the node to slam
-
-		double certainty = Math.min(0.75, 1.0 / Math.max(1.0, Math.abs(deltaHeading / 1.5)));
-		logger.error("Certainty :" + certainty);
-
-		currentMap = map;
-
-		navigatorSuspended = false;
-	}
-
-	private SubMapHolder findNearestSubMap(double x, double y)
-	{
-		double distance = Double.MAX_VALUE;
-
-		Vector3D pos = new Vector3D(x, y, 0);
-		SubMapHolder bestMap = null;
-		for (SubMapHolder map : subMaps)
-		{
-			Vector3D mapPose = new Vector3D(map.getMapPose().x, map.getMapPose().y, 0);
-			double dis = mapPose.distance(pos);
-			if (dis < distance)
-			{
-				distance = dis;
-				bestMap = map;
-			}
-		}
-
-		return bestMap;
-	}
 
 	public void update() throws InterruptedException
 	{
@@ -766,11 +606,6 @@ public class MapBuilder
 		// there is too much unexplored (unmapped) in sight
 		return existInMap < (Math.abs(to - from) / angleStepSize) * .9;
 
-	}
-
-	public boolean isComplete()
-	{
-		return complete;
 	}
 
 	RobotPoseSource getZeroPose()

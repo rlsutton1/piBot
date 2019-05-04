@@ -9,7 +9,7 @@ public class SetMotion extends MessageBase<SetMotion>
 
 	private static final long serialVersionUID = 4595314712852835336L;
 	private Speed speed;
-	private Double changeHeading;
+	private long turnRadius;
 	private long timeStamp;
 	private boolean freeze = false;
 
@@ -23,9 +23,9 @@ public class SetMotion extends MessageBase<SetMotion>
 		this.speed = speed;
 	}
 
-	public void setChangeHeading(Double changeHeading)
+	public void setTurnRadius(long turnRadius)
 	{
-		this.changeHeading = changeHeading;
+		this.turnRadius = turnRadius;
 	}
 
 	/**
@@ -43,9 +43,9 @@ public class SetMotion extends MessageBase<SetMotion>
 		return speed;
 	}
 
-	public Double getChangeHeading()
+	public long getTurnRadius()
 	{
-		return changeHeading;
+		return turnRadius;
 	}
 
 	public long getTimeStamp()
@@ -61,8 +61,7 @@ public class SetMotion extends MessageBase<SetMotion>
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(SetMotion.class).add("Speed", speed).add("changeHeading", changeHeading)
-				.toString();
+		return Objects.toStringHelper(SetMotion.class).add("Speed", speed).add("turnRadius", turnRadius).toString();
 	}
 
 	public boolean getFreeze()

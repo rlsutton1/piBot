@@ -1,6 +1,9 @@
 package au.com.rsutton.navigation.router;
 
-import java.util.Iterator;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -11,6 +14,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.RateLimiter;
@@ -25,11 +29,12 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
-public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaListener
+public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaListener, DataSourceMap
 {
 
 	private static final int BLOCK_SIZE = 5;
@@ -42,7 +47,11 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private ProbabilityMapIIFc world;
 
-	private final AtomicReference<PointCloudMessage> lastPointCloudMessage = new AtomicReference<>();
+	private final ProbabilityMap worldFromPointCloud = new ProbabilityMap(5);
+
+	Logger logger = LogManager.getLogger();
+
+	private final AtomicReference<PointCloudWrapper> lastPointCloudMessage = new AtomicReference<>();
 
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot, RobotPoseSource robotPoseSource)
 	{
@@ -55,6 +64,20 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	}
 
+	class PointCloudWrapper
+	{
+		private PointCloudMessage message;
+		private DistanceXY xy;
+		private double heading;
+
+		PointCloudWrapper(PointCloudMessage message)
+		{
+			this.message = message;
+			this.xy = robotPoseSource.getXyPosition();
+			this.heading = robotPoseSource.getHeading();
+		}
+	}
+
 	private MessageListener<PointCloudMessage> getPointCloudMessageListener()
 	{
 		return new MessageListener<PointCloudMessage>()
@@ -63,7 +86,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			@Override
 			public void onMessage(Message<PointCloudMessage> message)
 			{
-				lastPointCloudMessage.set(message.getMessageObject());
+				lastPointCloudMessage.set(new PointCloudWrapper(message.getMessageObject()));
 
 			}
 		};
@@ -104,7 +127,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		{
 			return lp.hasPlannedRoute();
 		}
-		return basePlanner.hasPlannedRoute();
+		return false;
 	}
 
 	@Override
@@ -115,9 +138,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		{
 			return lp.getDistanceToTarget(pfX, pfY);
 		}
-		// the navigator slows down as we reach the target, as we dont have a
-		// safe route, report the distance as zero
-		return 0;
+		return basePlanner.getDistanceToTarget(pfX, pfY);
 	}
 
 	RateLimiter rateLimiter = RateLimiter.create(1);
@@ -129,6 +150,43 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 		if (singlePass.tryAcquire())
 		{
+			if (lastPointCloudMessage.get() != null)
+			{
+				final DistanceXY pos = lastPointCloudMessage.get().xy;
+				final double heading = lastPointCloudMessage.get().heading;
+
+				final Vector3D offset = new Vector3D(pos.getX().convert(DistanceUnit.CM),
+						pos.getY().convert(DistanceUnit.CM), 0);
+
+				int step = 5;
+				// clear
+				for (int clearHeading = -30; clearHeading < 30; clearHeading++)
+				{
+					Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading + clearHeading));
+					Vector3D direction = rotation.applyTo(new Vector3D(0, step, 0));
+					Vector3D clear = offset;
+					for (int d = 0; d < 300; d += step)
+					{
+						clear = clear.add(direction);
+						worldFromPointCloud.resetPoint((int) clear.getX(), (int) clear.getY());
+
+					}
+
+				}
+
+				// add points
+
+				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
+				for (Vector3D observation : lastPointCloudMessage.get().message.getPoints())
+				{
+					if (observation.getNorm() < 150)
+					{
+						Vector3D point = observation;
+						Vector3D spot = rotation.applyTo(point).add(offset);
+						worldFromPointCloud.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+					}
+				}
+			}
 			if (!rateLimiter.tryAcquire() || !basePlanner.hasPlannedRoute())
 			{
 				singlePass.release();
@@ -138,8 +196,6 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			new Thread(() -> worker(observations, 150)).start();
 		}
 	}
-
-	List<Vector3D> pointMemory = new LinkedList<>();
 
 	private void worker(final List<ScanObservation> observations, int radius)
 	{
@@ -163,6 +219,18 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			}
 		}
 
+		// copy a radius from the worldFromPointCloud map into the local map
+		for (int dx = -radius; dx < radius; dx++)
+		{
+			for (int dy = -radius; dy < radius; dy++)
+			{
+				if (worldFromPointCloud.get(x + dx, y + dy) > 0.5)
+				{
+					localMap.writeRadius((int) (x + dx), (int) (y + dy), 1, 1);
+				}
+			}
+		}
+
 		// overlay the current incoming lidar scan
 
 		Vector3D offset = new Vector3D(pos.getX().convert(DistanceUnit.CM), pos.getY().convert(DistanceUnit.CM), 0);
@@ -182,45 +250,26 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			}
 		}
 
-		Vector3D robotLocation = new Vector3D(x, y, 0);
-		Iterator<Vector3D> itr = pointMemory.iterator();
-		while (itr.hasNext())
-
-		{
-			Vector3D spot = itr.next();
-			if (spot.distance(robotLocation) > 150 && pointMemory.size() > 1000)
-			{
-				itr.remove();
-			} else
-			{
-				localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
-			}
-		}
-
-		// overlay point cloud from depth camera
-		PointCloudMessage pointCloud = lastPointCloudMessage.get();
-		if (pointCloud != null && pointCloud.getTime() > System.currentTimeMillis() - 200L)
-		{
-			for (Vector3D obs : pointCloud.getPoints())
-			{
-				if (obs.getNorm() < 30)
-				{
-					// ignore some dodgy points coming from close by,
-					// immediately behind the robot
-				} else
-				{
-
-					Vector3D point = obs;
-					Vector3D spot = rotation.applyTo(point).add(offset);
-					localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
-					pointMemory.add(spot);
-					if (pointMemory.size() > 1000)
-					{
-						pointMemory.remove(0);
-					}
-				}
-			}
-		}
+		// // overlay point cloud from depth camera
+		// PointCloudMessage pointCloud = lastPointCloudMessage.get();
+		// if (pointCloud != null && pointCloud.getTime() >
+		// System.currentTimeMillis() - 200L)
+		// {
+		// for (Vector3D obs : pointCloud.getPoints())
+		// {
+		// if (obs.getNorm() < 30)
+		// {
+		// // ignore some dodgy points coming from close by,
+		// // immediately behind the robot
+		// } else
+		// {
+		//
+		// Vector3D point = obs;
+		// Vector3D spot = rotation.applyTo(point).add(offset);
+		// localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+		// }
+		// }
+		// }
 
 		// look ahead 100 CM
 
@@ -246,9 +295,53 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			{
 				LogManager.getLogger().error("Failed to create route, trying larger radius");
 				worker(observations, radius + 50);
+			} else
+			{
+				try
+				{
+					logger.error("Unable to plan a route!!!");
+					TimeUnit.MILLISECONDS.sleep(100);
+				} catch (InterruptedException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		singlePass.release();
+	}
+
+	@Override
+	public List<Point> getPoints()
+	{
+		List<Point> points = new LinkedList<>();
+		for (int y = worldFromPointCloud.getMinY() - 30; y <= worldFromPointCloud.getMaxY() + 30; y += 3)
+		{
+			for (int x = worldFromPointCloud.getMinX() - 30; x <= worldFromPointCloud.getMaxX() + 30; x += 3)
+			{
+				Point point = new Point(x, y);
+				if (worldFromPointCloud.get(x, y) > 0.5)
+				{
+					points.add(point);
+				}
+			}
+		}
+		return points;
+	}
+
+	@Override
+	public void drawPoint(BufferedImage image, double pointOriginX, double pointOriginY, double scale, double originalX,
+			double originalY)
+	{
+
+		Graphics graphics = image.getGraphics();
+
+		graphics.setColor(Color.ORANGE);
+
+		graphics.drawLine((int) (pointOriginX), (int) (pointOriginY), (int) ((pointOriginX + 1)),
+				(int) ((pointOriginY + 1)));
+		// System.out.println(pointOriginX + " " + pointOriginY + " " + value);
+
 	}
 
 }

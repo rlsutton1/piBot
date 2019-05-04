@@ -5,13 +5,10 @@ import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.depthcamera.PointCloudUI;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.particleFilter.DataWindow;
-import au.com.rsutton.mapping.particleFilter.DummySource;
 import au.com.rsutton.mapping.particleFilter.MapBuilder;
-import au.com.rsutton.mapping.particleFilter.Pose;
-import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
+import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.robot.roomba.RoombaRobot;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.VideoWindow;
@@ -73,7 +70,7 @@ public class Main
 
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
-			setMotion.setChangeHeading(-90d);
+			setMotion.setTurnRadius(-1);
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
@@ -91,7 +88,7 @@ public class Main
 
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
-			setMotion.setChangeHeading(90d);
+			setMotion.setTurnRadius(1);
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
@@ -109,7 +106,7 @@ public class Main
 
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
-			setMotion.setChangeHeading(0d);
+			setMotion.setTurnRadius(Roomba630.STRAIGHT);
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
@@ -129,7 +126,7 @@ public class Main
 			{
 				SetMotion setMotion = new SetMotion();
 				setMotion.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
-				setMotion.setChangeHeading(150d);
+				setMotion.setTurnRadius(1);
 				setMotion.publish();
 
 				TimeUnit.SECONDS.sleep(1);
@@ -151,11 +148,6 @@ public class Main
 			new VideoWindow("Video Test", 0, 0);
 			new DataWindow();
 			MapDrawingWindow ui = new MapDrawingWindow("Point Cloud", 600, 0, 250, true);
-
-			RobotPoseSource pf = new DummySource(new Pose(0, 0, 0));
-
-			// add data source from depth camera
-			ui.addDataSource(new PointCloudUI(pf));
 
 		}
 

@@ -1,6 +1,7 @@
 package au.com.rsutton.robot.roomba;
 
 import au.com.rsutton.config.Config;
+import au.com.rsutton.hazelcast.DataLogValue;
 import ev3dev.sensors.slamtec.RPLidarA1;
 import ev3dev.sensors.slamtec.RPLidarA1ServiceException;
 import ev3dev.sensors.slamtec.RPLidarProvider;
@@ -48,6 +49,7 @@ public class RPLidarAdaptor implements Runnable
 
 		try
 		{
+			int badScans = 0;
 			while (!stop)
 			{
 				try
@@ -55,13 +57,20 @@ public class RPLidarAdaptor implements Runnable
 					Scan scan = lidar.getNextScan();
 					if (scan == null)
 					{
-						lidar.close();
-						lidar.init();
-						lidar.continuousScanning();
+						badScans++;
+						if (badScans > 2)
+						{
+							lidar.close();
+							lidar.init();
+							lidar.forceContinuousScanning();
+							new DataLogValue("Force Lidar Scan", "yes").publish();
+							badScans = 0;
+						}
+					} else
+					{
+						System.out.println("Scan Received");
+						listener.receiveLidarScan(scan);
 					}
-					System.out.println("Scan Received");
-					listener.receiveLidarScan(scan);
-
 				} catch (Exception e)
 				{
 					// TODO Auto-generated catch block

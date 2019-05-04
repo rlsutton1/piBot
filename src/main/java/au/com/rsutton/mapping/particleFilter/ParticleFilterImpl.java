@@ -101,6 +101,12 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		ui.addDataSource(map, new Color(255, 255, 255));
 	}
 
+	@Override
+	public void updateMap(ProbabilityMapIIFc map)
+	{
+		this.map = buildMatchingMap(map);
+	}
+
 	ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
 	{
 		ProbabilityMap matchMap = new ProbabilityMap(5);
@@ -246,8 +252,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		});
 
 		// adjust the number of particles in the particle filter based on
-		// how well localised it is
-		int newParticleCount = Math.max(500, (int) (20 * stdDev));
+		// how well localised it is 500 < X < 5000
+		int newParticleCount = Math.max(500, Math.min(5000, (int) (20 * stdDev)));
 
 		resample(newParticleCount);
 

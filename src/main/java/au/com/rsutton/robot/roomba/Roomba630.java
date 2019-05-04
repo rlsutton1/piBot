@@ -14,7 +14,6 @@ import com.maschel.roomba.song.RoombaNoteDuration;
 import com.maschel.roomba.song.RoombaSongNote;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.units.Angle;
@@ -30,7 +29,7 @@ public class Roomba630 implements Runnable
 
 	static final String ROOMBA_USB_PORT = "roomba usb port";
 	private static final int ALARM_SONG = 0;
-	private static final int STRAIGHT = 32768;
+	public static final int STRAIGHT = 32768;
 	// enact commands
 	final private DistanceUnit distUnit = DistanceUnit.MM;
 	final private TimeUnit timeUnit = TimeUnit.SECONDS;
@@ -113,7 +112,7 @@ public class Roomba630 implements Runnable
 
 			alarm();
 		}
-		future = Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this, 200, 100,
+		future = Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this, 200, 50,
 				TimeUnit.MILLISECONDS);
 
 	}
@@ -332,35 +331,16 @@ public class Roomba630 implements Runnable
 			new DataLogValue("Roomba-Speed", "0").publish();
 		} else
 		{
-			Double changeInHeading = command.getChangeHeading();
-			changeInHeading = HeadingHelper.normalizeHeading(changeInHeading);
-			if (changeInHeading > 180)
-			{
-				changeInHeading = -360 + changeInHeading;
-			}
 
 			int speed = (int) command.getSpeed().getSpeed(distUnit, timeUnit);
 
-			int radius = STRAIGHT;
-			if (changeInHeading > 1.0)
-			{
-				radius = (int) (2000.0 * ((45.0 - Math.min(44d, changeInHeading)) / 45.0));
+			// convert to MM
+			int radius = (int) command.getTurnRadius() * 10;
 
-				// 1 is a really tight anti clock wise turn, but 0 is a straight
-				// line
-				radius = Math.max(1, radius);
-			} else if (changeInHeading < -1.0)
-			{
-				radius = (int) (2000.0 * ((-45.0 - Math.max(-44d, changeInHeading)) / 45.0));
-				// -1 is a really tight clock wise turn, but 0 is a
-				// straight line
-				radius = Math.min(-1, radius);
-			}
 			new DataLogValue("Roomba-Radius", "" + radius).publish();
 			new DataLogValue("Roomba-Speed", "" + speed).publish();
-			new DataLogValue("Roomba-Requested angle change", "" + changeInHeading).publish();
 
-			System.out.println("Set radius to " + radius + " for " + changeInHeading + " speed " + speed);
+			System.out.println("Set radius to " + radius + " speed " + speed);
 			synchronized (sync)
 			{
 
@@ -369,6 +349,17 @@ public class Roomba630 implements Runnable
 
 			}
 		}
+	}
+
+	double calculateRadiusToTurnAngleInDistance(double angle, Distance distance)
+	{
+		double circumference = (360 / angle) * distance.convert(DistanceUnit.MM);
+
+		// c = 2*pi *r;
+
+		double radius = circumference / (2.0 * Math.PI);
+
+		return radius;
 	}
 
 	public void alarm()

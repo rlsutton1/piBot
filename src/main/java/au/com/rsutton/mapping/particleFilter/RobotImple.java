@@ -7,6 +7,7 @@ import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
@@ -16,7 +17,7 @@ import au.com.rsutton.units.Time;
 public class RobotImple implements RobotInterface
 {
 
-	double heading = 0;
+	double turnRadius = 0;
 	Speed speed = new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond());
 	private boolean freeze;
 
@@ -52,9 +53,9 @@ public class RobotImple implements RobotInterface
 	}
 
 	@Override
-	public void turn(double normalizeHeading)
+	public void setTurnRadius(double turnRadius)
 	{
-		this.heading = normalizeHeading;
+		this.turnRadius = turnRadius;
 
 	}
 
@@ -64,7 +65,7 @@ public class RobotImple implements RobotInterface
 		SetMotion motion = new SetMotion();
 		motion.setFreeze(freeze);
 		motion.setSpeed(speed);
-		motion.setChangeHeading(heading);
+		motion.setTurnRadius((long) turnRadius);
 		motion.publish();
 
 	}
@@ -92,9 +93,16 @@ public class RobotImple implements RobotInterface
 	}
 
 	@Override
-	public double getRadius()
+	public double getPlatformRadius()
 	{
 		// roomba
 		return 15;
+	}
+
+	@Override
+	public void setStraight(String calledBy)
+	{
+		turnRadius = Roomba630.STRAIGHT;
+
 	}
 }

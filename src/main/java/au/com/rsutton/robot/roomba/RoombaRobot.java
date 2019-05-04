@@ -73,16 +73,7 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 		if (obsticleNear)
 		{
 			// turn on the spot!
-			Double changeHeading = command.getChangeHeading();
-			if (changeHeading > 179)
-			{
-				changeHeading -= 360;
-			}
-			if (changeHeading < -179)
-			{
-				changeHeading += 360;
-			}
-			command.setChangeHeading(Math.signum(changeHeading) * 120);
+			command.setTurnRadius((long) Math.signum(command.getTurnRadius()));
 		}
 
 		// cap speed based on distance to nearest obstacle

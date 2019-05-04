@@ -1,6 +1,5 @@
 package au.com.rsutton.navigation;
 
-import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 
 public interface NavigatorControl
@@ -29,9 +28,5 @@ public interface NavigatorControl
 	boolean hasReachedDestination();
 
 	boolean isStuck();
-
-	boolean isStopped();
-
-	ExpansionPoint getRouteForLocation(int x, int y);
 
 }

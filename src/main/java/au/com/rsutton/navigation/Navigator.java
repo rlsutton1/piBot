@@ -17,7 +17,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import au.com.rsutton.depthcamera.PointCloudUI;
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
@@ -28,6 +27,7 @@ import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RoutePlannerLastMeter;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
@@ -40,7 +40,9 @@ import au.com.rsutton.units.Time;
 public class Navigator implements Runnable, NavigatorControl
 {
 
-	private int MAX_SPEED = 30;
+	private static final int BEZIER_SAMPLING_DISTANCE = 20;
+
+	private final int MAX_SPEED;
 
 	Logger logger = LogManager.getLogger();
 
@@ -50,7 +52,6 @@ public class Navigator implements Runnable, NavigatorControl
 	private MapDrawingWindow ui;
 	private ScheduledExecutorService pool;
 	private volatile boolean stopped = true;
-	private ObsticleAvoidance obsticleAvoidance;
 	int pfX = 0;
 	int pfY = 0;
 	Integer initialX;
@@ -73,17 +74,15 @@ public class Navigator implements Runnable, NavigatorControl
 		ui = new MapDrawingWindow("Navigator", 600, 0, 250, true);
 		ui.addDataSource(map2, new Color(255, 255, 255));
 
-		// add data source from depth camera
-		ui.addDataSource(new PointCloudUI(pf));
-
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
 		routePlanner = new RoutePlannerLastMeter(map2, robot, pf);
-		this.robot = robot;
 
-		obsticleAvoidance = new ObsticleAvoidance(robot, pf);
-		ui.addDataSource(obsticleAvoidance.getHeadingMapDataSource(pf, robot));
+		// add data source from depth camera
+		ui.addDataSource((DataSourceMap) routePlanner);
+
+		this.robot = robot;
 
 		setupRoutePlanner(map2);
 
@@ -91,7 +90,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 		pool = Executors.newScheduledThreadPool(1);
 
-		pool.scheduleWithFixedDelay(this, 500, 500, TimeUnit.MILLISECONDS);
+		pool.scheduleWithFixedDelay(this, 500, 100, TimeUnit.MILLISECONDS);
 
 	}
 
@@ -104,7 +103,11 @@ public class Navigator implements Runnable, NavigatorControl
 			if (stopped)
 			{
 				robot.freeze(true);
-				robot.publishUpdate();
+				return;
+			}
+			if (!routePlanner.hasPlannedRoute())
+			{
+				robot.freeze(true);
 				return;
 			}
 			robot.freeze(false);
@@ -132,66 +135,51 @@ public class Navigator implements Runnable, NavigatorControl
 
 				List<Point2D> vals = new LinkedList<>();
 
-				int tx = pfX;
-				int ty = pfY;
-				if (routePlanner.hasPlannedRoute())
+				double turnRadius = Roomba630.STRAIGHT;
+
+				// get a point on the route 25 steps from where we are, we
+				// look ahead (25 steps) so our heading remains reasonably
+				// stable
+				next = routePlanner.getRouteForLocation(pfX, pfY);
+
+				addPointBehindRobotForBezier(vals);
+
+				int i = 0;
+				int lookAheadCM = 300;
+				for (; i < lookAheadCM; i++)
 				{
-					// get a point on the route 25 steps from where we are, we
-					// look ahead (25 steps) so our heading remains reasonably
-					// stable
-					next = routePlanner.getRouteForLocation(pfX, pfY);
-
-					int i = 0;
-					for (; i < 300; i++)
+					next = routePlanner.getRouteForLocation(next.getX(), next.getY());
+					if (i == 0 || i % BEZIER_SAMPLING_DISTANCE == 0)
 					{
-						next = routePlanner.getRouteForLocation(next.getX(), next.getY());
-						if (i == 0 || i % 50 == 0)
-						{
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
-						}
+						vals.add(new Point2D.Double(next.getX(), next.getY()));
 					}
-					vals.add(new Point2D.Double(next.getX(), next.getY()));
-
-					Point2D t = Bezier.parabolic2D(vals, Math.min(1.0, 30.0 / i));
-					tx = (int) t.getX();
-					ty = (int) t.getY();
-
 				}
+				vals.add(new Point2D.Double(next.getX(), next.getY()));
+
+				try
+				{
+					Bezier bezier = Bezier.createBezier(vals);
+
+					turnRadius = bezier.getRadiusAtPosition(0, (1.0 / (vals.size() + 1)) * 2.0);
+					turnRadius /= 2.0;
+
+				} catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+
 				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
 
 				// slow as we approach the target
 				speed = Math.min(Math.max(3, distanceToTarget), speed);
 
-				double dx = tx - pfX;
-				double dy = ty - pfY;
-
-				double da = 5;
-				if (Math.abs(dx) < 1 && Math.abs(dy) < 1)
-				{
-					speed = 0;
-					robot.freeze(true);
-					robot.publishUpdate();
-					Thread.sleep(500);
-				} else
-
 				if (distanceToTarget > 20)
 				{
 					// follow the route to the target
 
-					Vector3D delta = new Vector3D(dx, dy, 0);
-					double angle = Math.toDegrees(Math.atan2(delta.getY(), delta.getX())) - 90;
-
-					da = HeadingHelper.getChangeInHeading(angle, lastAngle);
-					speed *= ((180 - Math.abs(da)) / 180.0);
-					if (Math.abs(da) > 35)
-					{
-						// turning more than 35 degrees, stop while we do it.
-						logger.debug("Setting speed to 0");
-						speed = 10;
-					}
-					speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(da), speed);
+					speed = setHeadingWithObsticleAvoidance(turnRadius, speed);
 					robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
-
+					System.out.println("1 Set speed to " + speed);
 				} else
 				{
 					// we have arrived at our target location
@@ -200,18 +188,19 @@ public class Navigator implements Runnable, NavigatorControl
 							&& Math.abs(HeadingHelper.getChangeInHeading(lastAngle, targetHeading)) > 5)
 					{
 						// turn on the spot to set our heading
-						da = -HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
+						double da = -HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
 						robot.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
-						robot.turn(da);
+						System.out.println("2 Set speed to " + speed);
+						robot.setTurnRadius(Math.signum(da));
 
 					} else
 					{
+						System.out.println("3 Set speed to 0");
 						// were done, stop and shutdown
 						stopped = true;
 						speed = 0;
 						reachedDestination = true;
 						robot.freeze(true);
-						robot.publishUpdate();
 						Thread.sleep(500);
 					}
 				}
@@ -220,7 +209,7 @@ public class Navigator implements Runnable, NavigatorControl
 			{
 				// particle filter isn't localised, just turn on the spot
 				speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0), 10);
-				robot.turn(0);
+				robot.setStraight("Nav - unlocal");
 				robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
 
 			}
@@ -234,18 +223,26 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
-	double setHeadingWithObsticleAvoidance(double desiredHeading, double desiredSpeed)
+	double setHeadingWithObsticleAvoidance(double desiredTurnRadius, double desiredSpeed)
 	{
+		double setRadis = desiredTurnRadius;
 
-		CourseCorrection corrected = obsticleAvoidance.getCorrectedHeading(desiredHeading, desiredSpeed);
+		if (Math.abs(desiredTurnRadius) >= Roomba630.STRAIGHT || desiredTurnRadius == 0)
+		{
 
-		Double correctedRelativeHeading = corrected.getCorrectedRelativeHeading();
+			robot.setStraight("NAV set Head");
+			new DataLogValue("Desired Turn Radius", "Straight NAV").publish();
+			return desiredSpeed;
+		}
+		if (Math.abs(desiredTurnRadius) < 1)
+		{
+			setRadis = Math.signum(desiredTurnRadius);
+		}
+		setRadis = -1.0 * setRadis;
+		new DataLogValue("Desired Turn Radius", "" + setRadis).publish();
+		robot.setTurnRadius(setRadis);
 
-		new DataLogValue("Heading : corrected", "" + desiredHeading + " : " + correctedRelativeHeading).publish();
-		robot.turn(360 - correctedRelativeHeading);
-
-		return corrected.getSpeed();
-
+		return desiredSpeed;
 	}
 
 	private void setupRobotListener()
@@ -268,59 +265,6 @@ public class Navigator implements Runnable, NavigatorControl
 				double x = pos.getX().convert(DistanceUnit.CM);
 				double y = pos.getY().convert(DistanceUnit.CM);
 
-				List<Point2D> vals = new LinkedList<>();
-
-				List<Point> points2 = new LinkedList<>();
-				List<Point> points = new LinkedList<>();
-				if (routePlanner.hasPlannedRoute())
-				{
-
-					for (int i = 0; i < 3000; i++)
-					{
-						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
-						points.add(new Point(next.getX(), next.getY()));
-
-						if (i % 20 == 0)
-						{
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
-						}
-
-						double dx = (x - next.getX());
-						x -= dx;
-						double dy = (y - next.getY());
-						y -= dy;
-						if (dx == 0 && dy == 0)
-						{
-							// reached the target
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
-							break;
-						}
-					}
-
-					for (double i = 0.0; i <= 1.0; i += 0.01)
-					{
-						Point2D t = Bezier.parabolic2D(vals, i);
-						points2.add(new Point((int) t.getX(), (int) t.getY()));
-					}
-
-				}
-
-				return points2;
-			}
-
-		}, new Color(255, 0, 0));
-		ui.addDataSource(new DataSourcePoint()
-		{
-
-			@Override
-			public List<Point> getOccupiedPoints()
-			{
-
-				// determine the route from the current possition
-				DistanceXY pos = pf.getXyPosition();
-				double x = pos.getX().convert(DistanceUnit.CM);
-				double y = pos.getY().convert(DistanceUnit.CM);
-
 				List<Point> points = new LinkedList<>();
 				if (routePlanner.hasPlannedRoute())
 				{
@@ -330,7 +274,7 @@ public class Navigator implements Runnable, NavigatorControl
 					{
 						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
 								(int) y);
-						if (i % 50 == 0 || vals.size() == 0)
+						if (i % BEZIER_SAMPLING_DISTANCE == 0 || vals.size() == 0)
 						{
 							vals.add(new Point2D.Double(next.getX(), next.getY()));
 						}
@@ -356,6 +300,71 @@ public class Navigator implements Runnable, NavigatorControl
 			}
 
 		}, new Color(0, 255, 0));
+
+		ui.addDataSource(new DataSourcePoint()
+		{
+
+			@Override
+			public List<Point> getOccupiedPoints()
+			{
+
+				// determine the route from the current possition
+				DistanceXY pos = pf.getXyPosition();
+				double x = pos.getX().convert(DistanceUnit.CM);
+				double y = pos.getY().convert(DistanceUnit.CM);
+
+				List<Point2D> vals = new LinkedList<>();
+
+				addPointBehindRobotForBezier(vals);
+
+				List<Point> points2 = new LinkedList<>();
+				List<Point> points = new LinkedList<>();
+				if (routePlanner.hasPlannedRoute())
+				{
+
+					for (int i = 0; i < 3000; i++)
+					{
+						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
+						points.add(new Point(next.getX(), next.getY()));
+
+						if (i % BEZIER_SAMPLING_DISTANCE == 0)
+						{
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
+						}
+
+						double dx = (x - next.getX());
+						x -= dx;
+						double dy = (y - next.getY());
+						y -= dy;
+						if (dx == 0 && dy == 0)
+						{
+							// reached the target
+							vals.add(new Point2D.Double(next.getX(), next.getY()));
+							break;
+						}
+					}
+
+					for (double i = 0; i <= 1.0; i += 0.01)
+					{
+						Point2D t = Bezier.parabolic2D(vals, i);
+						points2.add(new Point((int) t.getX(), (int) t.getY()));
+					}
+
+				}
+
+				return points2;
+			}
+
+		}, new Color(255, 0, 0));
+	}
+
+	private void addPointBehindRobotForBezier(List<Point2D> vals)
+	{
+		Vector3D currentPos = new Vector3D(pfX, pfY, 0);
+		Vector3D behind = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading()))
+				.applyTo(new Vector3D(0, -50, 0)).add(currentPos);
+		vals.add(new Point2D.Double(behind.getX(), behind.getY()));
+		vals.add(new Point2D.Double(pfX, pfY));
 	}
 
 	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)
@@ -431,12 +440,6 @@ public class Navigator implements Runnable, NavigatorControl
 		return false;
 	}
 
-	@Override
-	public boolean isStopped()
-	{
-		return stopped;
-	}
-
 	public DataSourceMap getDeadReconningHeadingMapDataSource()
 	{
 		return new DataSourceMap()
@@ -468,12 +471,6 @@ public class Navigator implements Runnable, NavigatorControl
 
 			}
 		};
-	}
-
-	@Override
-	public ExpansionPoint getRouteForLocation(int x, int y)
-	{
-		return routePlanner.getRouteForLocation(x, y);
 	}
 
 }

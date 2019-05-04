@@ -18,7 +18,6 @@ public class ColumnEvaluator
 	private double xResolution;
 	private double yResolution;
 	private double yAxisRotation;
-	private int TO_CM = 10;
 
 	ColumnEvaluator(VideoStream stream, int x)
 	{
