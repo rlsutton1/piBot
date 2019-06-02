@@ -88,6 +88,9 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 		if (Math.abs(turned) >= Roomba630.STRAIGHT || Double.isNaN(turned))
 		{
 			turned = 0;
+		} else if (Math.abs(turned) >= 25)
+		{
+			turned = Math.signum(turned) * 25;
 		}
 
 		Vector3D unit = new Vector3D(0, distance, 0);

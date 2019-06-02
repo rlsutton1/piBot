@@ -24,6 +24,7 @@ import com.hazelcast.core.MessageListener;
 import au.com.rsutton.hazelcast.PointCloudMessage;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
+import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -158,6 +159,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				final Vector3D offset = new Vector3D(pos.getX().convert(DistanceUnit.CM),
 						pos.getY().convert(DistanceUnit.CM), 0);
 
+				int minDistance = 50;
+				int maxDistance = 150;
 				int step = 5;
 				// clear
 				for (int clearHeading = -30; clearHeading < 30; clearHeading++)
@@ -165,10 +168,14 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 					Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading + clearHeading));
 					Vector3D direction = rotation.applyTo(new Vector3D(0, step, 0));
 					Vector3D clear = offset;
-					for (int d = 0; d < 300; d += step)
+
+					for (int d = minDistance; d < maxDistance + 10; d += step)
 					{
 						clear = clear.add(direction);
-						worldFromPointCloud.resetPoint((int) clear.getX(), (int) clear.getY());
+						// worldFromPointCloud.resetPoint((int) clear.getX(),
+						// (int) clear.getY());
+						worldFromPointCloud.updatePoint((int) clear.getX(), (int) clear.getY(), Occupancy.VACANT, .005,
+								1);
 
 					}
 
@@ -179,11 +186,14 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
 				for (Vector3D observation : lastPointCloudMessage.get().message.getPoints())
 				{
-					if (observation.getNorm() < 150)
+					if (observation.getNorm() < maxDistance)
 					{
 						Vector3D point = observation;
 						Vector3D spot = rotation.applyTo(point).add(offset);
-						worldFromPointCloud.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
+						worldFromPointCloud.updatePoint((int) spot.getX(), (int) spot.getY(), Occupancy.OCCUPIED, .40,
+								3);
+						// worldFromPointCloud.writeRadius((int) spot.getX(),
+						// (int) spot.getY(), 1, 1);
 					}
 				}
 			}
@@ -196,6 +206,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			new Thread(() -> worker(observations, 150)).start();
 		}
 	}
+
+	double EXISTANCE_THRESHOLD = 0.7;
 
 	private void worker(final List<ScanObservation> observations, int radius)
 	{
@@ -224,7 +236,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		{
 			for (int dy = -radius; dy < radius; dy++)
 			{
-				if (worldFromPointCloud.get(x + dx, y + dy) > 0.5)
+				if (worldFromPointCloud.get(x + dx, y + dy) > EXISTANCE_THRESHOLD)
 				{
 					localMap.writeRadius((int) (x + dx), (int) (y + dy), 1, 1);
 				}
@@ -320,7 +332,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			for (int x = worldFromPointCloud.getMinX() - 30; x <= worldFromPointCloud.getMaxX() + 30; x += 3)
 			{
 				Point point = new Point(x, y);
-				if (worldFromPointCloud.get(x, y) > 0.5)
+				if (worldFromPointCloud.get(x, y) > EXISTANCE_THRESHOLD)
 				{
 					points.add(point);
 				}

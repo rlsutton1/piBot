@@ -40,7 +40,7 @@ import au.com.rsutton.units.Time;
 public class Navigator implements Runnable, NavigatorControl
 {
 
-	private static final int BEZIER_SAMPLING_DISTANCE = 20;
+	private static final int BEZIER_SAMPLING_DISTANCE = 5;
 
 	private final int MAX_SPEED;
 
@@ -242,7 +242,16 @@ public class Navigator implements Runnable, NavigatorControl
 		new DataLogValue("Desired Turn Radius", "" + setRadis).publish();
 		robot.setTurnRadius(setRadis);
 
-		return desiredSpeed;
+		// cap speed so we dont exceed maxturnsPerSecond
+		double maxTurnsPerSecond = 0.25;
+
+		double maxSpeed = maxTurnsPerSecond * 2 * Math.PI * Math.abs(desiredTurnRadius);
+		if (maxSpeed < 10)
+		{
+			maxSpeed = 10;
+		}
+
+		return Math.min(desiredSpeed, maxSpeed);
 	}
 
 	private void setupRobotListener()
@@ -268,16 +277,14 @@ public class Navigator implements Runnable, NavigatorControl
 				List<Point> points = new LinkedList<>();
 				if (routePlanner.hasPlannedRoute())
 				{
-					List<Point2D> vals = new LinkedList<>();
 
 					for (int i = 0; i < 3000; i++)
 					{
 						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
 								(int) y);
-						if (i % BEZIER_SAMPLING_DISTANCE == 0 || vals.size() == 0)
-						{
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
-						}
+
+						points.add(new Point(next.getX(), next.getY()));
+
 						double dx = (x - next.getX());
 						x -= dx;
 						double dy = (y - next.getY());
@@ -285,15 +292,12 @@ public class Navigator implements Runnable, NavigatorControl
 						if (dx == 0 && dy == 0)
 						{
 							// reached the target
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
+							points.add(new Point(next.getX(), next.getY()));
 							break;
 						}
+
 					}
-					for (double i = 0.0; i <= 1.0; i += 0.01)
-					{
-						Point2D t = Bezier.parabolic2D(vals, i);
-						points.add(new Point((int) t.getX(), (int) t.getY()));
-					}
+
 				}
 
 				return points;

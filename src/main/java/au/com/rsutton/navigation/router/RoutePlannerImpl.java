@@ -205,7 +205,7 @@ public class RoutePlannerImpl implements RoutePlanner
 				int radius = (robotRadius + desiredClearance) / blockSize;
 
 				double distanceToWall = doWallCheck(temp, radius);
-				int penalty = (int) ((radius - distanceToWall) * 10);
+				int penalty = (int) ((radius - distanceToWall) * 5000);
 
 				penalty += getTurnCost(temp);
 
@@ -260,7 +260,8 @@ public class RoutePlannerImpl implements RoutePlanner
 		// {
 		// System.out.println("Abs value " + abs);
 		// }
-		return abs;
+		// return abs;
+		return 0;
 
 	}
 
@@ -290,14 +291,14 @@ public class RoutePlannerImpl implements RoutePlanner
 		for (int radius = 1; radius <= size; radius++)
 		{
 			List<ExpansionPoint> points = new LinkedList<>();
-			points.add(new ExpansionPoint(radius, 0, 0, epoint));
-			points.add(new ExpansionPoint(radius, radius, 0, epoint));
-			points.add(new ExpansionPoint(radius, -radius, 0, epoint));
-			points.add(new ExpansionPoint(0, radius, 0, epoint));
-			points.add(new ExpansionPoint(0, -radius, 0, epoint));
-			points.add(new ExpansionPoint(-radius, 0, 0, epoint));
-			points.add(new ExpansionPoint(-radius, radius, 0, epoint));
-			points.add(new ExpansionPoint(-radius, -radius, 0, epoint));
+			for (int p = -radius; p <= radius; p++)
+			{
+				points.add(new ExpansionPoint(p, -radius, 0, epoint));
+				points.add(new ExpansionPoint(p, radius, 0, epoint));
+				points.add(new ExpansionPoint(-radius, p, 0, epoint));
+				points.add(new ExpansionPoint(radius, p, 0, epoint));
+
+			}
 
 			for (ExpansionPoint radiusPoint : points)
 			{
