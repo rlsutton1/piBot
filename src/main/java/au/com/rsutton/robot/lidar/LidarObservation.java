@@ -4,11 +4,9 @@ import java.io.Serializable;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.hazelcast.HcTopic;
-import au.com.rsutton.hazelcast.MessageBase;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 
-public class LidarObservation extends MessageBase<LidarObservation> implements Serializable, ScanObservation
+public class LidarObservation implements Serializable, ScanObservation
 {
 
 	/**
@@ -18,14 +16,8 @@ public class LidarObservation extends MessageBase<LidarObservation> implements S
 	private Vector3D vector;
 	private Double angleRadians;
 
-	public LidarObservation()
-	{
-		super(HcTopic.LIDAR_OBSERVATION);
-	}
-
 	public LidarObservation(Vector3D vector)
 	{
-		super(HcTopic.LIDAR_OBSERVATION);
 		this.vector = vector;
 	}
 

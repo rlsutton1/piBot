@@ -118,7 +118,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 	List<Vector3D> perimiter = new LinkedList<>();
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observations, boolean bump)
+	public void onMessage(List<ScanObservation> observations)
 	{
 		if (scansRemaining > 0)
 		{
@@ -219,6 +219,12 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 				}
 			}
 		}
+	}
+
+	@Override
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+	{
+		// not used here
 	}
 
 }

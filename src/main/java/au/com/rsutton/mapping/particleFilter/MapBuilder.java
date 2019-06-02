@@ -112,7 +112,7 @@ public class MapBuilder
 	volatile boolean crashDetected = false;
 
 	final boolean simulator = false;
-	int maxSpeed = 25;
+	int maxSpeed = 15;
 
 	public void test() throws InterruptedException
 	{
@@ -153,8 +153,7 @@ public class MapBuilder
 			{
 
 				@Override
-				public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation,
-						boolean bump)
+				public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
 				{
 					if (bump)
 					{
@@ -162,6 +161,13 @@ public class MapBuilder
 						System.out
 								.println("bump *********************************************************************");
 					}
+				}
+
+				@Override
+				public void onMessage(List<ScanObservation> robotLocation)
+				{
+					// not used here
+
 				}
 			});
 

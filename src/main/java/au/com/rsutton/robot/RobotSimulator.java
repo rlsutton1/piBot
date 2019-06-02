@@ -17,7 +17,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.hazelcast.DataLogValue;
-import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.hazelcast.LidarScan;
+import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
@@ -280,7 +281,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			List<LidarObservation> observations = getObservation(0, 100);
 			lastScan = to % 100;
 
-			RobotLocation message = new RobotLocation();
+			RobotTelemetry message = new RobotTelemetry();
 			message.setDeadReaconingHeading(new Angle(360 - heading, AngleUnits.DEGREES));
 			message.setDistanceTravelled(new Distance(totalDistanceTravelled, DistanceUnit.CM));
 			message.setBumpLeft(bump);
@@ -289,8 +290,11 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 			new DataLogValue("Simulator-Angle turned", "" + heading).publish();
 
-			message.setObservations(observations);
+			LidarScan scan = new LidarScan();
+			scan.setObservations(observations);
+
 			messsagePump.onMessage(message);
+			messsagePump.onMessage(scan);
 
 			try
 			{
@@ -318,12 +322,23 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> robotLocation, boolean bump)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
 	{
 		for (RobotLocationDeltaListener listener : listeners)
 		{
 
-			listener.onMessage(deltaHeading, deltaDistance, robotLocation, bump);
+			listener.onMessage(deltaHeading, deltaDistance, bump);
+		}
+
+	}
+
+	@Override
+	public void onMessage(List<ScanObservation> robotLocation)
+	{
+		for (RobotLocationDeltaListener listener : listeners)
+		{
+
+			listener.onMessage(robotLocation);
 		}
 
 	}

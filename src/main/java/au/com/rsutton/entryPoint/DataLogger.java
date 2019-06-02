@@ -9,8 +9,9 @@ import java.util.Date;
 import com.hazelcast.core.Message;
 
 import au.com.rsutton.hazelcast.ImageMessage;
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.PointCloudMessage;
-import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.hazelcast.RobotTelemetry;
 
 public class DataLogger
 {
@@ -37,7 +38,8 @@ public class DataLogger
 			e.printStackTrace();
 		}
 
-		new RobotLocation().addMessageListener(e -> writeObject(e));
+		new RobotTelemetry().addMessageListener(e -> writeObject(e));
+		new LidarScan().addMessageListener(e -> writeObject(e));
 		new PointCloudMessage().addMessageListener(e -> writeObject(e));
 		new ImageMessage().addMessageListener(e -> writeObject(e));
 

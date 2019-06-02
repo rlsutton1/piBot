@@ -144,8 +144,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		{
 
 			@Override
-			public void onMessage(final Angle deltaHeading, final Distance deltaDistance,
-					List<ScanObservation> observations, boolean bump)
+			public void onMessage(final Angle deltaHeading, final Distance deltaDistance, boolean bump)
 			{
 
 				if (suspended)
@@ -188,13 +187,26 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 							}
 						});
 
-						addObservation(resampleObservations(observations));
-
 					} finally
 					{
 						lock.unlock();
 					}
 
+				}
+			}
+
+			@Override
+			public void onMessage(List<ScanObservation> scan)
+			{
+				if (lock.tryLock())
+				{
+					try
+					{
+						addObservation(resampleObservations(scan));
+					} finally
+					{
+						lock.unlock();
+					}
 				}
 			}
 

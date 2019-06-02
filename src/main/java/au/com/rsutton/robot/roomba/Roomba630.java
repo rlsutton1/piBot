@@ -15,6 +15,7 @@ import com.maschel.roomba.song.RoombaSongNote;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -204,6 +205,13 @@ public class Roomba630 implements Runnable
 				bumpLeft = roomba.bumpLeft();
 				bumpRight = roomba.bumpRight();
 
+				RobotTelemetry location = new RobotTelemetry();
+				location.setDistanceTravelled(getDistanceTraveled());
+				location.setDeadReaconingHeading(getAngleTurned());
+				location.setBumpLeft(getBumpLeft());
+				location.setBumpRight(getBumpRight());
+				location.publish();
+
 				if (commandExpires > System.currentTimeMillis())
 				{
 					if (roomba.bumpLeft() || roomba.bumpRight())
@@ -336,6 +344,11 @@ public class Roomba630 implements Runnable
 
 			// convert to MM
 			int radius = (int) command.getTurnRadius() * 10;
+			if (Math.abs(radius) >= STRAIGHT)
+			{
+				// because 32768 is a special value which is broken by * 10
+				radius = STRAIGHT;
+			}
 
 			new DataLogValue("Roomba-Radius", "" + radius).publish();
 			new DataLogValue("Roomba-Speed", "" + speed).publish();

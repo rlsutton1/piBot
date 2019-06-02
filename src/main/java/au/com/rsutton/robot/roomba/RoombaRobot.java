@@ -12,7 +12,7 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.config.Config;
-import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.robot.lidar.LidarObservation;
 import au.com.rsutton.units.Distance;
@@ -134,14 +134,10 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 		// need to apply translations to the scan data
 
 		// need to change this to a different message type
-		RobotLocation location = new RobotLocation();
-
-		location.setDistanceTravelled(roomba630.getDistanceTraveled());
-		location.setDeadReaconingHeading(roomba630.getAngleTurned());
-
+		LidarScan location = new LidarScan();
 		location.addObservations(observations);
-		location.setBumpLeft(roomba630.getBumpLeft());
-		location.setBumpRight(roomba630.getBumpRight());
+		location.setStartTime(scan.getStartTime());
+		location.setEndTime(scan.getEndTime());
 		location.publish();
 
 	}

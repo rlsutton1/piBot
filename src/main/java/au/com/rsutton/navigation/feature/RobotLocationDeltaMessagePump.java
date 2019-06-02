@@ -8,13 +8,14 @@ import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
-import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.hazelcast.LidarScan;
+import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
-public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocation>
+public class RobotLocationDeltaMessagePump
 {
 
 	Double lastHeading = null;
@@ -26,65 +27,115 @@ public class RobotLocationDeltaMessagePump implements MessageListener<RobotLocat
 	public RobotLocationDeltaMessagePump(RobotLocationDeltaListener listener)
 	{
 		this.listener = listener;
-		RobotLocation locationMessage = new RobotLocation();
-		locationMessage.addMessageListener(this);
+		RobotTelemetry locationMessage = new RobotTelemetry();
+		locationMessage.addMessageListener(getTelemetryListener());
+
+		LidarScan lidarScan = new LidarScan();
+		lidarScan.addMessageListener(getScanListener());
 	}
 
-	@Override
-	public void onMessage(Message<RobotLocation> message)
+	private MessageListener<LidarScan> getScanListener()
+	{
+		return new MessageListener<LidarScan>()
+		{
+			@Override
+			public void onMessage(Message<LidarScan> message)
+			{
+				try
+				{
+					LidarScan robotLocation = message.getMessageObject();
+					RobotLocationDeltaMessagePump.this.onMessage(robotLocation);
+				} catch (Exception e)
+				{
+					logger.error(e, e);
+				}
+			}
+		};
+	}
+
+	MessageListener<RobotTelemetry> getTelemetryListener()
+	{
+
+		return new MessageListener<RobotTelemetry>()
+		{
+			@Override
+			public void onMessage(Message<RobotTelemetry> message)
+			{
+				try
+				{
+					RobotTelemetry robotLocation = message.getMessageObject();
+					RobotLocationDeltaMessagePump.this.onMessage(robotLocation);
+				} catch (Exception e)
+				{
+					logger.error(e, e);
+				}
+			}
+		};
+	}
+
+	public void onMessage(RobotTelemetry telemetry)
 	{
 		try
 		{
-			RobotLocation robotLocation = message.getMessageObject();
-			onMessage(robotLocation);
-		} catch (Exception e)
-		{
-			logger.error(e, e);
-		}
-	}
-
-	public void onMessage(RobotLocation robotLocation)
-	{
-		try
-		{
-			if (robotLocation.getTime() > System.currentTimeMillis() - 450)
+			if (telemetry.getTime() > System.currentTimeMillis() - 450)
 			{
 
-				Angle angle = robotLocation.getDeadReaconingHeading();
+				Angle angle = telemetry.getDeadReaconingHeading();
 				if (lastHeading == null)
 				{
 					lastHeading = angle.getDegrees();
 				}
 				if (lastDistance == null)
 				{
-					lastDistance = robotLocation.getDistanceTravelled();
+					lastDistance = telemetry.getDistanceTravelled();
 				}
 
 				double deltaHeading = HeadingHelper.getChangeInHeading(angle.getDegrees(), lastHeading);
-				double deltaDistance = robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)
+				double deltaDistance = telemetry.getDistanceTravelled().convert(DistanceUnit.MM)
 						- lastDistance.convert(DistanceUnit.MM);
 
 				lastHeading = angle.getDegrees();
-				lastDistance = robotLocation.getDistanceTravelled();
+				lastDistance = telemetry.getDistanceTravelled();
 
 				logger.debug("raw angle: " + angle.getDegrees() + " delta: " + deltaHeading);
-				logger.debug("raw diatance: " + robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)
+				logger.debug("raw diatance: " + telemetry.getDistanceTravelled().convert(DistanceUnit.MM)
 						+ " delta: " + deltaDistance);
 
 				new DataLogValue("Message Pump-raw angle", "" + angle.getDegrees()).publish();
 				new DataLogValue("Message Pump-delta angle", "" + deltaHeading).publish();
 				new DataLogValue("Message Pump-raw distance",
-						"" + robotLocation.getDistanceTravelled().convert(DistanceUnit.MM)).publish();
+						"" + telemetry.getDistanceTravelled().convert(DistanceUnit.MM)).publish();
 				new DataLogValue("Message Pump-delta distance", "" + deltaDistance).publish();
 
 				listener.onMessage(new Angle(deltaHeading, AngleUnits.DEGREES),
-						new Distance(deltaDistance, DistanceUnit.MM), robotLocation.getObservations(),
-						robotLocation.isBumpLeft() || robotLocation.isBumpRight());
+						new Distance(deltaDistance, DistanceUnit.MM),
+						telemetry.isBumpLeft() || telemetry.isBumpRight());
 				logger.warn("Recieved and dispatched RobotLocation");
 			} else
 			{
 				logger.error("Discarded old RobotLocation message "
-						+ Math.abs(robotLocation.getTime() - System.currentTimeMillis()));
+						+ Math.abs(telemetry.getTime() - System.currentTimeMillis()));
+			}
+		} catch (Exception e)
+		{
+			logger.error(e, e);
+		}
+
+	}
+
+	public void onMessage(LidarScan scan)
+	{
+		try
+		{
+			if (scan.getTime() > System.currentTimeMillis() - 450)
+			{
+
+				listener.onMessage(scan.getObservations());
+				logger.warn("Recieved and dispatched RobotLocation");
+			} else
+			{
+				logger.error("Discarded old RobotLocation message "
+						+ Math.abs(scan.getTime() - System.currentTimeMillis()));
 			}
 		} catch (Exception e)
 		{

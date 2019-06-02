@@ -146,7 +146,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	Semaphore singlePass = new Semaphore(1);
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, List<ScanObservation> observations, boolean bump)
+	public void onMessage(List<ScanObservation> observations)
 	{
 
 		if (singlePass.tryAcquire())
@@ -354,6 +354,12 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				(int) ((pointOriginY + 1)));
 		// System.out.println(pointOriginX + " " + pointOriginY + " " + value);
 
+	}
+
+	@Override
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+	{
+		// these messages are not needed here
 	}
 
 }

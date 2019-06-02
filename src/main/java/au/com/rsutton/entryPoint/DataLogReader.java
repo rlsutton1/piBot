@@ -10,7 +10,7 @@ import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.ImageMessage;
 import au.com.rsutton.hazelcast.PointCloudMessage;
-import au.com.rsutton.hazelcast.RobotLocation;
+import au.com.rsutton.hazelcast.RobotTelemetry;
 
 public class DataLogReader
 {
@@ -59,9 +59,9 @@ public class DataLogReader
 					Thread.sleep(delay);
 				}
 
-				if (messageObject.getMessageObject() instanceof RobotLocation)
+				if (messageObject.getMessageObject() instanceof RobotTelemetry)
 				{
-					RobotLocation locationMessage = (RobotLocation) messageObject.getMessageObject();
+					RobotTelemetry locationMessage = (RobotTelemetry) messageObject.getMessageObject();
 					if (locationMessage == null)
 					{
 						canContinue = false;
