@@ -111,7 +111,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = false;
+	final boolean simulator = true;
 	int maxSpeed = 15;
 
 	public void test() throws InterruptedException

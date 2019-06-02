@@ -13,13 +13,7 @@ public interface ParticleFilterIfc
 
 	public abstract DataSourceMap getHeadingMapDataSource();
 
-	public abstract void addPendingScan(ParticleFilterObservationSet par);
-
 	public abstract void shutdown();
-
-	public abstract void suspend();
-
-	public abstract void resume();
 
 	public abstract void removeListener(ParticleFilterListener listener);
 

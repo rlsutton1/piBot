@@ -7,7 +7,6 @@ import java.util.List;
 
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
-import au.com.rsutton.mapping.particleFilter.ParticleFilterObservationSet;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
@@ -86,28 +85,10 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 	}
 
 	@Override
-	public void addPendingScan(ParticleFilterObservationSet par)
-	{
-		pf.addPendingScan(par);
-	}
-
-	@Override
 	public void shutdown()
 	{
 		pf.shutdown();
 
-	}
-
-	@Override
-	public void suspend()
-	{
-		pf.suspend();
-	}
-
-	@Override
-	public void resume()
-	{
-		pf.resume();
 	}
 
 	@Override

@@ -54,24 +54,23 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	private volatile double bestScanMatchScore = 0;
 
-	private AtomicReference<List<ScanObservation>> lastObservation = new AtomicReference<>();
+	private final AtomicReference<List<ScanObservation>> lastObservation = new AtomicReference<>();
 	private final double headingNoise;
 	private final double distanceNoise;
 	private double stablisedHeading = 0;
 	private ParticleFilterListener listener;
 
-	DistanceUnit distanceUnit = DistanceUnit.CM;
+	private final DistanceUnit distanceUnit = DistanceUnit.CM;
 
-	Stopwatch lastResample = Stopwatch.createStarted();
 	volatile private double bestRawScore;
 
 	private boolean stop = false;
-	private RobotInterface robot;
+	private final RobotInterface robot;
 	private ProbabilityMapIIFc map;
-	private RobotLocationDeltaListener observer;
-	private MapDrawingWindow ui;
+	private final RobotLocationDeltaListener observer;
+	private final MapDrawingWindow ui;
 
-	Logger logger = LogManager.getLogger();
+	private final Logger logger = LogManager.getLogger();
 
 	public ParticleFilterImpl(ProbabilityMapIIFc map, int particles, double distanceNoise, double headingNoise,
 			StartPosition startPosition, RobotInterface robot, Pose pose)
@@ -107,7 +106,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		this.map = buildMatchingMap(map);
 	}
 
-	ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
+	private ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
 	{
 		ProbabilityMap matchMap = new ProbabilityMap(5);
 		matchMap.setDefaultValue(0.0);
@@ -136,7 +135,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		return matchMap;
 	}
 
-	ReentrantLock lock = new ReentrantLock();
+	private final ReentrantLock lock = new ReentrantLock();
 
 	private RobotLocationDeltaListener getObserver()
 	{
@@ -147,10 +146,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			public void onMessage(final Angle deltaHeading, final Distance deltaDistance, boolean bump)
 			{
 
-				if (suspended)
-				{
-					return;
-				}
 				if (lock.tryLock())
 				{
 
@@ -213,7 +208,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		};
 	}
 
-	void createFixedStart(int x, int y, int heading)
+	private void createFixedStart(int x, int y, int heading)
 	{
 		particles.clear();
 		// generate initial random scattering of particles
@@ -247,10 +242,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	public synchronized void addObservation(List<ScanObservation> observationList)
+	private void addObservation(List<ScanObservation> observationList)
 	{
 
-		if (stop || suspended)
+		if (stop)
 		{
 			return;
 		}
@@ -280,7 +275,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	 * @param observationList
 	 * @return
 	 */
-	List<ScanObservation> resampleObservations(List<ScanObservation> observationList)
+	private List<ScanObservation> resampleObservations(List<ScanObservation> observationList)
 	{
 		List<ScanObservation> result = new LinkedList<>();
 
@@ -312,7 +307,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		return result;
 	}
 
-	public void moveParticles(ParticleUpdate update)
+	private void moveParticles(ParticleUpdate update)
 	{
 		logger.debug("Delta heading " + update.getDeltaHeading() + " Delta move " + update.getMoveDistance());
 		if (update.getDeltaHeading() > 180 || update.getDeltaHeading() < -180)
@@ -328,9 +323,9 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		// stablisedHeading = HeadingHelper.normalizeHeading(stablisedHeading);
 	}
 
-	int poorMatches = 0;
+	private int poorMatches = 0;
 
-	protected synchronized void resample(int newParticleCount)
+	private void resample(int newParticleCount)
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -530,8 +525,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	int counter = 10;
-	private volatile boolean suspended;
 	private ParticleFilterStatus particleFilterStatus = ParticleFilterStatus.LOCALIZING;
 
 	/*
@@ -658,34 +651,12 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	}
 
 	@Override
-	public void addPendingScan(ParticleFilterObservationSet par)
-	{
-		for (Particle particle : particles)
-		{
-			particle.addScanReference(par);
-		}
-
-	}
-
-	@Override
 	public void shutdown()
 	{
 		stop = true;
 		robot.removeMessageListener(observer);
 		ui.destroy();
 
-	}
-
-	@Override
-	public void suspend()
-	{
-		suspended = true;
-	}
-
-	@Override
-	public void resume()
-	{
-		suspended = false;
 	}
 
 	private void addDataSoures(MapDrawingWindow ui)
