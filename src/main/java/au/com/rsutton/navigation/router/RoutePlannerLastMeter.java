@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.PointCloudMessage;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
@@ -146,7 +147,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	Semaphore singlePass = new Semaphore(1);
 
 	@Override
-	public void onMessage(List<ScanObservation> observations)
+	public void onMessage(LidarScan lidarScan)
 	{
 
 		if (singlePass.tryAcquire())
@@ -203,13 +204,13 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				return;
 			}
 
-			new Thread(() -> worker(observations, 150)).start();
+			new Thread(() -> worker(lidarScan, 150)).start();
 		}
 	}
 
 	double EXISTANCE_THRESHOLD = 0.7;
 
-	private void worker(final List<ScanObservation> observations, int radius)
+	private void worker(final LidarScan lidarScan, int radius)
 	{
 
 		Stopwatch timer = Stopwatch.createStarted();
@@ -247,7 +248,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 		Vector3D offset = new Vector3D(pos.getX().convert(DistanceUnit.CM), pos.getY().convert(DistanceUnit.CM), 0);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
-		for (ScanObservation obs : observations)
+		for (ScanObservation obs : lidarScan.getObservations())
 		{
 			if (obs.getDisctanceCm() < 50 && Math.toDegrees(obs.getAngleRadians()) > 160
 					&& Math.toDegrees(obs.getAngleRadians()) < 200)
@@ -306,7 +307,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			if (radius < 300)
 			{
 				LogManager.getLogger().error("Failed to create route, trying larger radius");
-				worker(observations, radius + 50);
+				worker(lidarScan, radius + 50);
 			} else
 			{
 				try

@@ -8,6 +8,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class Particle
@@ -106,10 +107,10 @@ public class Particle
 
 	double totalObservations = 0;
 
-	public void addObservation(ProbabilityMapIIFc currentWorld, List<ScanObservation> observations, boolean isLost)
+	public void addObservation(ProbabilityMapIIFc currentWorld, LidarScan lidarScan, boolean isLost)
 	{
 
-		for (ScanObservation obs : observations)
+		for (ScanObservation obs : lidarScan.getObservations())
 		{
 			double rating = scoreObservation(currentWorld, obs);
 

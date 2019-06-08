@@ -17,6 +17,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 
 import com.google.common.base.Stopwatch;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.kalman.RobotPoseSourceNoop;
 import au.com.rsutton.mapping.BoxMapBuilder;
 import au.com.rsutton.mapping.KitchenMapBuilder;
@@ -164,7 +165,7 @@ public class MapBuilder
 				}
 
 				@Override
-				public void onMessage(List<ScanObservation> robotLocation)
+				public void onMessage(LidarScan robotLocation)
 				{
 					// not used here
 

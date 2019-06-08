@@ -26,6 +26,7 @@ import com.google.common.base.Stopwatch;
 import au.com.rsutton.angle.AngleUtil;
 import au.com.rsutton.angle.WeightedAngle;
 import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
 import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.Occupancy;
@@ -54,7 +55,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	private volatile double bestScanMatchScore = 0;
 
-	private final AtomicReference<List<ScanObservation>> lastObservation = new AtomicReference<>();
+	private final AtomicReference<LidarScan> lastObservation = new AtomicReference<>();
 	private final double headingNoise;
 	private final double distanceNoise;
 	private double stablisedHeading = 0;
@@ -191,7 +192,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			}
 
 			@Override
-			public void onMessage(List<ScanObservation> scan)
+			public void onMessage(LidarScan scan)
 			{
 				if (lock.tryLock())
 				{
@@ -242,20 +243,20 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 	}
 
-	private void addObservation(List<ScanObservation> observationList)
+	private void addObservation(LidarScan lidarScan)
 	{
 
 		if (stop)
 		{
 			return;
 		}
-		lastObservation.set(observationList);
+		lastObservation.set(lidarScan);
 
 		double stdDev = getStdDev();
 		boolean isLost = stdDev > 100;
 
 		particles.parallelStream().forEach(e -> {
-			e.addObservation(map, observationList, isLost);
+			e.addObservation(map, lidarScan, isLost);
 		});
 
 		// adjust the number of particles in the particle filter based on
@@ -272,17 +273,17 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	 * are very close together - this is a problem that occurs when approaching
 	 * walls, the nearest wall becomes over represented to the particle filter.
 	 * 
-	 * @param observationList
+	 * @param lidarScan
 	 * @return
 	 */
-	private List<ScanObservation> resampleObservations(List<ScanObservation> observationList)
+	private LidarScan resampleObservations(LidarScan lidarScan)
 	{
-		List<ScanObservation> result = new LinkedList<>();
+		List<LidarObservation> result = new LinkedList<>();
 
 		int resolution = 5;
 
 		SparseArray<Double> array = Dynamic2dSparseArrayFactory.getDynamic2dSparseArray(0.0);
-		for (ScanObservation obs : observationList)
+		for (ScanObservation obs : lidarScan.getObservations())
 		{
 			// 5cm resolution
 			int x = obs.getX() / resolution;
@@ -303,8 +304,10 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 			}
 		}
+		LidarScan augmentedScan = new LidarScan(lidarScan);
+		augmentedScan.setObservations(result);
 
-		return result;
+		return augmentedScan;
 	}
 
 	private void moveParticles(ParticleUpdate update)
@@ -614,7 +617,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 				{
 					graphics.setColor(new Color(0, 0, 255));
 					// draw lidar observation lines
-					for (ScanObservation obs : lastObservation.get())
+					for (ScanObservation obs : lastObservation.get().getObservations())
 					{
 						Vector3D vector = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(stablisedHeading))
 								.applyTo(obs.getVector());

@@ -5,10 +5,10 @@ import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
-import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
@@ -93,7 +93,7 @@ public class ParticleFilterProxy implements ParticleFilterIfc, ParticleFilterLis
 
 	@Override
 	public void update(DistanceXY averagePosition, Angle averageHeading, double stdDev,
-			List<ScanObservation> particleFilterObservationSet, ParticleFilterStatus status)
+			LidarScan particleFilterObservationSet, ParticleFilterStatus status)
 	{
 		for (ParticleFilterListener listener : listeners)
 		{

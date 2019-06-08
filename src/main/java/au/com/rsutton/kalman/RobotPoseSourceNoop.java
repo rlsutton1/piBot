@@ -1,12 +1,10 @@
 package au.com.rsutton.kalman;
 
-import java.util.List;
-
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
-import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -32,7 +30,7 @@ public class RobotPoseSourceNoop implements RobotPoseSource, ParticleFilterListe
 
 	@Override
 	public void update(DistanceXY averagePosition, Angle averageHeading, double stdDev,
-			List<ScanObservation> particleFilterObservationSet, ParticleFilterStatus status)
+			LidarScan particleFilterObservationSet, ParticleFilterStatus status)
 	{
 		this.position = averagePosition;
 		this.heading = averageHeading;

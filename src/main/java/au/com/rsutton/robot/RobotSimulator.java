@@ -20,7 +20,6 @@ import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.mapping.particleFilter.Particle;
-import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
@@ -291,6 +290,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			new DataLogValue("Simulator-Angle turned", "" + heading).publish();
 
 			LidarScan scan = new LidarScan();
+			scan.setStartTime(System.currentTimeMillis());
+			scan.setEndTime(System.currentTimeMillis());
 			scan.setObservations(observations);
 
 			messsagePump.onMessage(message);
@@ -333,7 +334,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void onMessage(List<ScanObservation> robotLocation)
+	public void onMessage(LidarScan robotLocation)
 	{
 		for (RobotLocationDeltaListener listener : listeners)
 		{

@@ -8,11 +8,12 @@ import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.junit.Test;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RoutePlannerImpl;
 import au.com.rsutton.robot.lidar.LidarObservation;
 
@@ -62,7 +63,8 @@ public class ParticleTest
 	private void update(ProbabilityMapIIFc map, Particle testParticle, double x, double y, final double heading)
 	{
 
-		List<ScanObservation> observations = new LinkedList<>();
+		LidarScan lidarScan = new LidarScan();
+		List<LidarObservation> observations = new LinkedList<>();
 
 		Particle particle = new Particle(x, y, heading, 2, 2);
 
@@ -79,7 +81,8 @@ public class ParticleTest
 			}
 		}
 
-		testParticle.addObservation(map, observations, true);
+		lidarScan.setObservations(observations);
+		testParticle.addObservation(map, lidarScan, true);
 
 		// atan2 I think is 90 degrees out of phase with y = 0 degrees omg how
 		// much code will be broken as a result of that!!!!

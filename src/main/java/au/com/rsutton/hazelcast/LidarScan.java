@@ -27,6 +27,15 @@ public class LidarScan extends MessageBase<LidarScan>
 
 	}
 
+	public LidarScan(LidarScan derivedFrom)
+	{
+		super(HcTopic.LIDAR_SCAN);
+		startTime = derivedFrom.startTime;
+		endTime = derivedFrom.endTime;
+		time = derivedFrom.time;
+
+	}
+
 	public void setTopic()
 	{
 

@@ -3,6 +3,7 @@ package au.com.rsutton.mapping.particleFilter;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
@@ -42,7 +43,7 @@ public class RobotImple implements RobotInterface
 			}
 
 			@Override
-			public void onMessage(List<ScanObservation> scan)
+			public void onMessage(LidarScan scan)
 			{
 				for (RobotLocationDeltaListener listener : listeners)
 				{

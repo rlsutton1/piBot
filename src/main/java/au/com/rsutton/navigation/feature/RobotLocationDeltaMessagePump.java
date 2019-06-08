@@ -98,8 +98,8 @@ public class RobotLocationDeltaMessagePump
 				lastDistance = telemetry.getDistanceTravelled();
 
 				logger.debug("raw angle: " + angle.getDegrees() + " delta: " + deltaHeading);
-				logger.debug("raw diatance: " + telemetry.getDistanceTravelled().convert(DistanceUnit.MM)
-						+ " delta: " + deltaDistance);
+				logger.debug("raw diatance: " + telemetry.getDistanceTravelled().convert(DistanceUnit.MM) + " delta: "
+						+ deltaDistance);
 
 				new DataLogValue("Message Pump-raw angle", "" + angle.getDegrees()).publish();
 				new DataLogValue("Message Pump-delta angle", "" + deltaHeading).publish();
@@ -130,12 +130,12 @@ public class RobotLocationDeltaMessagePump
 			if (scan.getTime() > System.currentTimeMillis() - 450)
 			{
 
-				listener.onMessage(scan.getObservations());
+				listener.onMessage(scan);
 				logger.warn("Recieved and dispatched RobotLocation");
 			} else
 			{
-				logger.error("Discarded old RobotLocation message "
-						+ Math.abs(scan.getTime() - System.currentTimeMillis()));
+				logger.error(
+						"Discarded old RobotLocation message " + Math.abs(scan.getTime() - System.currentTimeMillis()));
 			}
 		} catch (Exception e)
 		{

@@ -9,6 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.base.Stopwatch;
 
+import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
@@ -118,13 +119,13 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 	List<Vector3D> perimiter = new LinkedList<>();
 
 	@Override
-	public void onMessage(List<ScanObservation> observations)
+	public void onMessage(LidarScan lidarScan)
 	{
 		if (scansRemaining > 0)
 		{
 			int gausianRadius = 2;
 			Vector3D lastPoint = null;
-			for (ScanObservation obs : observations)
+			for (ScanObservation obs : lidarScan.getObservations())
 			{
 
 				Vector3D point = obs.getVector();
