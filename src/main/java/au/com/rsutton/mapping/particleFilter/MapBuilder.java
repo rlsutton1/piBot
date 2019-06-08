@@ -87,11 +87,6 @@ public class MapBuilder
 			return mapPose;
 		}
 
-		// Pose getOriginalMapPose()
-		// {
-		// return mapPose;
-		// }
-
 		void setMapPose(Pose mapPose)
 		{
 			this.mapPose = mapPose;
@@ -191,11 +186,11 @@ public class MapBuilder
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
+			addMap(getZeroPose());
+
 			particleFilterProxy = new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO,
 					robot, new Pose(0, 0, 0));
 			this.poseAdjuster = new RobotPoseSourceNoop(particleFilterProxy);
-
-			addMap(getZeroPose());
 
 			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot), maxSpeed);
 
@@ -238,7 +233,6 @@ public class MapBuilder
 				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.POOR_MATCH
 						&& changeCounter < CHANGE_COUNTER_ADD_MAP && localized == true)
 				{
-					// TODO:
 					navigatorSuspended = true;
 					for (int i = 0; i < 15; i++)
 					{
@@ -357,8 +351,12 @@ public class MapBuilder
 		CountDownLatch latch = new CountDownLatch(1);
 		regernateWorld(world, latch);
 		latch.await();
-		particleFilterProxy.updateMap(world);
-
+		if (particleFilterProxy != null)
+		{
+			// at startup the particle filter isn't created because we have to
+			// wait for the map
+			particleFilterProxy.updateMap(world);
+		}
 	}
 
 	private void regernateWorld(final ProbabilityMapIIFc targetWorld, final CountDownLatch latch)
@@ -638,21 +636,18 @@ public class MapBuilder
 			@Override
 			public DataSourcePoint getParticlePointSource()
 			{
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public DataSourceMap getHeadingMapDataSource()
 			{
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public ParticleFilterStatus getParticleFilterStatus()
 			{
-				// TODO Auto-generated method stub
 				return null;
 			}
 		};
