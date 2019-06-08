@@ -133,6 +133,7 @@ public class PointCloudProvider
 			@Override
 			public void onFrameReady(VideoStream stream)
 			{
+				long created = System.currentTimeMillis();
 				VideoFrameRef frame = stream.readFrame();
 
 				new DataLogValue("FOV h", "" + stream.getHorizontalFieldOfView()).publish();
@@ -188,7 +189,7 @@ public class PointCloudProvider
 				frame.release();
 				try
 				{
-					listener.evaluatePointCloud(pointCloud);
+					listener.evaluatePointCloud(pointCloud, created);
 				} catch (HazelcastInstanceNotActiveException e)
 				{
 					// we've been shut down

@@ -28,7 +28,7 @@ public class PointCloudProcessor implements PointCloudListener
 	}
 
 	@Override
-	public void evaluatePointCloud(List<Vector3D> pointCloud)
+	public void evaluatePointCloud(List<Vector3D> pointCloud, long created)
 	{
 		List<Vector3D> source = new LinkedList<>();
 
@@ -41,6 +41,7 @@ public class PointCloudProcessor implements PointCloudListener
 			source.add(rotatedVector);
 		}
 		PointCloudMessage pcMessage = new PointCloudMessage();
+		pcMessage.setCreated(created);
 		pcMessage.setPoints(source);
 		pcMessage.setTopic();
 		pcMessage.publish();

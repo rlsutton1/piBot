@@ -12,10 +12,22 @@ public class PointCloudMessage extends MessageBase<PointCloudMessage>
 	private long time = System.currentTimeMillis();
 	private List<Vector3D> points;
 
+	private long created;
+
 	public PointCloudMessage()
 	{
 		super(HcTopic.POINT_CLOUD);
 
+	}
+
+	public void setCreated(long created)
+	{
+		this.created = created;
+	}
+
+	public long getCreated()
+	{
+		return created;
 	}
 
 	public void setTopic()

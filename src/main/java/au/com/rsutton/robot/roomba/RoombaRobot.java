@@ -130,15 +130,12 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 			{
 				roomba630.alarm();
 			}
+			LidarScan location = new LidarScan();
+			location.addObservations(observations);
+			location.setStartTime(scan.getStartTime());
+			location.setEndTime(scan.getEndTime());
+			location.publish();
 		}
-		// need to apply translations to the scan data
-
-		// need to change this to a different message type
-		LidarScan location = new LidarScan();
-		location.addObservations(observations);
-		location.setStartTime(scan.getStartTime());
-		location.setEndTime(scan.getEndTime());
-		location.publish();
 
 	}
 
