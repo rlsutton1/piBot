@@ -13,8 +13,6 @@ public interface ParticleFilterIfc
 
 	public abstract DataSourceMap getHeadingMapDataSource();
 
-	public abstract void shutdown();
-
 	public abstract void removeListener(ParticleFilterListener listener);
 
 	void updateMap(ProbabilityMapIIFc map);

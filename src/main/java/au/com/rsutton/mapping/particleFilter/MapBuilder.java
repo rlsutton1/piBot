@@ -22,7 +22,6 @@ import au.com.rsutton.kalman.RobotPoseSourceNoop;
 import au.com.rsutton.mapping.BoxMapBuilder;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.XY;
-import au.com.rsutton.mapping.multimap.ParticleFilterProxy;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
@@ -67,7 +66,7 @@ public class MapBuilder
 
 	private NavigatorControl navigatorControl;
 
-	private PoseAdjuster poseAdjuster;
+	private RobotPoseSource poseAdjuster;
 	RobotInterface robot;
 
 	Set<XY> vistedLocations = new HashSet<>();
@@ -107,7 +106,7 @@ public class MapBuilder
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 
-	private ParticleFilterProxy particleFilterProxy;
+	private ParticleFilterIfc particleFilterProxy;
 
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
@@ -192,13 +191,11 @@ public class MapBuilder
 
 			panel.addDataSource(new WrapperForObservedMapInMapUI(world));
 
-			particleFilterProxy = new ParticleFilterProxy(null);
-			this.poseAdjuster = new PoseAdjuster(new Pose(0, 0, 0), new RobotPoseSourceNoop(particleFilterProxy));
+			particleFilterProxy = new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO,
+					robot, new Pose(0, 0, 0));
+			this.poseAdjuster = new RobotPoseSourceNoop(particleFilterProxy);
 
 			addMap(getZeroPose());
-
-			particleFilterProxy.changeParticleFilter(new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE,
-					StartPosition.ZERO, robot, new Pose(0, 0, 0)));
 
 			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot), maxSpeed);
 

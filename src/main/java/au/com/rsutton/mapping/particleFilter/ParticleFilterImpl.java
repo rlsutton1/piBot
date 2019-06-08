@@ -65,8 +65,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	volatile private double bestRawScore;
 
-	private boolean stop = false;
-	private final RobotInterface robot;
 	private ProbabilityMapIIFc map;
 	private final RobotLocationDeltaListener observer;
 	private final MapDrawingWindow ui;
@@ -78,7 +76,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	{
 		this.headingNoise = headingNoise;
 		this.distanceNoise = distanceNoise;
-		this.robot = robot;
 		this.map = buildMatchingMap(map);
 		particleQty = particles;
 		if (startPosition == StartPosition.RANDOM)
@@ -198,7 +195,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 				{
 					try
 					{
-						addObservation(resampleObservations(scan));
+						addObservation(downSampleObservations(scan));
 					} finally
 					{
 						lock.unlock();
@@ -246,10 +243,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	private void addObservation(LidarScan lidarScan)
 	{
 
-		if (stop)
-		{
-			return;
-		}
 		lastObservation.set(lidarScan);
 
 		double stdDev = getStdDev();
@@ -268,7 +261,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	}
 
 	/**
-	 * Resemble the observations by adding them to an occupancy grid, then
+	 * Down sample the observations by adding them to an occupancy grid, then
 	 * rebuilding the scans from the occupancy grid, thus eliminating scans that
 	 * are very close together - this is a problem that occurs when approaching
 	 * walls, the nearest wall becomes over represented to the particle filter.
@@ -276,7 +269,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	 * @param lidarScan
 	 * @return
 	 */
-	private LidarScan resampleObservations(LidarScan lidarScan)
+	private LidarScan downSampleObservations(LidarScan lidarScan)
 	{
 		List<LidarObservation> result = new LinkedList<>();
 
@@ -650,15 +643,6 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 	public void addListener(ParticleFilterListener listener)
 	{
 		this.listener = listener;
-
-	}
-
-	@Override
-	public void shutdown()
-	{
-		stop = true;
-		robot.removeMessageListener(observer);
-		ui.destroy();
 
 	}
 
