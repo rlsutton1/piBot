@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
+import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
@@ -68,7 +69,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 	// private Double initialHeading = null;
 
-	public Navigator(ProbabilityMapIIFc map2, RobotPoseSource pf, RobotInterface robot, int maxSpeed)
+	public Navigator(ProbabilityMapIIFc map2, RobotPoseSourceTimeTraveling pf, RobotInterface robot, int maxSpeed)
 	{
 		this.MAX_SPEED = maxSpeed;
 		ui = new MapDrawingWindow("Navigator", 600, 0, 250, true);

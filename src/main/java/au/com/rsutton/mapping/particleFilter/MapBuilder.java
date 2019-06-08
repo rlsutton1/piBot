@@ -18,7 +18,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.hazelcast.LidarScan;
-import au.com.rsutton.kalman.RobotPoseSourceNoop;
+import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
 import au.com.rsutton.mapping.BoxMapBuilder;
 import au.com.rsutton.mapping.KitchenMapBuilder;
 import au.com.rsutton.mapping.XY;
@@ -33,8 +33,6 @@ import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.CoordinateClickListener;
-import au.com.rsutton.ui.DataSourceMap;
-import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.VideoWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
@@ -66,7 +64,7 @@ public class MapBuilder
 
 	private NavigatorControl navigatorControl;
 
-	private RobotPoseSource poseAdjuster;
+	private RobotPoseSourceTimeTraveling poseSource;
 	RobotInterface robot;
 
 	Set<XY> vistedLocations = new HashSet<>();
@@ -106,7 +104,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = true;
+	final boolean simulator = false;
 	int maxSpeed = 15;
 
 	public void test() throws InterruptedException
@@ -190,9 +188,9 @@ public class MapBuilder
 
 			particleFilterProxy = new ParticleFilterImpl(world, 1000, DISTANCE_NOISE, HEADING_NOISE, StartPosition.ZERO,
 					robot, new Pose(0, 0, 0));
-			this.poseAdjuster = new RobotPoseSourceNoop(particleFilterProxy);
+			this.poseSource = new RobotPoseSourceTimeTraveling(particleFilterProxy);
 
-			this.navigatorControl = new Navigator(world, poseAdjuster, getShimmedRobot(robot), maxSpeed);
+			this.navigatorControl = new Navigator(world, poseSource, getShimmedRobot(robot), maxSpeed);
 
 			// Thread.sleep(20000);
 
@@ -225,12 +223,12 @@ public class MapBuilder
 
 				update();
 
-				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZED)
+				if (poseSource != null && poseSource.getParticleFilterStatus() == ParticleFilterStatus.LOCALIZED)
 				{
 					localized = true;
 				}
 
-				if (poseAdjuster != null && poseAdjuster.getParticleFilterStatus() == ParticleFilterStatus.POOR_MATCH
+				if (poseSource != null && poseSource.getParticleFilterStatus() == ParticleFilterStatus.POOR_MATCH
 						&& changeCounter < CHANGE_COUNTER_ADD_MAP && localized == true)
 				{
 					navigatorSuspended = true;
@@ -241,7 +239,7 @@ public class MapBuilder
 					}
 					if (addMap)
 					{
-						addMap(poseAdjuster);
+						addMap(poseSource);
 					}
 
 					navigatorSuspended = false;
@@ -439,9 +437,9 @@ public class MapBuilder
 		{
 			navigatorControl.stop();
 
-			if (isUnexplored(poseAdjuster.getXyPosition().getVector(DistanceUnit.CM), 0))
+			if (isUnexplored(poseSource.getXyPosition().getVector(DistanceUnit.CM), 0))
 			{
-				addMap(poseAdjuster);
+				addMap(poseSource);
 			}
 
 			if (nextTarget != null)
@@ -535,7 +533,7 @@ public class MapBuilder
 	{
 
 		double idealDistance = MIN_TARGET_SEPARATION * 2.0;
-		DistanceXY currentLocation = poseAdjuster.getXyPosition();
+		DistanceXY currentLocation = poseSource.getXyPosition();
 		if (x >= world.getMinX() && x <= world.getMaxX())
 		{
 			if (y >= world.getMinY() && y <= world.getMaxY())
@@ -631,18 +629,6 @@ public class MapBuilder
 			public double getHeading()
 			{
 				return 0;
-			}
-
-			@Override
-			public DataSourcePoint getParticlePointSource()
-			{
-				return null;
-			}
-
-			@Override
-			public DataSourceMap getHeadingMapDataSource()
-			{
-				return null;
 			}
 
 			@Override

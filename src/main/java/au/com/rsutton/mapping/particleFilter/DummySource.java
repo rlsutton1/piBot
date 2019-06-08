@@ -1,8 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
 import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.ui.DataSourceMap;
-import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.units.DistanceUnit;
 
 public class DummySource implements RobotPoseSource
@@ -32,20 +30,6 @@ public class DummySource implements RobotPoseSource
 	{
 		// TODO Auto-generated method stub
 		return 0;
-	}
-
-	@Override
-	public DataSourcePoint getParticlePointSource()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public DataSourceMap getHeadingMapDataSource()
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override

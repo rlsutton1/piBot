@@ -21,9 +21,11 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
+import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.PointCloudMessage;
-import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
+import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
+import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling.RobotPoseInstant;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
@@ -45,7 +47,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private final AtomicReference<RoutePlanner> localPlanner = new AtomicReference<>();
 
-	private RobotPoseSource robotPoseSource;
+	private RobotPoseSourceTimeTraveling robotPoseSource;
 
 	private ProbabilityMapIIFc world;
 
@@ -55,7 +57,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private final AtomicReference<PointCloudWrapper> lastPointCloudMessage = new AtomicReference<>();
 
-	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot, RobotPoseSource robotPoseSource)
+	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot,
+			RobotPoseSourceTimeTraveling robotPoseSource)
 	{
 		basePlanner = new RoutePlannerImpl(world);
 		this.world = world;
@@ -75,8 +78,12 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		PointCloudWrapper(PointCloudMessage message)
 		{
 			this.message = message;
-			this.xy = robotPoseSource.getXyPosition();
-			this.heading = robotPoseSource.getHeading();
+
+			new DataLogValue("PointCountAge", "" + (System.currentTimeMillis() - message.getCreated())).publish();
+
+			RobotPoseInstant poseSource = robotPoseSource.findInstant(message.getCreated());
+			this.xy = poseSource.getXyPosition();
+			this.heading = poseSource.getHeading();
 		}
 	}
 

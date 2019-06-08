@@ -1,8 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
 import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.ui.DataSourceMap;
-import au.com.rsutton.ui.DataSourcePoint;
 
 public interface RobotPoseSource
 {
@@ -18,10 +16,6 @@ public interface RobotPoseSource
 	 * @return
 	 */
 	public abstract double getStdDev();
-
-	public abstract DataSourcePoint getParticlePointSource();
-
-	public abstract DataSourceMap getHeadingMapDataSource();
 
 	public abstract ParticleFilterStatus getParticleFilterStatus();
 
