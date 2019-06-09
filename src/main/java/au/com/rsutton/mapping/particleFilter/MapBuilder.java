@@ -431,9 +431,7 @@ public class MapBuilder
 
 		boolean hasReachedDestination = navigatorControl.hasReachedDestination();
 		long targetElapsedMinutes = targetAge.elapsed(TimeUnit.MINUTES);
-		long targetElapsedSeconds = targetAge.elapsed(TimeUnit.SECONDS);
-		if (hasReachedDestination || (navigatorControl.isStuck() && targetElapsedSeconds > 120)
-				|| targetElapsedMinutes > 2 || nextTarget != null)
+		if (hasReachedDestination || navigatorControl.isStuck() || targetElapsedMinutes > 2 || nextTarget != null)
 		{
 			navigatorControl.stop();
 
@@ -481,12 +479,12 @@ public class MapBuilder
 		navigatorControl.go();
 	}
 
-	double closestToIdealDistance = Double.MAX_VALUE;
+	double closestToIdealDistance = 0;
 
 	boolean setNewTarget()
 	{
 
-		closestToIdealDistance = Double.MAX_VALUE;
+		closestToIdealDistance = 0;
 
 		int minX = world.getMinX();
 		int maxX = world.getMaxX() + 1;
@@ -532,7 +530,6 @@ public class MapBuilder
 	private boolean isTarget(int x, int y)
 	{
 
-		double idealDistance = MIN_TARGET_SEPARATION * 2.0;
 		DistanceXY currentLocation = poseSource.getXyPosition();
 		if (x >= world.getMinX() && x <= world.getMaxX())
 		{
@@ -547,9 +544,9 @@ public class MapBuilder
 					if (isUnexplored(position, 0))
 					{
 
-						if (Math.abs(idealDistance - distance) < closestToIdealDistance)
+						if (distance > closestToIdealDistance)
 						{
-							closestToIdealDistance = Math.abs(idealDistance - distance);
+							closestToIdealDistance = distance;
 							return true;
 						}
 					}

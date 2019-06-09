@@ -18,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
@@ -66,6 +67,8 @@ public class Navigator implements Runnable, NavigatorControl
 	private Double targetHeading;
 
 	double speed = 0;
+
+	private volatile int stuckCounter = 0;
 
 	// private Double initialHeading = null;
 
@@ -138,10 +141,21 @@ public class Navigator implements Runnable, NavigatorControl
 
 				double turnRadius = Roomba630.STRAIGHT;
 
+				ExpansionPoint current = next;
 				// get a point on the route 25 steps from where we are, we
 				// look ahead (25 steps) so our heading remains reasonably
 				// stable
 				next = routePlanner.getRouteForLocation(pfX, pfY);
+
+				if (current.equals(next))
+				{
+					robot.freeze(true);
+					new DataLogValue("Navigator routing", "cant route", DataLogLevel.ERROR).publish();
+					stuckCounter++;
+					return;
+				}
+				stuckCounter = 0;
+				new DataLogValue("Navigator routing", "routing", DataLogLevel.INFO).publish();
 
 				addPointBehindRobotForBezier(vals);
 
@@ -232,7 +246,7 @@ public class Navigator implements Runnable, NavigatorControl
 		{
 
 			robot.setStraight("NAV set Head");
-			new DataLogValue("Desired Turn Radius", "Straight NAV").publish();
+			new DataLogValue("Desired Turn Radius", "Straight NAV", DataLogLevel.INFO).publish();
 			return desiredSpeed;
 		}
 		if (Math.abs(desiredTurnRadius) < 1)
@@ -240,7 +254,7 @@ public class Navigator implements Runnable, NavigatorControl
 			setRadis = Math.signum(desiredTurnRadius);
 		}
 		setRadis = -1.0 * setRadis;
-		new DataLogValue("Desired Turn Radius", "" + setRadis).publish();
+		new DataLogValue("Desired Turn Radius", "" + setRadis, DataLogLevel.INFO).publish();
 		robot.setTurnRadius(setRadis);
 
 		// cap speed so we dont exceed maxturnsPerSecond
@@ -430,6 +444,7 @@ public class Navigator implements Runnable, NavigatorControl
 	{
 		reachedDestination = !routePlanner.createRoute(x, y, routeOption);
 		targetHeading = heading;
+		stuckCounter = 0;
 
 	}
 
@@ -442,7 +457,7 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public boolean isStuck()
 	{
-		return false;
+		return stuckCounter > 100;
 	}
 
 	public DataSourceMap getDeadReconningHeadingMapDataSource()

@@ -16,6 +16,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.RobotTelemetry;
@@ -229,7 +230,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			turnRadius = Math.signum(turnRadius) * minTurnRadius;
 		}
 
-		new DataLogValue("Simulator-Requested turnRadius", "" + turnRadius).publish();
+		new DataLogValue("Simulator-Requested turnRadius", "" + turnRadius, DataLogLevel.INFO).publish();
 
 		this.turnRadius = turnRadius;
 		logger.info("Requested turnRadius " + turnRadius);
@@ -285,9 +286,9 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			message.setDistanceTravelled(new Distance(totalDistanceTravelled, DistanceUnit.CM));
 			message.setBumpLeft(bump);
 			message.setBumpRight(bump);
-			new DataLogValue("Simulator-Distance Traveled", "" + totalDistanceTravelled).publish();
+			new DataLogValue("Simulator-Distance Traveled", "" + totalDistanceTravelled, DataLogLevel.INFO).publish();
 
-			new DataLogValue("Simulator-Angle turned", "" + heading).publish();
+			new DataLogValue("Simulator-Angle turned", "" + heading, DataLogLevel.INFO).publish();
 
 			LidarScan scan = new LidarScan();
 			scan.setStartTime(System.currentTimeMillis());
@@ -355,7 +356,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	{
 		turnRadius = Roomba630.STRAIGHT;
 
-		new DataLogValue("Simulator-Requested turnRadius", "STRAIGHT " + calledBy).publish();
+		new DataLogValue("Simulator-Requested turnRadius", "STRAIGHT " + calledBy, DataLogLevel.INFO).publish();
 
 	}
 }

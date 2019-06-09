@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.PointCloudMessage;
@@ -55,6 +56,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	Logger logger = LogManager.getLogger();
 
+	private RoutePlannerStatus status = RoutePlannerStatus.STARTUP;
+
 	private final AtomicReference<PointCloudWrapper> lastPointCloudMessage = new AtomicReference<>();
 
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot,
@@ -79,7 +82,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		{
 			this.message = message;
 
-			new DataLogValue("PointCountAge", "" + (System.currentTimeMillis() - message.getCreated())).publish();
+			new DataLogValue("PointCountAge", "" + (System.currentTimeMillis() - message.getCreated()),
+					DataLogLevel.INFO).publish();
 
 			RobotPoseInstant poseSource = robotPoseSource.findInstant(message.getCreated());
 			this.xy = poseSource.getXyPosition();
@@ -101,11 +105,25 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		};
 	}
 
+	public RoutePlannerStatus getStatus()
+	{
+		return status;
+	}
+
 	@Override
 	public boolean createRoute(int toX, int toY, RouteOption routeOption)
 	{
 		localPlanner.set(null);
-		return basePlanner.createRoute(toX, toY, routeOption);
+		boolean baseStatus = basePlanner.createRoute(toX, toY, routeOption);
+
+		if (baseStatus)
+		{
+			setStatus(RoutePlannerStatus.BASE_PLANNED);
+		} else
+		{
+			setStatus(RoutePlannerStatus.BASE_PLAN_FAILED);
+		}
+		return baseStatus;
 	}
 
 	@Override
@@ -304,6 +322,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 		if (success)
 		{
+			setStatus(RoutePlannerStatus.SUCCESS);
 			localPlanner.set(newLocalPlanner);
 
 			LogManager.getLogger()
@@ -314,11 +333,13 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			if (radius < 300)
 			{
 				LogManager.getLogger().error("Failed to create route, trying larger radius");
+				setStatus(RoutePlannerStatus.FAILED_TRY_LARGER);
 				worker(lidarScan, radius + 50);
 			} else
 			{
 				try
 				{
+					setStatus(RoutePlannerStatus.FAILED);
 					logger.error("Unable to plan a route!!!");
 					TimeUnit.MILLISECONDS.sleep(100);
 				} catch (InterruptedException e)
@@ -368,6 +389,12 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
 	{
 		// these messages are not needed here
+	}
+
+	void setStatus(RoutePlannerStatus status)
+	{
+		new DataLogValue("PlannerStatus", status.name(), status.getLevel()).publish();
+		this.status = status;
 	}
 
 }

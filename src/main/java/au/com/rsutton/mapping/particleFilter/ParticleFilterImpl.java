@@ -25,6 +25,7 @@ import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.angle.AngleUtil;
 import au.com.rsutton.angle.WeightedAngle;
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
@@ -158,7 +159,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 							{
 
 								double degrees = deltaHeading.getDegrees();
-								new DataLogValue("Move Particles DH(1)", "" + degrees).publish();
+								new DataLogValue("Move Particles DH(1)", "" + degrees, DataLogLevel.INFO).publish();
 								if (degrees > 180)
 								{
 									degrees = 360 - degrees;
@@ -168,7 +169,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 									degrees = degrees * -1.0;
 								}
 
-								new DataLogValue("Move Particles DH", "" + degrees).publish();
+								new DataLogValue("Move Particles DH", "" + degrees, DataLogLevel.INFO).publish();
 
 								return degrees;
 							}
@@ -339,7 +340,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			maxRating = Math.max(maxRating, selectedParticle.getRating());
 		}
 
-		new DataLogValue("PF best:", "" + maxRating).publish();
+		new DataLogValue("PF best:", "" + maxRating, DataLogLevel.INFO).publish();
 
 		// 90 ok
 		if (maxRating < 0.80)
@@ -396,7 +397,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		}
 		particleQty = newParticleCount;
 
-		new DataLogValue("PF-particle count", "" + particleQty).publish();
+		new DataLogValue("PF-particle count", "" + particleQty, DataLogLevel.INFO).publish();
 
 		logger.debug("Resample took " + timer.elapsed(TimeUnit.MILLISECONDS));
 
@@ -475,7 +476,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		{
 			String message = "removing " + particlesToRemove.size() + " useless particles";
 			logger.debug(message);
-			new DataLogValue("PF-useless particles", "" + particlesToRemove.size()).publish();
+			new DataLogValue("PF-useless particles", "" + particlesToRemove.size(), DataLogLevel.INFO).publish();
 			// strip particles with ratings that are below the minimum threshold
 			particles.removeAll(particlesToRemove);
 
@@ -547,7 +548,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 			particleFilterStatus = ParticleFilterStatus.LOCALIZED;
 		}
 
-		new DataLogValue("ParticleFilterStatus", "" + particleFilterStatus).publish();
+		new DataLogValue("ParticleFilterStatus", "" + particleFilterStatus, particleFilterStatus.getDataLogLevel())
+				.publish();
 
 		return dev;
 	}

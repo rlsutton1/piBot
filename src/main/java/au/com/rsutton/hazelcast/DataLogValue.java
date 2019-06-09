@@ -10,16 +10,19 @@ public class DataLogValue extends MessageBase<DataLogValue>
 	String key;
 	String value;
 
+	DataLogLevel level;
+
 	public DataLogValue()
 	{
 		super(HcTopic.DATA_LOG_VALUE);
 	}
 
-	public DataLogValue(String key, String value)
+	public DataLogValue(String key, String value, DataLogLevel level)
 	{
 		super(HcTopic.DATA_LOG_VALUE);
 		this.key = key;
 		this.value = value;
+		this.level = level;
 
 	}
 
@@ -53,4 +56,8 @@ public class DataLogValue extends MessageBase<DataLogValue>
 		this.time = time;
 	}
 
+	public DataLogLevel getLevel()
+	{
+		return level;
+	}
 }

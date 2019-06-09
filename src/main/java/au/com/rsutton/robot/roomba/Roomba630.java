@@ -14,6 +14,7 @@ import com.maschel.roomba.song.RoombaNoteDuration;
 import com.maschel.roomba.song.RoombaSongNote;
 
 import au.com.rsutton.config.Config;
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.hazelcast.SetMotion;
@@ -255,8 +256,19 @@ public class Roomba630 implements Runnable
 				if (batteryStats % 10 == 0)
 				{
 
-					new DataLogValue("Roomba-Battery V", "" + roomba.batteryVoltage()).publish();
-					new DataLogValue("Roomba-Battery %", "" + ((roomba.batteryVoltage() - 12000) / 7000d)).publish();
+					double percent = ((roomba.batteryVoltage() - 12000) / 3500d);
+					DataLogLevel level = DataLogLevel.INFO;
+					if (percent < 0.30)
+					{
+						level = DataLogLevel.WARN;
+					}
+					if (percent < 0.20)
+					{
+						level = DataLogLevel.ERROR;
+					}
+
+					new DataLogValue("Roomba-Battery V", "" + roomba.batteryVoltage(), DataLogLevel.INFO).publish();
+					new DataLogValue("Roomba-Battery %", "" + percent, level).publish();
 
 					System.out.println("Battery charge/capacity/voltage/temperature " + roomba.batteryCharge() + " "
 							+ roomba.batteryCapacity() + " " + roomba.batteryVoltage() + " "
@@ -297,7 +309,7 @@ public class Roomba630 implements Runnable
 			totalDistanceTraveled += distanceTraveled;
 		}
 
-		new DataLogValue("Roomba-Distance Traveled", "" + distanceTraveled).publish();
+		new DataLogValue("Roomba-Distance Traveled", "" + distanceTraveled, DataLogLevel.INFO).publish();
 		if (distanceTraveled != 0)
 		{
 			System.out.println("Distance Traveled: " + distanceTraveled);
@@ -316,7 +328,7 @@ public class Roomba630 implements Runnable
 			totalAngleTurned += angleTurned;
 		}
 
-		new DataLogValue("Roomba-Angle turned", "" + angleTurned).publish();
+		new DataLogValue("Roomba-Angle turned", "" + angleTurned, DataLogLevel.INFO).publish();
 		if (angleTurned != 0)
 		{
 
@@ -336,7 +348,7 @@ public class Roomba630 implements Runnable
 				targetSpeed = 0;
 				roomba.driveDirect(0, 0);
 			}
-			new DataLogValue("Roomba-Speed", "0").publish();
+			new DataLogValue("Roomba-Speed", "0", DataLogLevel.WARN).publish();
 		} else
 		{
 
@@ -350,8 +362,8 @@ public class Roomba630 implements Runnable
 				radius = STRAIGHT;
 			}
 
-			new DataLogValue("Roomba-Radius", "" + radius).publish();
-			new DataLogValue("Roomba-Speed", "" + speed).publish();
+			new DataLogValue("Roomba-Radius", "" + radius, DataLogLevel.INFO).publish();
+			new DataLogValue("Roomba-Speed", "" + speed, DataLogLevel.INFO).publish();
 
 			System.out.println("Set radius to " + radius + " speed " + speed);
 			synchronized (sync)

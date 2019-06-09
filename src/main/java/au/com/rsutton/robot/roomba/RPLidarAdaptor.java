@@ -1,6 +1,7 @@
 package au.com.rsutton.robot.roomba;
 
 import au.com.rsutton.config.Config;
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import ev3dev.sensors.slamtec.RPLidarA1;
 import ev3dev.sensors.slamtec.RPLidarA1ServiceException;
@@ -63,7 +64,7 @@ public class RPLidarAdaptor implements Runnable
 							lidar.close();
 							lidar.init();
 							lidar.forceContinuousScanning();
-							new DataLogValue("Force Lidar Scan", "yes").publish();
+							new DataLogValue("Force Lidar Scan", "yes", DataLogLevel.WARN).publish();
 							badScans = 0;
 						}
 					} else

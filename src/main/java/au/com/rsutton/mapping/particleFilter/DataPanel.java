@@ -23,7 +23,7 @@ public class DataPanel extends JPanel implements MessageListener<DataLogValue>, 
 {
 
 	private static final long serialVersionUID = 1L;
-	Map<String, String> currentData = new ConcurrentHashMap<>();
+	Map<String, DataLogValue> currentData = new ConcurrentHashMap<>();
 	private ScheduledExecutorService pool;
 
 	DataPanel()
@@ -42,7 +42,7 @@ public class DataPanel extends JPanel implements MessageListener<DataLogValue>, 
 	@Override
 	public void onMessage(Message<DataLogValue> message)
 	{
-		currentData.put(message.getMessageObject().getKey(), message.getMessageObject().getValue());
+		currentData.put(message.getMessageObject().getKey(), message.getMessageObject());
 
 	}
 
@@ -59,7 +59,7 @@ public class DataPanel extends JPanel implements MessageListener<DataLogValue>, 
 			{
 				try
 				{
-					for (Entry<String, String> entry : currentData.entrySet())
+					for (Entry<String, DataLogValue> entry : currentData.entrySet())
 					{
 						TextField field = fields.get(entry.getKey());
 						if (field == null)
@@ -70,7 +70,8 @@ public class DataPanel extends JPanel implements MessageListener<DataLogValue>, 
 							add(new Label(entry.getKey()));
 							add(field);
 						}
-						field.setText(entry.getValue());
+						field.setBackground(entry.getValue().getLevel().getColor());
+						field.setText(entry.getValue().getValue());
 						field.setName(entry.getKey());
 					}
 				} catch (Exception e)

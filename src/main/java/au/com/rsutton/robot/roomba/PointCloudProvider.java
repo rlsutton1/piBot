@@ -25,6 +25,7 @@ import org.openni.VideoStream.NewFrameListener;
 
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 
 public class PointCloudProvider
@@ -136,8 +137,8 @@ public class PointCloudProvider
 				long created = System.currentTimeMillis();
 				VideoFrameRef frame = stream.readFrame();
 
-				new DataLogValue("FOV h", "" + stream.getHorizontalFieldOfView()).publish();
-				new DataLogValue("FOV v", "" + stream.getVerticalFieldOfView()).publish();
+				new DataLogValue("FOV h", "" + stream.getHorizontalFieldOfView(), DataLogLevel.INFO).publish();
+				new DataLogValue("FOV v", "" + stream.getVerticalFieldOfView(), DataLogLevel.INFO).publish();
 
 				PixelFormat pixelFormat = frame.getVideoMode().getPixelFormat();
 				PixelFormat expectedFormat = PixelFormat.DEPTH_1_MM;

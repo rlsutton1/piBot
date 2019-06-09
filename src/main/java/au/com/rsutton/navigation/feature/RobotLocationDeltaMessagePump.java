@@ -7,6 +7,7 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.RobotTelemetry;
@@ -101,11 +102,11 @@ public class RobotLocationDeltaMessagePump
 				logger.debug("raw diatance: " + telemetry.getDistanceTravelled().convert(DistanceUnit.MM) + " delta: "
 						+ deltaDistance);
 
-				new DataLogValue("Message Pump-raw angle", "" + angle.getDegrees()).publish();
-				new DataLogValue("Message Pump-delta angle", "" + deltaHeading).publish();
+				new DataLogValue("Message Pump-raw angle", "" + angle.getDegrees(), DataLogLevel.INFO).publish();
+				new DataLogValue("Message Pump-delta angle", "" + deltaHeading, DataLogLevel.INFO).publish();
 				new DataLogValue("Message Pump-raw distance",
-						"" + telemetry.getDistanceTravelled().convert(DistanceUnit.MM)).publish();
-				new DataLogValue("Message Pump-delta distance", "" + deltaDistance).publish();
+						"" + telemetry.getDistanceTravelled().convert(DistanceUnit.MM), DataLogLevel.INFO).publish();
+				new DataLogValue("Message Pump-delta distance", "" + deltaDistance, DataLogLevel.INFO).publish();
 
 				listener.onMessage(new Angle(deltaHeading, AngleUnits.DEGREES),
 						new Distance(deltaDistance, DistanceUnit.MM),
