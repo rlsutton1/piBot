@@ -3,58 +3,94 @@ package au.com.rsutton.robot.roomba;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.openni.VideoMode;
 import org.openni.VideoStream;
 
 public class ColumnEvaluator
 {
 	private int MAX_RANGE = 2000;
 	private int BLOCK_SIZE = 5;
-	private int[] column = new int[MAX_RANGE / BLOCK_SIZE];
-	private float hfov;
+	private PointData[] column = new PointData[MAX_RANGE / BLOCK_SIZE];
 	private float vfov;
-	private double halfX;
-	private double halfY;
 	private double xResolution;
 	private double yResolution;
-	private double yAxisRotation;
+	private double zAxisRotation;
 
-	ColumnEvaluator(VideoStream stream, int x)
+	class PointData
 	{
 
-		for (int i = 0; i < column.length; i++)
+		int hitCount = 0;
+		double totalZ = 0;
+		Vector3D max;
+
+		double getAverageZ()
 		{
-			column[i] = Integer.MIN_VALUE;
+			return totalZ / hitCount;
 		}
 
-		hfov = (stream.getHorizontalFieldOfView());
-		vfov = stream.getVerticalFieldOfView();
+		PointData(Vector3D data)
+		{
+			totalZ = data.getZ();
+			hitCount = 1;
+			max = data;
+		}
 
-		VideoMode videoMode = stream.getVideoMode();
-		xResolution = new Double(videoMode.getResolutionX());
-		yResolution = new Double(videoMode.getResolutionY());
-
-		halfX = xResolution / 2.0;
-		halfY = yResolution / 2.0;
-
-		yAxisRotation = -hfov * ((x - halfX) / xResolution);
+		void addHit(Vector3D data)
+		{
+			totalZ += data.getZ();
+			hitCount++;
+			if (data.getZ() > max.getZ())
+			{
+				max = data;
+			}
+		}
 
 	}
 
-	Vector3D findObjects(int heightCM)
+	ColumnEvaluator(VideoStream stream, int imageXCoord)
 	{
-		int prior = column[0];
+		this(stream.getHorizontalFieldOfView(), stream.getVerticalFieldOfView(), stream.getVideoMode().getResolutionX(),
+				stream.getVideoMode().getResolutionY(), imageXCoord);
+
+	}
+
+	ColumnEvaluator(float hfov, float vfov, double xres, double yres, int imageXCoord)
+	{
+		for (int i = 0; i < column.length; i++)
+		{
+			column[i] = null;
+		}
+
+		this.vfov = vfov;
+
+		xResolution = xres;
+		yResolution = yres;
+
+		// expressed as -0.5< xPosition < 0.5
+		double xPosition = (imageXCoord / xResolution) - 0.5;
+		zAxisRotation = hfov * xPosition;
+	}
+
+	Vector3D findObjects(int minimumHeightCM)
+	{
+		// find lowest points in first third and last third
+
+		// calculate function.
+
+		// find points not adhearing to function.
+
+		PointData prior = column[0];
 		for (int i = 1; i < column.length - 1; i++)
 		{
-			int current = column[i];
-			int next = column[i + 1];
-			if (current != Integer.MIN_VALUE && next != Integer.MIN_VALUE && prior != Integer.MIN_VALUE)
+			PointData current = column[i];
+			PointData next = column[i + 1];
+			if (current != null && next != null && prior != null)
 			{
-				double expected = (prior + next) / 2.0;
-				if (Math.abs(current - expected) > heightCM)
+				// expectedHeight is the average of the previous and next points
+				// in this column
+				double expectedHeight = (prior.getAverageZ() + current.getAverageZ()) / 2.0;
+				if (next.getAverageZ() - expectedHeight > minimumHeightCM)
 				{
-					return new Rotation(RotationOrder.XYZ, 0, 0, yAxisRotation)
-							.applyInverseTo(new Vector3D(0, i * BLOCK_SIZE, 0));
+					return next.max;
 
 				}
 			}
@@ -63,24 +99,29 @@ public class ColumnEvaluator
 		return null;
 	}
 
-	void addPoint(int y, int z)
+	void addPoint(int imageYCoord, int distanceMM)
 	{
 
-		double xAxisRotation = vfov * ((y - halfY) / yResolution);
+		// expressed as -0.5< yPosition < 0.5
+		double yPosition = (imageYCoord / yResolution) - 0.5;
+		double xAxisRotation = -vfov * yPosition;
 
-		Vector3D vector = new Rotation(RotationOrder.XYZ, xAxisRotation, yAxisRotation, 0)
-				.applyTo(new Vector3D(0, 0, 1));
+		double distanceCM = distanceMM / 6.0;
+		Vector3D vector = new Rotation(RotationOrder.XYZ, xAxisRotation, 0, zAxisRotation)
+				.applyTo(new Vector3D(0, distanceCM, 0));
 
-		// rescale unit vector to correct Z value
-		double salez = z / vector.getZ();
-		vector = vector.scalarMultiply(salez / 7.0);
-
-		int height = (int) (vector.getY());
-		int pos = (int) (vector.getZ()) / BLOCK_SIZE;
+		int pos = (int) (vector.getY()) / BLOCK_SIZE;
 
 		if (pos >= 0 && pos <= column.length)
 		{
-			column[pos] = Math.max(column[pos], height);
+			if (column[pos] == null)
+			{
+				column[pos] = new PointData(vector);
+			} else
+
+			{
+				column[pos].addHit(vector);
+			}
 		}
 
 	}

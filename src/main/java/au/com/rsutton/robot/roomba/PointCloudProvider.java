@@ -155,32 +155,35 @@ public class PointCloudProvider
 
 				ShortBuffer sb = frame.getData().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
 				sb.rewind();
-				int z = 0;
+				int distanceMM = 0;
 
 				List<Vector3D> pointCloud = new LinkedList<>();
 
-				for (int x = 0; x < width; x += 10)
+				for (int x = 0; x < width; x += 3)
 				{
 					ColumnEvaluator columnEvaluator = new ColumnEvaluator(stream, x);
 					for (int y = 0; y < height; y += 1)
 					{
-						z = sb.get(x + (y * width));
-						if (z < 0)
+						distanceMM = sb.get(x + (y * width));
+						if (distanceMM < 0)
 						{
-							z = 65536 + z;
+							distanceMM = 65536 + distanceMM;
 						}
-						if (z > 0)
+						if (distanceMM > 0)
 						{
 							// broken with RealSense D435 <br>
 							// Point3D<Float> point =
 							// CoordinateConverter.convertDepthToWorld(stream,
-							// x, y, z);
+							// x, y, distanceMM);
 
-							columnEvaluator.addPoint(y, z);
+							// logger.error("point " + point.getX() + " " +
+							// point.getY() + " " + point.getZ());
+
+							columnEvaluator.addPoint(y, distanceMM);
 
 						}
 					}
-					Vector3D object = columnEvaluator.findObjects(4);
+					Vector3D object = columnEvaluator.findObjects(8);
 					if (object != null)
 					{
 						pointCloud.add(object);
@@ -190,7 +193,7 @@ public class PointCloudProvider
 				frame.release();
 				try
 				{
-					listener.evaluatePointCloud(pointCloud, created);
+					listener.evaluatePointCloud(pointCloud, created, stream.getHorizontalFieldOfView());
 				} catch (HazelcastInstanceNotActiveException e)
 				{
 					// we've been shut down

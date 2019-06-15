@@ -168,7 +168,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		return basePlanner.getDistanceToTarget(pfX, pfY);
 	}
 
-	RateLimiter rateLimiter = RateLimiter.create(1);
+	RateLimiter rateLimiter = RateLimiter.create(1.0 / 5.0);
 	Semaphore singlePass = new Semaphore(1);
 
 	@Override
@@ -185,17 +185,19 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				final Vector3D offset = new Vector3D(pos.getX().convert(DistanceUnit.CM),
 						pos.getY().convert(DistanceUnit.CM), 0);
 
-				int minDistance = 50;
-				int maxDistance = 150;
+				int minDistance = 20;
+				int maxDistance = 100;
 				int step = 5;
+
+				int fov = (int) Math.toDegrees(lastPointCloudMessage.get().message.getHorizontalFieldOfView() / 2.0);
 				// clear
-				for (int clearHeading = -30; clearHeading < 30; clearHeading++)
+				for (int clearHeading = -1 * fov; clearHeading < fov; clearHeading++)
 				{
 					Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading + clearHeading));
 					Vector3D direction = rotation.applyTo(new Vector3D(0, step, 0));
 					Vector3D clear = offset;
 
-					for (int d = minDistance; d < maxDistance + 10; d += step)
+					for (int d = minDistance + step; d < maxDistance; d += step)
 					{
 						clear = clear.add(direction);
 						// worldFromPointCloud.resetPoint((int) clear.getX(),
@@ -212,15 +214,17 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 				Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
 				for (Vector3D observation : lastPointCloudMessage.get().message.getPoints())
 				{
-					if (observation.getNorm() < maxDistance)
-					{
-						Vector3D point = observation;
-						Vector3D spot = rotation.applyTo(point).add(offset);
-						worldFromPointCloud.updatePoint((int) spot.getX(), (int) spot.getY(), Occupancy.OCCUPIED, .40,
-								3);
-						// worldFromPointCloud.writeRadius((int) spot.getX(),
-						// (int) spot.getY(), 1, 1);
-					}
+					if (observation.getZ() < 25)
+						if (observation.getNorm() < maxDistance && observation.getNorm() > minDistance)
+						{
+							Vector3D point = observation;
+							Vector3D spot = rotation.applyTo(point).add(offset);
+							worldFromPointCloud.updatePoint((int) spot.getX(), (int) spot.getY(), Occupancy.OCCUPIED,
+									.40, 1);
+							// worldFromPointCloud.writeRadius((int)
+							// spot.getX(),
+							// (int) spot.getY(), 1, 1);
+						}
 				}
 			}
 			if (!rateLimiter.tryAcquire() || !basePlanner.hasPlannedRoute())

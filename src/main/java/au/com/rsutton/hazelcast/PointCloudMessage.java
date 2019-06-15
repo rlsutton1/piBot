@@ -14,10 +14,22 @@ public class PointCloudMessage extends MessageBase<PointCloudMessage>
 
 	private long created;
 
+	private double horizontalFieldOfView;
+
 	public PointCloudMessage()
 	{
 		super(HcTopic.POINT_CLOUD);
 
+	}
+
+	public void setHorizontalFieldOfView(double horizontalFieldOfView)
+	{
+		this.horizontalFieldOfView = horizontalFieldOfView;
+	}
+
+	public double getHorizontalFieldOfView()
+	{
+		return horizontalFieldOfView;
 	}
 
 	public void setCreated(long created)

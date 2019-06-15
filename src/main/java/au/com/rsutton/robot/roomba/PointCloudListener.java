@@ -9,7 +9,7 @@ import org.openni.VideoMode;
 public interface PointCloudListener
 {
 
-	void evaluatePointCloud(List<Vector3D> pointCloud, long created);
+	void evaluatePointCloud(List<Vector3D> pointCloud, long created, double horizontalFieldOfView);
 
 	VideoMode chooseDepthMode(List<VideoMode> supportedModes);
 

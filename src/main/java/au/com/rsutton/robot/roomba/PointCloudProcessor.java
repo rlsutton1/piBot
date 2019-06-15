@@ -19,7 +19,7 @@ public class PointCloudProcessor implements PointCloudListener
 {
 	PointCloudProvider provider;
 
-	Rotation cameraAngle = new Rotation(RotationOrder.XYZ, Math.toRadians(-15), 0, 0);
+	Rotation cameraAngle = new Rotation(RotationOrder.XYZ, Math.toRadians(15), 0, 0);
 
 	PointCloudProcessor()
 	{
@@ -28,7 +28,7 @@ public class PointCloudProcessor implements PointCloudListener
 	}
 
 	@Override
-	public void evaluatePointCloud(List<Vector3D> pointCloud, long created)
+	public void evaluatePointCloud(List<Vector3D> pointCloud, long created, double hfov)
 	{
 		List<Vector3D> source = new LinkedList<>();
 
@@ -41,6 +41,7 @@ public class PointCloudProcessor implements PointCloudListener
 			source.add(rotatedVector);
 		}
 		PointCloudMessage pcMessage = new PointCloudMessage();
+		pcMessage.setHorizontalFieldOfView(hfov);
 		pcMessage.setCreated(created);
 		pcMessage.setPoints(source);
 		pcMessage.setTopic();
