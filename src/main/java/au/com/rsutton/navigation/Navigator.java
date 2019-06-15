@@ -175,7 +175,7 @@ public class Navigator implements Runnable, NavigatorControl
 				{
 					Bezier bezier = Bezier.createBezier(vals);
 
-					turnRadius = bezier.getRadiusAtPosition(0, (1.0 / (vals.size() + 1)) * 2.0);
+					turnRadius = bezier.getRadiusAtPosition(0 + (1.0 / vals.size()), (1.0 / (vals.size() + 1)) * 2.0);
 					turnRadius /= 2.0;
 
 				} catch (Exception e)

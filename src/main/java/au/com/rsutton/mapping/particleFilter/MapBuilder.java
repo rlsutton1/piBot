@@ -105,7 +105,7 @@ public class MapBuilder
 	volatile boolean crashDetected = false;
 
 	final boolean simulator = false;
-	int maxSpeed = 15;
+	int maxSpeed = 25;
 
 	public void test() throws InterruptedException
 	{
@@ -544,7 +544,7 @@ public class MapBuilder
 					if (isUnexplored(position, 0))
 					{
 
-						if (distance > closestToIdealDistance)
+						if (navigatorControl.isStuck() || distance > closestToIdealDistance)
 						{
 							closestToIdealDistance = distance;
 							return true;
