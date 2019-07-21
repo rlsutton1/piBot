@@ -104,7 +104,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = false;
+	final boolean simulator = true;
 	int maxSpeed = 25;
 
 	public void test() throws InterruptedException
@@ -191,6 +191,9 @@ public class MapBuilder
 			this.poseSource = new RobotPoseSourceTimeTraveling(particleFilterProxy);
 
 			this.navigatorControl = new Navigator(world, poseSource, getShimmedRobot(robot), maxSpeed);
+
+			// new MapStacker(robot, poseSource);
+			// new MapStackerRaw(robot, poseSource);
 
 			// Thread.sleep(20000);
 

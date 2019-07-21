@@ -37,7 +37,7 @@ public enum HazelCastInstance
 		config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(true);
 		TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
 		tcpIpConfig.setEnabled(true);
-		for (int i = 2; i < 22; i++)
+		for (int i = 2; i < 30; i++)
 		{
 			tcpIpConfig.addMember("192.168.0." + i);
 		}

@@ -238,6 +238,20 @@ public class Navigator implements Runnable, NavigatorControl
 
 	}
 
+	double currentRadius = Roomba630.STRAIGHT;
+
+	void adjustRadius(double newRadius)
+	{
+		if (Math.signum(currentRadius) == Math.signum(newRadius))
+		{
+			currentRadius = (currentRadius * 0.35) + (newRadius * 0.65);
+		} else
+		{
+			// almost straight in and change the sign
+			currentRadius = (Roomba630.STRAIGHT - 1) * Math.signum(newRadius);
+		}
+	}
+
 	double setHeadingWithObsticleAvoidance(double desiredTurnRadius, double desiredSpeed)
 	{
 		double setRadis = desiredTurnRadius;
@@ -255,7 +269,8 @@ public class Navigator implements Runnable, NavigatorControl
 		}
 		setRadis = -1.0 * setRadis;
 		new DataLogValue("Desired Turn Radius", "" + setRadis, DataLogLevel.INFO).publish();
-		robot.setTurnRadius(setRadis);
+		adjustRadius(setRadis);
+		robot.setTurnRadius(currentRadius);
 
 		// cap speed so we dont exceed maxturnsPerSecond
 		double maxTurnsPerSecond = 0.25;
@@ -375,6 +390,8 @@ public class Navigator implements Runnable, NavigatorControl
 			}
 
 		}, new Color(255, 0, 0));
+
+		ui.addDataSource(routePlanner.getGdPointSource());
 	}
 
 	private void addPointBehindRobotForBezier(List<Point2D> vals)

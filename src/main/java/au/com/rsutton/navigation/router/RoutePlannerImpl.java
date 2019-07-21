@@ -16,6 +16,7 @@ import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.ui.DataSourceMap;
 
 public class RoutePlannerImpl implements RoutePlanner
 {
@@ -314,6 +315,13 @@ public class RoutePlannerImpl implements RoutePlanner
 		return size;
 	}
 
+	int getValueAtLocation(int x, int y)
+	{
+		int rx = x / blockSize;
+		int ry = y / blockSize;
+		return route.get(rx, ry).totalCost;
+	}
+
 	private ExpansionPoint getRouteForLocation(int x, int y, int radius)
 	{
 		// System.out.println("Route from " + x + "," + y);
@@ -406,5 +414,12 @@ public class RoutePlannerImpl implements RoutePlanner
 	public double getDistanceToTarget(int pfX, int pfY)
 	{
 		return new Vector3D(pfX - targetX, pfY - targetY, 0).getNorm();
+	}
+
+	@Override
+	public DataSourceMap getGdPointSource()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

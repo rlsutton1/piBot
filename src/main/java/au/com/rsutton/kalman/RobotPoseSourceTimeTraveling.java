@@ -3,6 +3,7 @@ package au.com.rsutton.kalman;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
@@ -92,16 +93,61 @@ public class RobotPoseSourceTimeTraveling implements RobotPoseSource, ParticleFi
 
 	public RobotPoseInstant findInstant(long time)
 	{
+		RobotPoseInstant instant1 = null;
+		RobotPoseInstant instant2 = null;
 
 		for (RobotPoseInstant instant : instants)
 		{
 			if (instant.time >= time)
 			{
-				// TODO: interpolate adjacent instants
-				return instant;
+				if (instant1 == null)
+				{
+					instant1 = instant;
+				} else if (instant2 == null)
+				{
+					instant2 = instant;
+				} else
+				{
+					break;
+				}
 			}
 		}
-		return current;
+		if (instant1 == null)
+		{
+			return current;
+		}
+		if (instant2 == null)
+		{
+			return instant1;
+		}
+
+		double x1 = instant1.getXyPosition().getX().convert(DistanceUnit.CM);
+		double y1 = instant1.getXyPosition().getY().convert(DistanceUnit.CM);
+		double h1 = instant1.getHeading();
+
+		double x2 = instant2.getXyPosition().getX().convert(DistanceUnit.CM);
+		double y2 = instant2.getXyPosition().getY().convert(DistanceUnit.CM);
+		double h2 = instant2.getHeading();
+
+		double duration = instant2.time - instant1.time;
+
+		double s1 = (time - instant1.time) / duration;
+		double s2 = 1.0 - s1;
+
+		double x = (x1 * (s1)) + (x2 * (s2));
+		double y = (y1 * (s1)) + (y2 * (s2));
+
+		double change = HeadingHelper.getChangeInHeading(h1, h2);
+		double h = HeadingHelper.normalizeHeading(h1 + (change * (s1)));
+
+		RobotPoseInstant ii = new RobotPoseInstant();
+		ii.heading = new Angle(h, AngleUnits.DEGREES);
+		ii.position = new DistanceXY(x, y, DistanceUnit.CM);
+		ii.status = instant2.status;
+		ii.stdDev = instant2.stdDev;
+
+		return ii;
+
 	}
 
 	@Override

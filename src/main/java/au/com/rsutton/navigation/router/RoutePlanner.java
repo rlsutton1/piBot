@@ -1,5 +1,7 @@
 package au.com.rsutton.navigation.router;
 
+import au.com.rsutton.ui.DataSourceMap;
+
 public interface RoutePlanner
 {
 
@@ -17,5 +19,7 @@ public interface RoutePlanner
 	boolean hasPlannedRoute();
 
 	double getDistanceToTarget(int pfX, int pfY);
+
+	DataSourceMap getGdPointSource();
 
 }

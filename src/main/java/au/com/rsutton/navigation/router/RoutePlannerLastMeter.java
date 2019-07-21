@@ -60,6 +60,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private final AtomicReference<PointCloudWrapper> lastPointCloudMessage = new AtomicReference<>();
 
+	RoutePlannerGD gdPlanner = new RoutePlannerGD();
+
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot,
 			RobotPoseSourceTimeTraveling robotPoseSource)
 	{
@@ -168,7 +170,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		return basePlanner.getDistanceToTarget(pfX, pfY);
 	}
 
-	RateLimiter rateLimiter = RateLimiter.create(1.0 / 5.0);
+	RateLimiter rateLimiter = RateLimiter.create(2);
 	Semaphore singlePass = new Semaphore(1);
 
 	@Override
@@ -332,6 +334,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			LogManager.getLogger()
 					.error("Local Route plan took " + timer.elapsed(TimeUnit.MILLISECONDS) + "ms for radius " + radius);
 
+			gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner);
+
 		} else
 		{
 			if (radius < 300)
@@ -399,6 +403,12 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	{
 		new DataLogValue("PlannerStatus", status.name(), status.getLevel()).publish();
 		this.status = status;
+	}
+
+	@Override
+	public DataSourceMap getGdPointSource()
+	{
+		return gdPlanner;
 	}
 
 }

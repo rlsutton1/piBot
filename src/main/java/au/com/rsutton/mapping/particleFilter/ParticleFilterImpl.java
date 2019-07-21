@@ -105,7 +105,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		this.map = buildMatchingMap(map);
 	}
 
-	private ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
+	public static ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
 	{
 		ProbabilityMap matchMap = new ProbabilityMap(5);
 		matchMap.setDefaultValue(0.0);
