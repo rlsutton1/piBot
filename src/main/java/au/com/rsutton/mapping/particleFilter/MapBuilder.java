@@ -29,6 +29,8 @@ import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.navigation.router.MapStacker;
+import au.com.rsutton.navigation.router.MapStackerRaw;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
@@ -104,7 +106,7 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = true;
+	final boolean simulator = false;
 	int maxSpeed = 25;
 
 	public void test() throws InterruptedException
@@ -192,8 +194,8 @@ public class MapBuilder
 
 			this.navigatorControl = new Navigator(world, poseSource, getShimmedRobot(robot), maxSpeed);
 
-			// new MapStacker(robot, poseSource);
-			// new MapStackerRaw(robot, poseSource);
+			new MapStacker(robot, poseSource);
+			new MapStackerRaw(robot, poseSource);
 
 			// Thread.sleep(20000);
 

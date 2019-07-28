@@ -16,6 +16,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import au.com.rsutton.gradientdescent.GradientDescent;
 import au.com.rsutton.gradientdescent.GradientDescent.GDFunction;
 import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling.RobotPoseInstant;
+import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.DistanceUnit;
@@ -28,12 +29,15 @@ public class RoutePlannerGD implements DataSourceMap
 	private List<Point> pointList = new CopyOnWriteArrayList<>();
 	boolean buildPoints = false;
 
+	volatile double angleToUse = 0;
+
 	public RoutePlannerGD()
 	{
 
 	}
 
 	final Semaphore semaphore = new Semaphore(1);
+	private double lastUsedParameter;
 
 	public void plan(RobotPoseInstant poseSource, RoutePlannerImpl planner)
 	{
@@ -60,10 +64,118 @@ public class RoutePlannerGD implements DataSourceMap
 
 			GDFunction function = plan(poseSource.getHeading(), xy, vals);
 
+			// build list of point for rendering UI
 			buildPoints = true;
 			function.getValue(result);
+			lastUsedParameter = result[0];
+			angleToUse = getRadiusOfArc(result[0], 10);
+
 			semaphore.release();
 		}
+
+	}
+
+	ProbabilityMap makeWallCostMap(DistanceXY pos, int radius, ProbabilityMap world)
+	{
+		// set map to 0(clear) or INF(wall/unexplored)
+
+		List<ExpansionPoint> expansionPoints = new LinkedList<>();
+
+		int BLOCK_SIZE = 5;
+		double EXISTANCE_THRESHOLD = 0.5;
+		int WALL = 1000;
+
+		ProbabilityMap wallCostMap = new ProbabilityMap(BLOCK_SIZE);
+		wallCostMap.setDefaultValue(0.0);
+
+		double x = pos.getX().convert(DistanceUnit.CM);
+		double y = pos.getY().convert(DistanceUnit.CM);
+
+		// copy a radius from the world map into the local map, marking occupied
+		// locations to MAX_VALUE
+		for (int dx = -radius; dx < radius; dx++)
+		{
+			for (int dy = -radius; dy < radius; dy++)
+			{
+				if (world.get(x + dx, y + dy) >= EXISTANCE_THRESHOLD)
+				{
+					wallCostMap.writeRadius((int) (x + dx), (int) (y + dy), Double.MAX_VALUE, 1);
+				}
+			}
+		}
+
+		for (int dx = -radius; dx < radius; dx++)
+		{
+			for (int dy = -radius; dy < radius; dy++)
+			{
+				if (world.get(x + dx, y + dy) < 1)
+				{
+					expansionPoints
+							.add(new ExpansionPoint((int) (x + dx), (int) (y + dy), world.get(x + dx, y + dy), null));
+				}
+			}
+		}
+
+		while (!expansionPoints.isEmpty())
+		{
+			ExpansionPoint point = expansionPoints.get(0);
+			for (ExpansionPoint neighbour : point.getNeighbours(BLOCK_SIZE))
+			{
+				double neighbourValue = wallCostMap.get(neighbour.getX(), neighbour.getY());
+				if (point.getTotalCost() < neighbourValue)
+				{
+					if (point.getTotalCost() == 0)
+					{
+						if (neighbourValue > WALL)
+						{
+							wallCostMap.setValue(neighbour.getX(), neighbour.getY(), WALL);
+							neighbour.setTotalCost((double) WALL);
+							expansionPoints.add(neighbour);
+						} else
+						{
+							// NO OP
+						}
+					} else if (neighbourValue > WALL)
+					{
+						wallCostMap.setValue(neighbour.getX(), neighbour.getY(), point.getTotalCost() + 1);
+						neighbour.setTotalCost(point.getTotalCost() + 1);
+						expansionPoints.add(neighbour);
+					} else
+					{
+						// NO OP
+					}
+				}
+			}
+
+		}
+
+		return wallCostMap;
+
+	}
+
+	double getRadius()
+	{
+		return angleToUse;
+	}
+
+	public double getRadiusOfArc(double angle, double length)
+	{
+		// H is the hieght of the arc
+		// W is the width of the arc
+
+		// formula for the radius of an arc
+
+		// r = (H/2)+ ((W^2)/8H)
+
+		Vector3D v = new Vector3D(0, length, 0);
+
+		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle));
+
+		Vector3D vector = v.add(rotation.applyTo(v));
+		double w = vector.getNorm();
+		double h = rotation.applyTo(v).getX();
+
+		return (h / 2.0) + ((w * w) / (8.0 * h));
 
 	}
 
@@ -77,23 +189,6 @@ public class RoutePlannerGD implements DataSourceMap
 
 		double[] params = new double[] {
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-		// double straight = function.getValue(params);
-		// params[0] = 45;
-		// double left = function.getValue(params);
-		// params[0] = -45;
-		// double right = function.getValue(params);
-		//
-		// if (straight < left && straight < right)
-		// {
-		// params[0] = 0;
-		// } else if (left < straight && left < right)
-		// {
-		// params[0] = 45;
-		// } else
-		// {
-		// params[0] = -45;
-		// }
 
 		new GradientDescent(function, params).descend(0.001, 1);
 
@@ -129,7 +224,9 @@ public class RoutePlannerGD implements DataSourceMap
 
 				double heading = initialHeading;
 
-				double lastParameter = 0;
+				// start with the last used parameter, avoiding wild swings in
+				// direction
+				double lastParameter = lastUsedParameter;
 
 				double pscore = 0;
 				for (double parameter : parameters)

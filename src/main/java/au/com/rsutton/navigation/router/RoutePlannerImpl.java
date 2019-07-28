@@ -419,7 +419,12 @@ public class RoutePlannerImpl implements RoutePlanner
 	@Override
 	public DataSourceMap getGdPointSource()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		throw new RuntimeException("NOt implemented");
+	}
+
+	@Override
+	public double getAngleToUse()
+	{
+		throw new RuntimeException("NOt implemented");
 	}
 }

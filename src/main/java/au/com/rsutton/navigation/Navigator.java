@@ -183,6 +183,7 @@ public class Navigator implements Runnable, NavigatorControl
 					e.printStackTrace();
 				}
 
+				turnRadius = -routePlanner.getAngleToUse();
 				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
 
 				// slow as we approach the target

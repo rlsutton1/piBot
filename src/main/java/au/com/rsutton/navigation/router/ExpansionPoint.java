@@ -1,5 +1,8 @@
 package au.com.rsutton.navigation.router;
 
+import java.util.LinkedList;
+import java.util.List;
+
 public final class ExpansionPoint implements Comparable<ExpansionPoint>
 {
 	private Double totalCost;
@@ -103,5 +106,26 @@ public final class ExpansionPoint implements Comparable<ExpansionPoint>
 	{
 		// pythagoras
 		return (int) Math.sqrt(Math.pow(pfX - x, 2) + Math.pow(pfY - y, 2));
+	}
+
+	public void setTotalCost(Double totalCost)
+	{
+		this.totalCost = totalCost;
+	}
+
+	public List<ExpansionPoint> getNeighbours(int blockSize)
+	{
+		List<ExpansionPoint> points = new LinkedList<>();
+
+		points.add(new ExpansionPoint(x + blockSize, y + 0, 0, this));
+		points.add(new ExpansionPoint(x - blockSize, y + 0, 0, this));
+		points.add(new ExpansionPoint(x + blockSize, y + blockSize, 0, this));
+		points.add(new ExpansionPoint(x - blockSize, y + blockSize, 0, this));
+		points.add(new ExpansionPoint(x + blockSize, y - blockSize, 0, this));
+		points.add(new ExpansionPoint(x - blockSize, y - blockSize, 0, this));
+		points.add(new ExpansionPoint(x + 0, y + blockSize, 0, this));
+		points.add(new ExpansionPoint(x + 0, y - blockSize, 0, this));
+
+		return points;
 	}
 }

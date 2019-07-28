@@ -294,27 +294,6 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			}
 		}
 
-		// // overlay point cloud from depth camera
-		// PointCloudMessage pointCloud = lastPointCloudMessage.get();
-		// if (pointCloud != null && pointCloud.getTime() >
-		// System.currentTimeMillis() - 200L)
-		// {
-		// for (Vector3D obs : pointCloud.getPoints())
-		// {
-		// if (obs.getNorm() < 30)
-		// {
-		// // ignore some dodgy points coming from close by,
-		// // immediately behind the robot
-		// } else
-		// {
-		//
-		// Vector3D point = obs;
-		// Vector3D spot = rotation.applyTo(point).add(offset);
-		// localMap.writeRadius((int) spot.getX(), (int) spot.getY(), 1, 1);
-		// }
-		// }
-		// }
-
 		// look ahead 100 CM
 
 		ExpansionPoint next = basePlanner.getRouteForLocation((int) x, (int) y);
@@ -409,6 +388,12 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	public DataSourceMap getGdPointSource()
 	{
 		return gdPlanner;
+	}
+
+	@Override
+	public double getAngleToUse()
+	{
+		return gdPlanner.angleToUse;
 	}
 
 }
