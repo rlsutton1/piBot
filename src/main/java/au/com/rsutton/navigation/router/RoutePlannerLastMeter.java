@@ -313,7 +313,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			LogManager.getLogger()
 					.error("Local Route plan took " + timer.elapsed(TimeUnit.MILLISECONDS) + "ms for radius " + radius);
 
-			gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner);
+			gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner, world);
 
 		} else
 		{

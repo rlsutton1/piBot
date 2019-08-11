@@ -47,6 +47,8 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 
 	double get(double x, double y);
 
+	double getSubPixelValue(double x, double y);
+
 	int getBlockSize();
 
 	@Override

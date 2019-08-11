@@ -13,10 +13,13 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.google.common.base.Stopwatch;
+
 import au.com.rsutton.gradientdescent.GradientDescent;
 import au.com.rsutton.gradientdescent.GradientDescent.GDFunction;
 import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling.RobotPoseInstant;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.DistanceUnit;
@@ -39,7 +42,7 @@ public class RoutePlannerGD implements DataSourceMap
 	final Semaphore semaphore = new Semaphore(1);
 	private double lastUsedParameter;
 
-	public void plan(RobotPoseInstant poseSource, RoutePlannerImpl planner)
+	public void plan(RobotPoseInstant poseSource, RoutePlannerImpl planner, ProbabilityMapIIFc world)
 	{
 		if (semaphore.tryAcquire())
 		{
@@ -58,24 +61,30 @@ public class RoutePlannerGD implements DataSourceMap
 				next = planner.getRouteForLocation(next.getX(), next.getY());
 				if (i % sampleDistance == 0)
 				{
-					vals.add(new Vector3D(next.getX(), next.getY(), 0));
+					Vector3D wayPoint = new Vector3D(next.getX(), next.getY(), 0);
+					if (wayPoint.distance(xy.getVector(DistanceUnit.CM)) > 10)
+					{
+						vals.add(wayPoint);
+					}
 				}
 			}
 
-			GDFunction function = plan(poseSource.getHeading(), xy, vals);
+			if (vals.size() > 0)
+			{
+				GDFunction function = plan(poseSource.getHeading(), xy, vals, world);
 
-			// build list of point for rendering UI
-			buildPoints = true;
-			function.getValue(result);
-			lastUsedParameter = result[0];
-			angleToUse = getRadiusOfArc(result[0], 10);
-
+				// build list of point for rendering UI
+				buildPoints = true;
+				function.getValue(result);
+				lastUsedParameter = result[0];
+				angleToUse = getRadiusOfArc(result[0], 10);
+			}
 			semaphore.release();
 		}
 
 	}
 
-	ProbabilityMap makeWallCostMap(DistanceXY pos, int radius, ProbabilityMap world)
+	ProbabilityMap makeWallCostMap(DistanceXY pos, int radius, ProbabilityMapIIFc world)
 	{
 		// set map to 0(clear) or INF(wall/unexplored)
 
@@ -93,9 +102,9 @@ public class RoutePlannerGD implements DataSourceMap
 
 		// copy a radius from the world map into the local map, marking occupied
 		// locations to MAX_VALUE
-		for (int dx = -radius; dx < radius; dx++)
+		for (int dx = -radius; dx < radius; dx += BLOCK_SIZE)
 		{
-			for (int dy = -radius; dy < radius; dy++)
+			for (int dy = -radius; dy < radius; dy += BLOCK_SIZE)
 			{
 				if (world.get(x + dx, y + dy) >= EXISTANCE_THRESHOLD)
 				{
@@ -104,9 +113,9 @@ public class RoutePlannerGD implements DataSourceMap
 			}
 		}
 
-		for (int dx = -radius; dx < radius; dx++)
+		for (int dx = -radius; dx < radius; dx += BLOCK_SIZE)
 		{
-			for (int dy = -radius; dy < radius; dy++)
+			for (int dy = -radius; dy < radius; dy += BLOCK_SIZE)
 			{
 				if (world.get(x + dx, y + dy) < 1)
 				{
@@ -116,9 +125,13 @@ public class RoutePlannerGD implements DataSourceMap
 			}
 		}
 
+		int ctr = 0;
 		while (!expansionPoints.isEmpty())
 		{
-			ExpansionPoint point = expansionPoints.get(0);
+			ctr++;
+			if (ctr % 1000 == 0)
+				System.out.println("Size " + expansionPoints.size());
+			ExpansionPoint point = expansionPoints.remove(0);
 			for (ExpansionPoint neighbour : point.getNeighbours(BLOCK_SIZE))
 			{
 				double neighbourValue = wallCostMap.get(neighbour.getX(), neighbour.getY());
@@ -179,27 +192,50 @@ public class RoutePlannerGD implements DataSourceMap
 
 	}
 
-	GDFunction plan(double initialHeading, DistanceXY xy, List<Vector3D> vals)
+	GDFunction plan(double initialHeading, DistanceXY xy, List<Vector3D> vals, ProbabilityMapIIFc world)
 	{
+		Stopwatch timer = Stopwatch.createStarted();
+		GDFunction function = null;
+		try
+		{
+			ProbabilityMap wallCostMap = null;// TODO: makeWallCostMap(xy, 200,
+												// world);
 
-		System.out.println("initialHeading " + initialHeading);
-		System.out.println("XY " + xy);
-		System.out.println("Way Points " + vals);
-		GDFunction function = getCostFunction(initialHeading, xy, vals, false);
+			System.out.println("initialHeading " + initialHeading);
+			System.out.println("XY " + xy);
+			System.out.println("Way Points " + vals);
+			function = getCostFunction(initialHeading, xy, vals, false, false, wallCostMap);
 
-		double[] params = new double[] {
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			double[] params = new double[18];
 
-		new GradientDescent(function, params).descend(0.001, 1);
+			params = new GradientDescent(function, params).descend(0.001, 1);
 
-		function = getCostFunction(initialHeading, xy, vals, true);
+			// limit angles
+			function = getCostFunction(initialHeading, xy, vals, true, false, wallCostMap);
 
-		result = new GradientDescent(function, params).descend(0.001, 1);
+			params = new GradientDescent(function, params).descend(0.001, 1);
+
+			// do wall checks
+			function = getCostFunction(initialHeading, xy, vals, true, true, wallCostMap);
+
+			result = new GradientDescent(function, params).descend(0.001, 1);
+
+			if (Math.abs(result[0]) > 60)
+			{
+				// System.exit(1);
+			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		System.out.println("GD rount plann took " + timer.elapsedMillis());
 
 		return function;
 	}
 
-	private GDFunction getCostFunction(double initialHeading, DistanceXY xy, List<Vector3D> waypoints, boolean smooth)
+	private GDFunction getCostFunction(double initialHeading, DistanceXY xy, List<Vector3D> waypoints, boolean smooth,
+			boolean wallCheck, ProbabilityMap wallCostMap)
 	{
 		GDFunction function = new GDFunction()
 		{
@@ -231,9 +267,12 @@ public class RoutePlannerGD implements DataSourceMap
 				double pscore = 0;
 				for (double parameter : parameters)
 				{
-					// penalize turning and change in turn
+					// penalize change in turn
 					pscore += Math.abs(parameter - lastParameter);
-					// pscore += Math.abs(parameter) / 10.0;
+
+					// penalize turning
+					pscore += Math.abs(parameter) / 2.0;
+
 					lastParameter = parameter;
 
 					Vector3D v = new Vector3D(0, 5, 0);

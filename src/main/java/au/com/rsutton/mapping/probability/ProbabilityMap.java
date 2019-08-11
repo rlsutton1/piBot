@@ -338,6 +338,37 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 		return world.get((int) x / blockSize, (int) y / blockSize);
 	}
 
+	@Override
+	public double getSubPixelValue(double x, double y)
+	{
+		double xa = x / blockSize;
+		double ya = y / blockSize;
+		int x1 = (int) xa;
+		int y1 = (int) ya;
+
+		int x2 = x1 + 1;
+		int y2 = y1 + 1;
+
+		double s1 = 1 - Math.max(Math.abs(x1 - xa), Math.abs(y1 - ya));
+		double s2 = 1 - Math.max(Math.abs(x2 - xa), Math.abs(y1 - ya));
+		double s3 = 1 - Math.max(Math.abs(x2 - xa), Math.abs(y2 - ya));
+		double s4 = 1 - Math.max(Math.abs(x1 - xa), Math.abs(y2 - ya));
+
+		double t = s1 + s2 + s3 + s4;
+
+		s1 = s1 / t;
+		s2 = s2 / t;
+		s3 = s3 / t;
+		s4 = s4 / t;
+
+		double r = s1 * world.get(x1, y1);
+		r += s2 * world.get(x2, y1);
+		r += s3 * world.get(x2, y2);
+		r += s4 * world.get(x1, y2);
+
+		return r;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -443,4 +474,5 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 		world.set((int) x / blockSize, (int) y / blockSize, value);
 
 	}
+
 }
