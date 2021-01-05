@@ -183,7 +183,10 @@ public class Navigator implements Runnable, NavigatorControl
 					e.printStackTrace();
 				}
 
-				turnRadius = -routePlanner.getAngleToUse();
+				turnRadius = -routePlanner.getTurnRadius();
+
+				int direction = routePlanner.getDirection();
+
 				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
 
 				// slow as we approach the target
@@ -192,8 +195,12 @@ public class Navigator implements Runnable, NavigatorControl
 				if (distanceToTarget > 20)
 				{
 					// follow the route to the target
+					if (direction < 0)
+					{
+						speed = -5;
+					}
 
-					speed = setHeadingWithObsticleAvoidance(turnRadius, speed);
+					speed = setHeadingWithObsticleAvoidance(turnRadius, speed * direction);
 					robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
 					System.out.println("1 Set speed to " + speed);
 				} else

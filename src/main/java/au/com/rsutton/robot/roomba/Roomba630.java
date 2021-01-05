@@ -145,6 +145,8 @@ public class Roomba630 implements Runnable
 	}
 
 	Double totalDistanceTraveled;
+
+	Double absoluteTotalDistance;
 	Double totalAngleTurned;
 
 	Distance getDistanceTraveled()
@@ -153,6 +155,15 @@ public class Roomba630 implements Runnable
 		{
 
 			return new Distance(totalDistanceTraveled, DistanceUnit.MM);
+		}
+	}
+
+	Distance getAbsoluteTotalDistance()
+	{
+		synchronized (sync)
+		{
+
+			return new Distance(absoluteTotalDistance, DistanceUnit.MM);
 		}
 	}
 
@@ -208,6 +219,7 @@ public class Roomba630 implements Runnable
 
 				RobotTelemetry location = new RobotTelemetry();
 				location.setDistanceTravelled(getDistanceTraveled());
+				location.setAbsoluteTotalDistance(getAbsoluteTotalDistance());
 				location.setDeadReaconingHeading(getAngleTurned());
 				location.setBumpLeft(getBumpLeft());
 				location.setBumpRight(getBumpRight());
@@ -307,6 +319,14 @@ public class Roomba630 implements Runnable
 		} else
 		{
 			totalDistanceTraveled += distanceTraveled;
+		}
+
+		if (absoluteTotalDistance == null)
+		{
+			absoluteTotalDistance = (double) distanceTraveled;
+		} else
+		{
+			absoluteTotalDistance += Math.abs(distanceTraveled);
 		}
 
 		new DataLogValue("Roomba-Distance Traveled", "" + distanceTraveled, DataLogLevel.INFO).publish();

@@ -22,6 +22,8 @@ public interface RoutePlanner
 
 	DataSourceMap getGdPointSource();
 
-	double getAngleToUse();
+	double getTurnRadius();
+
+	int getDirection();
 
 }

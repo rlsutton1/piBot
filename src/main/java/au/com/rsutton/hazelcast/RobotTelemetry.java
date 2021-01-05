@@ -11,6 +11,8 @@ public class RobotTelemetry extends MessageBase<RobotTelemetry>
 
 	private Distance distanceTravelled;
 
+	private Distance absoluteTotalDistance;
+
 	private long time = System.currentTimeMillis();
 	private boolean bumpLeft;
 	private boolean bumpRight;
@@ -51,6 +53,16 @@ public class RobotTelemetry extends MessageBase<RobotTelemetry>
 	public void setDistanceTravelled(Distance distanceTravelled)
 	{
 		this.distanceTravelled = distanceTravelled;
+	}
+
+	public void setAbsoluteTotalDistance(Distance absoluteTotalDistance)
+	{
+		this.absoluteTotalDistance = absoluteTotalDistance;
+	}
+
+	public Distance getAbsoluteTotalDistance()
+	{
+		return absoluteTotalDistance;
 	}
 
 	public void setTime(long time)

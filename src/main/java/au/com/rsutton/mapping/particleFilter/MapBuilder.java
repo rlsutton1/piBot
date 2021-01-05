@@ -104,8 +104,8 @@ public class MapBuilder
 	Pose nextTarget = null;
 	volatile boolean crashDetected = false;
 
-	final boolean simulator = false;
-	int maxSpeed = 30;
+	final boolean simulator = true;
+	int maxSpeed = 15;
 
 	public void test() throws InterruptedException
 	{
@@ -146,7 +146,8 @@ public class MapBuilder
 			{
 
 				@Override
-				public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+				public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump,
+						Distance absoluteTotalDistance)
 				{
 					if (bump)
 					{

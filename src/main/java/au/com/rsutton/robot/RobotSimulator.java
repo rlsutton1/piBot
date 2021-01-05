@@ -47,6 +47,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	double y = 0;
 
 	double totalDistanceTravelled = 0;
+	double absoluteTotalDistance = 0;
 
 	double heading;
 	private volatile boolean freeze;
@@ -110,6 +111,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			x = nx;
 			y = ny;
 			totalDistanceTravelled += distance;
+			absoluteTotalDistance += Math.abs(distance);
 			bump = false;
 
 			return distance;
@@ -284,6 +286,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			RobotTelemetry message = new RobotTelemetry();
 			message.setDeadReaconingHeading(new Angle(360 - heading, AngleUnits.DEGREES));
 			message.setDistanceTravelled(new Distance(totalDistanceTravelled, DistanceUnit.CM));
+			message.setAbsoluteTotalDistance(new Distance(absoluteTotalDistance, DistanceUnit.CM));
 			message.setBumpLeft(bump);
 			message.setBumpRight(bump);
 			new DataLogValue("Simulator-Distance Traveled", "" + totalDistanceTravelled, DataLogLevel.INFO).publish();
@@ -324,12 +327,12 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump, Distance absoluteTotalDistance)
 	{
 		for (RobotLocationDeltaListener listener : listeners)
 		{
 
-			listener.onMessage(deltaHeading, deltaDistance, bump);
+			listener.onMessage(deltaHeading, deltaDistance, bump, absoluteTotalDistance);
 		}
 
 	}

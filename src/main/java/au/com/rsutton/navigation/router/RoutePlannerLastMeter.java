@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
+import au.com.rsutton.gradientdescent.PlannerNext;
 import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
@@ -60,7 +61,9 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private final AtomicReference<PointCloudWrapper> lastPointCloudMessage = new AtomicReference<>();
 
-	RoutePlannerGD gdPlanner = new RoutePlannerGD();
+	// RoutePlannerFinalStage gdPlanner = new RoutePlannerGD();
+
+	RoutePlannerFinalStage gdPlanner = new PlannerNext();
 
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot,
 			RobotPoseSourceTimeTraveling robotPoseSource)
@@ -313,7 +316,15 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			LogManager.getLogger()
 					.error("Local Route plan took " + timer.elapsed(TimeUnit.MILLISECONDS) + "ms for radius " + radius);
 
-			gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner, world);
+			try
+			{
+
+				gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner, world);
+			} catch (InterruptedException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
 		} else
 		{
@@ -373,9 +384,10 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	}
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump, Distance absoluteTotalDistance)
 	{
 		// these messages are not needed here
+		gdPlanner.setAbsoluteTotalDistance(absoluteTotalDistance);
 	}
 
 	void setStatus(RoutePlannerStatus status)
@@ -387,13 +399,19 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	@Override
 	public DataSourceMap getGdPointSource()
 	{
-		return gdPlanner;
+		return (DataSourceMap) gdPlanner;
 	}
 
 	@Override
-	public double getAngleToUse()
+	public double getTurnRadius()
 	{
-		return gdPlanner.angleToUse;
+		return gdPlanner.getTurnRadius();
+	}
+
+	@Override
+	public int getDirection()
+	{
+		return gdPlanner.getDirection();
 	}
 
 }

@@ -7,7 +7,7 @@ import au.com.rsutton.units.Distance;
 public interface RobotLocationDeltaListener
 {
 
-	void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump);
+	void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump, Distance absoluteTotalDistance);
 
 	void onMessage(LidarScan scan);
 

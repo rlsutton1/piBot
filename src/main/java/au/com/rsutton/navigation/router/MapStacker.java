@@ -195,7 +195,7 @@ public class MapStacker implements RobotLocationDeltaListener, DataSourceMap
 	}
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump, Distance absoluteTotalDistance)
 	{
 		// these messages are not needed here
 	}

@@ -223,7 +223,7 @@ public class SubMapBuilder implements RobotLocationDeltaListener
 	}
 
 	@Override
-	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump)
+	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump, Distance absoluteTotalDistance)
 	{
 		// not used here
 	}

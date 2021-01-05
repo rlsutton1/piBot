@@ -124,7 +124,7 @@ public class Particle
 	 * scans upto maxDistance, returning the distance of the strongest match
 	 * 
 	 * @param currentWorld
-	 * @param angle
+	 * @param thetaDelta
 	 * @param maxDistance
 	 * @param occupancyThreshold
 	 * @return

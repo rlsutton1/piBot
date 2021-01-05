@@ -107,10 +107,12 @@ public class RobotLocationDeltaMessagePump
 				new DataLogValue("Message Pump-raw distance",
 						"" + telemetry.getDistanceTravelled().convert(DistanceUnit.MM), DataLogLevel.INFO).publish();
 				new DataLogValue("Message Pump-delta distance", "" + deltaDistance, DataLogLevel.INFO).publish();
+				new DataLogValue("Message Absolute total distance",
+						"" + telemetry.getAbsoluteTotalDistance().toString(), DataLogLevel.INFO).publish();
 
 				listener.onMessage(new Angle(deltaHeading, AngleUnits.DEGREES),
-						new Distance(deltaDistance, DistanceUnit.MM),
-						telemetry.isBumpLeft() || telemetry.isBumpRight());
+						new Distance(deltaDistance, DistanceUnit.MM), telemetry.isBumpLeft() || telemetry.isBumpRight(),
+						telemetry.getAbsoluteTotalDistance());
 				logger.warn("Recieved and dispatched RobotLocation");
 			} else
 			{

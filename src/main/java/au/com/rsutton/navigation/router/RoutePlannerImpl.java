@@ -423,8 +423,14 @@ public class RoutePlannerImpl implements RoutePlanner
 	}
 
 	@Override
-	public double getAngleToUse()
+	public double getTurnRadius()
 	{
 		throw new RuntimeException("NOt implemented");
+	}
+
+	@Override
+	public int getDirection()
+	{
+		return 1;
 	}
 }

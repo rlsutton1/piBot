@@ -142,7 +142,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 		{
 
 			@Override
-			public void onMessage(final Angle deltaHeading, final Distance deltaDistance, boolean bump)
+			public void onMessage(final Angle deltaHeading, final Distance deltaDistance, boolean bump,
+					Distance absoluteTotalDistance)
 			{
 
 				if (lock.tryLock())

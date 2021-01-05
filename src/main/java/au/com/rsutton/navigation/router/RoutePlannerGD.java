@@ -22,9 +22,10 @@ import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.ui.DataSourceMap;
+import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
-public class RoutePlannerGD implements DataSourceMap
+public class RoutePlannerGD implements DataSourceMap, RoutePlannerFinalStage
 {
 
 	private double[] result = new double[] {
@@ -42,6 +43,7 @@ public class RoutePlannerGD implements DataSourceMap
 	final Semaphore semaphore = new Semaphore(1);
 	private double lastUsedParameter;
 
+	@Override
 	public void plan(RobotPoseInstant poseSource, RoutePlannerImpl planner, ProbabilityMapIIFc world)
 	{
 		if (semaphore.tryAcquire())
@@ -208,17 +210,25 @@ public class RoutePlannerGD implements DataSourceMap
 
 			double[] params = new double[18];
 
-			params = new GradientDescent(function, params).descend(0.001, 1);
+			// params = new GradientDescent(function,
+			// params).simulatedAnnealing(0.001, 1);
 
 			// limit angles
-			function = getCostFunction(initialHeading, xy, vals, true, false, wallCostMap);
+			// function = getCostFunction(initialHeading, xy, vals, true, false,
+			// wallCostMap);
 
-			params = new GradientDescent(function, params).descend(0.001, 1);
+			// params = new GradientDescent(function,
+			// params).simulatedAnnealing(0.001, 1);
 
 			// do wall checks
 			function = getCostFunction(initialHeading, xy, vals, true, true, wallCostMap);
 
-			result = new GradientDescent(function, params).descend(0.001, 1);
+			// params = new GradientDescent(function,
+			// params).simulatedAnnealing(0.001, 1);
+			// params = new GradientDescent(function,
+			// params).simulatedAnnealing(0.001, 1);
+
+			result = new GradientDescent(function, params).simulatedAnnealing(0.001, 1);
 
 			if (Math.abs(result[0]) > 60)
 			{
@@ -256,6 +266,9 @@ public class RoutePlannerGD implements DataSourceMap
 
 				Vector3D position = xy.getVector(DistanceUnit.CM);
 
+				double straight = 0;
+				double accel = 0;
+				double waypoint = 0;
 				double score = 0;
 
 				double heading = initialHeading;
@@ -264,14 +277,13 @@ public class RoutePlannerGD implements DataSourceMap
 				// direction
 				double lastParameter = lastUsedParameter;
 
-				double pscore = 0;
 				for (double parameter : parameters)
 				{
 					// penalize change in turn
-					pscore += Math.abs(parameter - lastParameter);
+					straight = Math.max(straight, Math.abs(parameter - lastParameter));
 
 					// penalize turning
-					pscore += Math.abs(parameter) / 2.0;
+					accel = Math.max(accel, Math.abs(parameter));
 
 					lastParameter = parameter;
 
@@ -298,12 +310,14 @@ public class RoutePlannerGD implements DataSourceMap
 				}
 				for (int i = 0; i < bests.length; i++)
 				{
-					score += bests[i];
+					waypoint += bests[i];
 				}
-				if (smooth)
-				{
-					score += pscore;
-				}
+				double scaledAccel = accel / 90.0;
+				double scaledWaypoint = waypoint / (parameters.length * 5 * waypoints.size());
+				double scaledStraight = 0;
+				// System.out.println("a: " + scaledAccel + " w: " +
+				// scaledWaypoint + " s: " + scaledStraight);
+				score = Math.max(scaledAccel, Math.max(scaledWaypoint, scaledStraight));
 
 				return score;
 			}
@@ -329,6 +343,25 @@ public class RoutePlannerGD implements DataSourceMap
 		graphics.drawLine((int) (pointOriginX), (int) (pointOriginY), (int) ((pointOriginX + 5)),
 				(int) ((pointOriginY + 5)));
 		// System.out.println(pointOriginX + " " + pointOriginY + " " + value);
+
+	}
+
+	@Override
+	public double getTurnRadius()
+	{
+		return angleToUse;
+	}
+
+	@Override
+	public int getDirection()
+	{
+		return 1;
+	}
+
+	@Override
+	public void setAbsoluteTotalDistance(Distance absoluteTotalDistance)
+	{
+		// TODO Auto-generated method stub
 
 	}
 
