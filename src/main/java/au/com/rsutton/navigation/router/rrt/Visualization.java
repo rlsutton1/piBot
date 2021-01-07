@@ -16,6 +16,7 @@ public class Visualization extends JFrame
 	private static final long serialVersionUID = -4490943128993707547L;
 
 	JPanel graph;
+	BufferedImage image;
 
 	// static public void main(String[] args)
 	// {
@@ -23,7 +24,7 @@ public class Visualization extends JFrame
 	//
 	// }
 
-	public Visualization(String string, int x, int y, int width, int height, BufferedImage image)
+	public Visualization(String string, int x, int y, int width, int height)
 	{
 		if (StringUtils.isNotBlank(string))
 		{
@@ -54,6 +55,11 @@ public class Visualization extends JFrame
 		setLocation(x, y);
 		setVisible(true);
 
+	}
+
+	public void setImage(BufferedImage image2)
+	{
+		this.image = image2;
 	}
 
 }

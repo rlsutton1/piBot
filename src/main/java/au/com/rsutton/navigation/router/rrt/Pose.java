@@ -14,7 +14,12 @@ public interface Pose<T>
 
 	public boolean canConnect(T pose2);
 
+	public boolean canBridge(T pose2);
+
 	public void updateParent(T parent);
 
 	public T copy();
+
+	public T invertDirection();
+
 }

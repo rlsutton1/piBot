@@ -12,7 +12,7 @@ public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 	Double theta = null;
 
 	final double maxAngle = 20;
-	final boolean isReverse;
+	boolean isReverse;
 
 	Random rand = new Random(1);
 
@@ -190,5 +190,22 @@ public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 	public boolean isReverse()
 	{
 		return isReverse;
+	}
+
+	@Override
+	public boolean canBridge(Pose2DWithConstraint pose2)
+	{
+
+		Pose2DWithConstraint copy = pose2.copy();
+		copy.theta = copy.theta + 180.0;
+
+		return !isReverse && !pose2.isReverse && canConnect(copy);
+	}
+
+	@Override
+	public Pose2DWithConstraint invertDirection()
+	{
+		theta = theta + 180;
+		return this;
 	}
 }

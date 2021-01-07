@@ -95,4 +95,16 @@ public class Pose2D implements Pose<Pose2D>
 	{
 		return new Pose2D(x, y);
 	}
+
+	@Override
+	public Pose2D invertDirection()
+	{
+		return this;
+	}
+
+	@Override
+	public boolean canBridge(Pose2D pose2)
+	{
+		return true;
+	}
 }

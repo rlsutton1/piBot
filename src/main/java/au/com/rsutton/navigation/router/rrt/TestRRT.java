@@ -15,13 +15,19 @@ public class TestRRT
 
 	Pose2DWithConstraint start = new Pose2DWithConstraint(25, 5, 180.0d, false);
 	Pose2DWithConstraint target = new Pose2DWithConstraint(20, 25, 45.0d, false);
+	private BufferedImage image;
+	private Visualization visualization;
+	private Graphics2D graphics;
+	private int width;
+	private int height;
 
 	@Test
 	public void loop() throws Exception
 	{
 
+		createUI();
 		String times = "";
-		for (int i = 0; i < 50; i++)
+		for (int i = 0; i < 100; i++)
 		{
 			Stopwatch timer = Stopwatch.createStarted();
 			do
@@ -36,11 +42,11 @@ public class TestRRT
 						false);
 			} while (getMap().get((int) target.getX(), (int) target.getY()) != 0);
 
-			RRT<Pose2DWithConstraint> rrt = new RRT<>(start, target, getMap(), getNodeListener());
+			RrtBi<Pose2DWithConstraint> rrt = new RrtBi<>(start, target, getMap(), getNodeListener());
 			// RRT<Pose2D> rrt = new RRT<>(new Pose2D(20, 5), new Pose2D(20,
 			// 20),
 			// getMap());
-			rrt.solve(500000);
+			rrt.solve(100, 3);
 			times += "\n" + timer.elapsed(TimeUnit.SECONDS);
 			TimeUnit.SECONDS.sleep(3);
 
@@ -49,16 +55,24 @@ public class TestRRT
 		TimeUnit.HOURS.sleep(1);
 	}
 
+	private void createUI()
+	{
+
+		width = 1200;
+		height = 1200;
+
+		visualization = new Visualization("title", 1000, 0, width, height);
+
+	}
+
 	private NodeListener<Pose2DWithConstraint> getNodeListener()
 	{
 
-		int width = 1200;
-		int height = 1200;
-		int scaleUp = 30;
+		image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		graphics = (Graphics2D) image.getGraphics();
 
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		Visualization visualization = new Visualization("title", 1000, 0, width, height, image);
-		Graphics2D graphics = (Graphics2D) image.getGraphics();
+		visualization.setImage(image);
+		int scaleUp = 30;
 
 		graphics.setColor(Color.GREEN);
 		Array2d<Integer> map = getMap();

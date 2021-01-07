@@ -1,5 +1,7 @@
 package au.com.rsutton.navigation.router.rrt;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class RrtNode<T extends Pose<T>>
@@ -9,6 +11,7 @@ class RrtNode<T extends Pose<T>>
 	int id = seed.getAndIncrement();
 	private T pose;
 	private RrtNode<T> parent;
+	private Map<Integer, RrtNode<T>> children = new HashMap<>();
 	private double cost;
 
 	public RrtNode<T> getParent()
@@ -21,12 +24,31 @@ class RrtNode<T extends Pose<T>>
 		return cost;
 	}
 
+	public Map<Integer, RrtNode<T>> getChildren()
+	{
+		return children;
+	}
+
+	public void discard()
+	{
+		children.clear();
+		parent = null;
+		pose = null;
+	}
+
 	public void setParent(RrtNode<T> parent, double cost)
 	{
 		if (parent == this)
 		{
 			throw new RuntimeException("Illegal parent");
 		}
+
+		if (this.parent != null)
+		{
+			this.parent.children.remove(id);
+		}
+		parent.children.put(id, this);
+
 		this.parent = parent;
 		this.cost = cost;
 		this.pose.updateParent(parent.pose);
@@ -38,6 +60,7 @@ class RrtNode<T extends Pose<T>>
 		if (parent != null)
 		{
 			this.parent = parent;
+			parent.children.put(id, this);
 
 		} else
 		{
@@ -117,6 +140,11 @@ class RrtNode<T extends Pose<T>>
 		return pose.canConnect(pose2.pose);
 	}
 
+	public boolean canBridge(RrtNode<T> pose2)
+	{
+		return pose.canBridge(pose2.getPose());
+	}
+
 	public T getPose()
 	{
 		return pose;
@@ -126,6 +154,11 @@ class RrtNode<T extends Pose<T>>
 	public String toString()
 	{
 		return "RrtNode [id=" + id + ", cost=" + cost + ", pose=" + pose + "]";
+	}
+
+	public RrtNode<T> copy()
+	{
+		return new RrtNode<>(pose.copy(), parent, cost);
 	}
 
 }

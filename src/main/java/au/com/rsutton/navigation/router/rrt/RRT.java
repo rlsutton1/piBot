@@ -66,7 +66,7 @@ public class RRT<T extends Pose<T>>
 		{
 			writeSolution(solution);
 			solution.calculateCost(target);
-			notifySolution(solution, Color.RED);
+			notifySolution(solution, Color.RED, targetNode, nodeListener);
 		}
 
 		dumpMap();
@@ -74,7 +74,7 @@ public class RRT<T extends Pose<T>>
 		System.out.println("Steps " + steps);
 		System.out.println("Duration " + timer.elapsed(TimeUnit.SECONDS));
 
-		System.out.println("Solution cost is " + getPathCost(solution));
+		System.out.println("Solution cost is " + getPathCost(solution, nodes.size() + 10));
 
 	}
 
@@ -106,7 +106,7 @@ public class RRT<T extends Pose<T>>
 																	// *
 																	// 0.1);
 
-					double pathCost = getPathCost(newNode);
+					double pathCost = getPathCost(newNode, nodes.size() + 10);
 
 					if (cost < 1 && pathCost < bestPath)
 					{
@@ -119,12 +119,13 @@ public class RRT<T extends Pose<T>>
 						bestPath = pathCost;
 						System.out.println("Solution improved " + cost);
 						System.out.println("New path cost " + pathCost);
-						notifySolution(solution, Color.RED);
+						notifySolution(solution, Color.RED, targetNode, nodeListener);
 					}
 
 				}
 				if (bestSolution <= 2.0)
 				{
+					// TODO: relinkNodes is still broken
 					// relinkNodes(newNode);
 				}
 				nodes.add(newNode);
@@ -146,7 +147,8 @@ public class RRT<T extends Pose<T>>
 		return steps;
 	}
 
-	private void notifySolution(RrtNode<T> solution, Color color)
+	static public <T extends Pose<T>> void notifySolution(RrtNode<T> solution, Color color, RrtNode<T> targetNode,
+			NodeListener<T> nodeListener)
 	{
 		System.out.println("solution " + solution);
 		System.out.println("target " + targetNode);
@@ -183,33 +185,45 @@ public class RRT<T extends Pose<T>>
 
 	private void relinkNodes(RrtNode<T> parent)
 	{
+
+		// this is still broken, it violates constraints!!!!!
+
 		// find near nodes with score that would benifit if newNode was their
 		// parent
 		List<RrtNode<T>> nodesToRelink = findNodesToRelink(parent);
 
 		for (RrtNode<T> node : nodesToRelink)
 		{
+			RrtNode<T> copyOfParent = node.getParent().copy();
 			if (parent.canConnect(node))
 			{
 				node.setParent(parent, node.calculateCost(parent));
+				List<RrtNode<T>> children = new LinkedList<>(node.getChildren().values());
+				for (RrtNode<T> childNode : children)
+				{
+					if (!node.canConnect(childNode))
+					{
+						childNode.setParent(copyOfParent, childNode.calculateCost(copyOfParent));
+					}
+				}
 			}
 		}
 
 	}
 
-	private double getPathCost(RrtNode<T> node)
+	static public double getPathCost(RrtNode<?> node, int limit)
 	{
-		RrtNode<T> tmp = node;
+		RrtNode<?> tmp = node;
 		// find path to root
 		double cost = 0;
 		int ctr = 0;
-		while (tmp != null && ctr < nodes.size())
+		while (tmp != null && ctr < limit)
 		{
 			cost += tmp.getCost();
 			tmp = tmp.getParent();
 			ctr++;
 		}
-		if (ctr == nodes.size() + 10)
+		if (ctr == limit)
 		{
 			System.out.println("Path cost failure");
 			cost += 1_000_000;
@@ -232,8 +246,8 @@ public class RRT<T extends Pose<T>>
 		for (RrtNode<T> node : shortList)
 		{
 
-			double oldCost = getPathCost(node.getParent());
-			double newCost = getPathCost(newParent);
+			double oldCost = getPathCost(node.getParent(), nodes.size() + 10);
+			double newCost = getPathCost(newParent, nodes.size() + 10);
 
 			double oldDistance = node.calculateCost(node.getParent());
 			double newDistance = node.calculateCost(newParent);
@@ -281,7 +295,7 @@ public class RRT<T extends Pose<T>>
 	// return shortList;
 	// }
 
-	private List<RrtNode<T>> getNearbyNodes(int x, int y, int minReturn)
+	public List<RrtNode<T>> getNearbyNodes(int x, int y, int minReturn)
 	{
 
 		int maxRadius = Math.max(map.getMaxX(), map.getMaxY());
@@ -455,6 +469,16 @@ public class RRT<T extends Pose<T>>
 			}
 		}
 		return selectedNode;
+	}
+
+	public boolean hasSolution()
+	{
+		return solution != null;
+	}
+
+	public RrtNode<T> getSolution()
+	{
+		return solution;
 	}
 
 }
