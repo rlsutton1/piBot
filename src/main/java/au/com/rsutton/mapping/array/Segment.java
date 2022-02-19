@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.array;
 
-public interface Segment<T>
+interface Segment<T>
 {
 
 	T get(int x, int y);

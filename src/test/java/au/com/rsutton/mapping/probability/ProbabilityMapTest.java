@@ -11,7 +11,7 @@ public class ProbabilityMapTest
 	public void test()
 	{
 		int worldSize = 50;
-		ProbabilityMapIIFc world = new ProbabilityMap(1);
+		ProbabilityMapIIFc world = new ProbabilityMap(1, 0.5);
 
 		Random r = new Random();
 
@@ -37,7 +37,7 @@ public class ProbabilityMapTest
 	@Test
 	public void testUp()
 	{
-		ProbabilityMapIIFc world = new ProbabilityMap(1);
+		ProbabilityMapIIFc world = new ProbabilityMap(1, 0.5);
 
 		for (int i = 0; i < 20; i++)
 		{
@@ -49,7 +49,7 @@ public class ProbabilityMapTest
 	@Test
 	public void drawWorld()
 	{
-		ProbabilityMapIIFc world = new ProbabilityMap(10);
+		ProbabilityMapIIFc world = new ProbabilityMap(10, 0.5);
 		world.drawLine(0, 0, 0, 89, Occupancy.OCCUPIED, 1.0, 2);// a
 		world.drawLine(0, 0, -141, 0, Occupancy.OCCUPIED, 1.0, 2);// b
 		world.drawLine(-141, 0, -141, 42, Occupancy.OCCUPIED, 1.0, 2);// c

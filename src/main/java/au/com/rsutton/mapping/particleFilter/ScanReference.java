@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
-public interface ScanReference
+interface ScanReference
 {
 
 	ParticleFilterObservationSet getScan();

@@ -8,7 +8,7 @@ import ev3dev.sensors.slamtec.RPLidarA1ServiceException;
 import ev3dev.sensors.slamtec.RPLidarProvider;
 import ev3dev.sensors.slamtec.model.Scan;
 
-public class RPLidarAdaptor implements Runnable
+class RPLidarAdaptor implements Runnable
 {
 
 	public static final String RPLIDAR_USB_PORT = "rplidar usb port";

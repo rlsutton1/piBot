@@ -15,7 +15,7 @@ import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
 import au.com.rsutton.units.Time;
 
-public class RobotImple implements RobotInterface
+class RobotImple implements RobotInterface
 {
 
 	double turnRadius = 0;

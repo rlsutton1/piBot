@@ -46,7 +46,7 @@ import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
-public class ParticleFilterImpl implements ParticleFilterIfc
+class ParticleFilterImpl implements ParticleFilterIfc
 {
 
 	private static final double MINIMUM_MEANINGFUL_RATING = 0.0001;
@@ -107,8 +107,8 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	public static ProbabilityMap buildMatchingMap(ProbabilityMapIIFc source)
 	{
-		ProbabilityMap matchMap = new ProbabilityMap(5);
-		matchMap.setDefaultValue(0.0);
+		ProbabilityMap matchMap = new ProbabilityMap(5, 0.0);
+
 		matchMap.erase();
 		int radius = 25;
 
@@ -410,7 +410,7 @@ public class ParticleFilterImpl implements ParticleFilterIfc
 
 	}
 
-	class ParticleRef implements Comparable<Double>
+	private class ParticleRef implements Comparable<Double>
 	{
 		Particle particle;
 		Double value;

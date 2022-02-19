@@ -1,8 +1,10 @@
 package au.com.rsutton.navigation.router.rrt;
 
-public interface Pose<T>
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+
+interface Pose<T>
 {
-	public T getRandomPointInMapSpace(Array2d<Integer> map, int steps);
+	public T getRandomPointInMapSpace(ProbabilityMapIIFc map, RttPhase rttPhase);
 
 	public double calculateCost(T from);
 

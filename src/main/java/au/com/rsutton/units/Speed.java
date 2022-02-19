@@ -33,6 +33,16 @@ public class Speed implements Serializable
 		return Objects.toStringHelper(Speed.class).add("distance", distance).add("time", time).toString();
 	}
 
+	public static Speed cmPerSec(double value)
+	{
+		return new Speed(new Distance(value, DistanceUnit.CM), Time.perSecond());
+	}
+
+	public double getCmPerSec()
+	{
+		return getSpeed(DistanceUnit.CM, TimeUnit.SECONDS);
+	}
+
 	public double getSpeed(DistanceUnit distanceU, TimeUnit timeU)
 	{
 

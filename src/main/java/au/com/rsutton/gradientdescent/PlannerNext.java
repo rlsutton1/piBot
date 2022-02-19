@@ -24,13 +24,13 @@ import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
+import au.com.rsutton.navigation.router.RoutePlanner;
 import au.com.rsutton.navigation.router.RoutePlannerFinalStage;
-import au.com.rsutton.navigation.router.RoutePlannerImpl;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 
-public class PlannerNext implements RoutePlannerFinalStage, DataSourceMap
+class PlannerNext implements RoutePlannerFinalStage, DataSourceMap
 {
 
 	static final int REQUIRED_ACCURACY = 5;
@@ -59,7 +59,7 @@ public class PlannerNext implements RoutePlannerFinalStage, DataSourceMap
 		// previous turn angle
 		double thetaDelta = 0;
 
-		ProbabilityMap map = new ProbabilityMap(5);
+		ProbabilityMap map = new ProbabilityMap(5, 0.5);
 
 		State initialState = new State(targets, x, y, angle, new Transition((int) thetaDelta, STEP_SIZE));
 
@@ -106,7 +106,7 @@ public class PlannerNext implements RoutePlannerFinalStage, DataSourceMap
 	private Distance absoluteTotalDistance;
 
 	@Override
-	public void plan(RobotPoseInstant poseSource, RoutePlannerImpl planner, ProbabilityMapIIFc world)
+	public void plan(RobotPoseInstant poseSource, RoutePlanner planner, ProbabilityMapIIFc world)
 			throws InterruptedException
 	{
 		if (semaphore.tryAcquire())

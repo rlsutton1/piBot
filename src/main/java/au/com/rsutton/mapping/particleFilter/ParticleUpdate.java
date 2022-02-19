@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.particleFilter;
 
-public interface ParticleUpdate
+interface ParticleUpdate
 {
 
 	double getDeltaHeading();

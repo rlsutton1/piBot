@@ -29,7 +29,6 @@ import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
-import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.CoordinateClickListener;
@@ -60,7 +59,7 @@ public class MapBuilder
 
 	private MapDrawingWindow panel;
 
-	ProbabilityMapIIFc world = new ProbabilityMap(5);
+	ProbabilityMapIIFc world = new ProbabilityMap(5, 0.5);
 
 	private NavigatorControl navigatorControl;
 
@@ -71,7 +70,7 @@ public class MapBuilder
 
 	boolean addMap = true;
 
-	class SubMapHolder
+	private class SubMapHolder
 	{
 		public SubMapHolder(Pose pose, ProbabilityMapIIFc map)
 		{
@@ -123,14 +122,14 @@ public class MapBuilder
 				RobotSimulator robotS;
 				if (useKitchenMap)
 				{
-					robotS = new RobotSimulator(KitchenMapBuilder.buildMap());
+					robotS = new RobotSimulator(KitchenMapBuilder.buildMap(), -180, 60);
 
 					robotS.setLocation(-150, 100, new Random().nextInt(360));
 				} else
 				{
 					// robotS = new RobotSimulator(LoopMapBuilder.buildMap());
 
-					robotS = new RobotSimulator(BoxMapBuilder.buildMap());
+					robotS = new RobotSimulator(BoxMapBuilder.buildMap(), 10, 10);
 
 					robotS.setLocation(400, 400, new Random().nextInt(360));
 				}
@@ -448,8 +447,7 @@ public class MapBuilder
 
 			if (nextTarget != null)
 			{
-				navigatorControl.calculateRouteTo((int) nextTarget.getX(), (int) nextTarget.getY(), null,
-						RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				navigatorControl.calculateRouteTo(new Pose(nextTarget.getX(), nextTarget.getY(), 0));
 				nextTarget = null;
 			} else
 			{
@@ -469,13 +467,12 @@ public class MapBuilder
 			addMap = false;
 			if (subMaps.isEmpty())
 			{
-				navigatorControl.calculateRouteTo(0, 0, null, RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				navigatorControl.calculateRouteTo(new Pose(0, 0, 0));
 
 			} else
 			{
 				SubMapHolder map = subMaps.get((int) (Math.random() * subMaps.size()));
-				navigatorControl.calculateRouteTo((int) map.getMapPose().getX(), (int) map.getMapPose().getY(), null,
-						RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+				navigatorControl.calculateRouteTo(new Pose(map.getMapPose().getX(), map.getMapPose().getY(), 0));
 
 			}
 		}
@@ -523,8 +520,7 @@ public class MapBuilder
 		if (location != null)
 		{
 			vistedLocations.add(location);
-			navigatorControl.calculateRouteTo(location.getX(), location.getY(), null,
-					RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+			navigatorControl.calculateRouteTo(new Pose(location.getX(), location.getY(), 0));
 
 			return true;
 		}

@@ -19,7 +19,7 @@ import com.hazelcast.core.MessageListener;
 
 import au.com.rsutton.hazelcast.DataLogValue;
 
-public class DataPanel extends JPanel implements MessageListener<DataLogValue>, Runnable
+class DataPanel extends JPanel implements MessageListener<DataLogValue>, Runnable
 {
 
 	private static final long serialVersionUID = 1L;

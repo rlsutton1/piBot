@@ -9,7 +9,7 @@ public class KitchenMapBuilder
 
 	public static ProbabilityMap buildMap()
 	{
-		ProbabilityMap world = new ProbabilityMap(5);
+		ProbabilityMap world = new ProbabilityMap(5, 0.5);
 
 		buildKitchenMap(world, 2);
 

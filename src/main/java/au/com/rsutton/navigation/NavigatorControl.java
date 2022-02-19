@@ -1,6 +1,6 @@
 package au.com.rsutton.navigation;
 
-import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.mapping.particleFilter.Pose;
 
 public interface NavigatorControl
 {
@@ -23,7 +23,7 @@ public interface NavigatorControl
 	 * @param y
 	 * @param heading
 	 */
-	void calculateRouteTo(int x, int y, Double heading, RouteOption routeOption);
+	void calculateRouteTo(Pose pose);
 
 	boolean hasReachedDestination();
 

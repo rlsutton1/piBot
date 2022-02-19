@@ -11,7 +11,7 @@ public class BoxMapBuilder
 
 	public static ProbabilityMap buildMap()
 	{
-		ProbabilityMap world = new ProbabilityMap(5);
+		ProbabilityMap world = new ProbabilityMap(5, 0.5);
 
 		buildMap(world, 2);
 

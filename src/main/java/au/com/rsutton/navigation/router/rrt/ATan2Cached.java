@@ -3,7 +3,7 @@ package au.com.rsutton.navigation.router.rrt;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ATan2Cached
+class ATan2Cached
 {
 
 	private static Map<String, Double> cache = new HashMap<>();

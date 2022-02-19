@@ -11,12 +11,16 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 
-public class RRT<T extends Pose<T>>
+import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
+import au.com.rsutton.mapping.array.SparseArray;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+
+class RRT<T extends Pose<T>>
 {
-	Array2d<Integer> map;
+	ProbabilityMapIIFc map;
 	private RrtNode<T> root;
 	private List<RrtNode<T>> nodes = new LinkedList<>();
-	Array2d<List<RrtNode<T>>> nodeMap;
+	SparseArray<List<RrtNode<T>>> nodeMap;
 	private T target;
 	private RrtNode<T> targetNode;
 	private NodeListener<T> nodeListener;
@@ -27,7 +31,7 @@ public class RRT<T extends Pose<T>>
 
 	static Random rand;
 
-	RRT(T start, T target, Array2d<Integer> map, NodeListener<T> nodeListener)
+	RRT(T start, T target, ProbabilityMapIIFc map, NodeListener<T> nodeListener)
 	{
 		this.map = map;
 		this.target = target;
@@ -35,12 +39,23 @@ public class RRT<T extends Pose<T>>
 		this.targetNode = new RrtNode<>(target, null, 0);
 		this.nodeListener = nodeListener;
 
-		nodeMap = new Array2d<>(map.getMaxX(), map.getMaxY(), null);
+		nodeMap = new Dynamic2dSparseArray<>(null);
 		nodes = new LinkedList<>();
 		nodes.add(root);
 
 		isVacant(root);
 		isVacant(target);
+
+	}
+
+	public void changeTarget(T target)
+	{
+		this.target = target;
+		this.targetNode = new RrtNode<>(target, null, 0);
+		bestSolution = Double.MAX_VALUE;
+		bestPath = Double.MAX_VALUE;
+		steps = 0;
+		solution = null;
 
 	}
 
@@ -52,8 +67,22 @@ public class RRT<T extends Pose<T>>
 
 		while (steps < maxSteps && timer.elapsed(TimeUnit.SECONDS) < 100)
 		{
+			RttPhase phase = RttPhase.START;
+			long elapsed = timer.elapsed(TimeUnit.MILLISECONDS);
+			if (elapsed > 1000)
+			{
+				phase = RttPhase.NORMAL;
+			}
+			if (elapsed > 2500)
+			{
+				phase = RttPhase.LONG;
+			}
+			if (found == true)
+			{
+				phase = RttPhase.OPTIMIZE;
+			}
 
-			tryStep();
+			tryStep(phase);
 			if (solution != null && !found)
 			{
 				found = true;
@@ -66,7 +95,7 @@ public class RRT<T extends Pose<T>>
 		{
 			writeSolution(solution);
 			solution.calculateCost(target);
-			notifySolution(solution, Color.RED, targetNode, nodeListener);
+			notifySolution(this, solution, Color.RED, targetNode, nodeListener);
 		}
 
 		dumpMap();
@@ -78,10 +107,11 @@ public class RRT<T extends Pose<T>>
 
 	}
 
-	public int tryStep()
+	public int tryStep(RttPhase rttPhase)
 	{
 		// pick random point in map space
-		T pose = root.getRandomPointInMapSpace(map, steps);
+
+		T pose = root.getRandomPointInMapSpace(map, rttPhase);
 
 		if (Math.random() > 0.99)
 		{
@@ -93,7 +123,26 @@ public class RRT<T extends Pose<T>>
 
 		if (parentNode != null)
 		{
+
 			T newPose = parentNode.moveTowards(pose);
+			// T testPose = newPose;
+			// for (int i = 0; i < 1; i++)
+			// {
+			// if (!isVacant(testPose))
+			// {
+			// break;
+			// }
+			// try
+			// {
+			// testPose = testPose.moveTowards(pose);
+			// } catch (Exception e)
+			// {
+			// // an exception is thrown if two nodes cant be joined
+			// break;
+			// }
+			// newPose = testPose;
+			//
+			// }
 			if (isVacant(newPose))
 			{
 				steps++;
@@ -119,7 +168,7 @@ public class RRT<T extends Pose<T>>
 						bestPath = pathCost;
 						System.out.println("Solution improved " + cost);
 						System.out.println("New path cost " + pathCost);
-						notifySolution(solution, Color.RED, targetNode, nodeListener);
+						notifySolution(this, solution, Color.RED, targetNode, nodeListener);
 					}
 
 				}
@@ -147,8 +196,8 @@ public class RRT<T extends Pose<T>>
 		return steps;
 	}
 
-	static public <T extends Pose<T>> void notifySolution(RrtNode<T> solution, Color color, RrtNode<T> targetNode,
-			NodeListener<T> nodeListener)
+	static public <T extends Pose<T>> void notifySolution(RRT<T> rrt, RrtNode<T> solution, Color color,
+			RrtNode<T> targetNode, NodeListener<T> nodeListener)
 	{
 		System.out.println("solution " + solution);
 		System.out.println("target " + targetNode);
@@ -240,23 +289,25 @@ public class RRT<T extends Pose<T>>
 			return Collections.emptyList();
 		}
 
-		List<RrtNode<T>> shortList = getNearbyNodes((int) newParent.getX(), (int) newParent.getY(), 20);
+		List<List<RrtNode<T>>> shortList = getNearbyNodes((int) newParent.getX(), (int) newParent.getY(), 20);
 
 		List<RrtNode<T>> candidates = new LinkedList<>();
-		for (RrtNode<T> node : shortList)
+		for (List<RrtNode<T>> list : shortList)
 		{
 
-			double oldCost = getPathCost(node.getParent(), nodes.size() + 10);
-			double newCost = getPathCost(newParent, nodes.size() + 10);
-
-			double oldDistance = node.calculateCost(node.getParent());
-			double newDistance = node.calculateCost(newParent);
-
-			if (newDistance <= 1 && newDistance + newCost < oldDistance + oldCost)
+			for (RrtNode<T> node : list)
 			{
-				candidates.add(node);
-			}
+				double oldCost = getPathCost(node.getParent(), nodes.size() + 10);
+				double newCost = getPathCost(newParent, nodes.size() + 10);
 
+				double oldDistance = node.calculateCost(node.getParent());
+				double newDistance = node.calculateCost(newParent);
+
+				if (newDistance <= 1 && newDistance + newCost < oldDistance + oldCost)
+				{
+					candidates.add(node);
+				}
+			}
 		}
 		return candidates;
 	}
@@ -295,27 +346,27 @@ public class RRT<T extends Pose<T>>
 	// return shortList;
 	// }
 
-	public List<RrtNode<T>> getNearbyNodes(int x, int y, int minReturn)
+	public List<List<RrtNode<T>>> getNearbyNodes(int x, int y, int minReturn)
 	{
 
 		int maxRadius = Math.max(map.getMaxX(), map.getMaxY());
 
-		List<RrtNode<T>> shortList = new LinkedList<>();
+		List<List<RrtNode<T>>> shortList = new LinkedList<>();
 
-		addNodeToList(shortList, x, y);
+		int total = addNodeToList(shortList, x, y);
 		for (int r = 1; r < maxRadius; r++)
 		{
 
 			for (int p = -r; p <= r; p++)
 			{
-				addNodeToList(shortList, p + x, -r + y);
-				addNodeToList(shortList, p + x, +r + y);
-				addNodeToList(shortList, -r + x, p + y);
-				addNodeToList(shortList, +r + x, p + y);
+				total += addNodeToList(shortList, p + x, -r + y);
+				total += addNodeToList(shortList, p + x, +r + y);
+				total += addNodeToList(shortList, -r + x, p + y);
+				total += addNodeToList(shortList, +r + x, p + y);
 
 			}
 
-			if (shortList.size() > minReturn)
+			if (total > minReturn)
 			{
 				break;
 			}
@@ -324,15 +375,19 @@ public class RRT<T extends Pose<T>>
 		return shortList;
 	}
 
-	private void addNodeToList(List<RrtNode<T>> shortList, int xp, int yp)
+	private int addNodeToList(List<List<RrtNode<T>>> shortList, int xp, int yp)
 	{
+		int ret = 0;
 		if (xp >= 0 && yp >= 0 && xp < map.getMaxX() && yp < map.getMaxY())
 		{
-			if (nodeMap.get(xp, yp) != null)
+			List<RrtNode<T>> list = nodeMap.get(xp, yp);
+			if (list != null && !list.isEmpty())
 			{
-				shortList.addAll(nodeMap.get(xp, yp));
+				shortList.add(list);
+				ret = list.size();
 			}
 		}
+		return ret;
 	}
 
 	private boolean isVacant(RrtNode<T> root2)
@@ -352,7 +407,7 @@ public class RRT<T extends Pose<T>>
 		{
 			int x = (int) node.getX();
 			int y = (int) node.getY();
-			map.set(x, y, 2);
+			map.setValue(x, y, 2);
 			if (node == node.getParent())
 			{
 				throw new RuntimeException("Bad parent");
@@ -413,48 +468,59 @@ public class RRT<T extends Pose<T>>
 	private RrtNode<T> chooseBestParentNode(T pose)
 	{
 
-		if (Math.random() > 1.75)
-		{
-			// choose random node
+		// if (Math.random() > 1.75)
+		// {
+		// // choose random node
+		//
+		// LinkedList<RrtNode<T>> tmp = new LinkedList<>();
+		// tmp.addAll(nodes);
+		//
+		// while (!tmp.isEmpty())
+		// {
+		// RrtNode<T> node = tmp.remove((int) (Math.random() * tmp.size()));
+		// if (node.canConnect(pose))
+		// {
+		// return node;
+		// }
+		// }
+		//
+		// return null;
+		//
+		// }
 
-			LinkedList<RrtNode<T>> tmp = new LinkedList<>();
-			tmp.addAll(nodes);
-
-			while (!tmp.isEmpty())
-			{
-				RrtNode<T> node = tmp.remove((int) (Math.random() * tmp.size()));
-				if (node.canConnect(pose))
-				{
-					return node;
-				}
-			}
-
-			return null;
-
-		}
 		double bestDistance = Double.MAX_VALUE;
 		RrtNode<T> selectedNode = null;
 
-		List<RrtNode<T>> nearbyNodes = getNearbyNodes((int) pose.getX(), (int) pose.getY(), 30);
-		for (RrtNode<T> node : nearbyNodes)
+		if (nodes.size() < 30)
 		{
+			return checkall(pose, bestDistance, selectedNode);
+		}
 
-			double distance = node.calculateCost(pose);
-			if (distance < bestDistance)
+		List<List<RrtNode<T>>> nearbyNodes = getNearbyNodes((int) pose.getX(), (int) pose.getY(), 30);
+
+		for (List<RrtNode<T>> list : nearbyNodes)
+		{
+			for (RrtNode<T> node : list)
 			{
-				if (node.canConnect(pose))
+				double distance = node.calculateCost(pose);
+				if (distance < bestDistance)
 				{
-					bestDistance = distance;
-					selectedNode = node;
+					if (node.canConnect(pose))
+					{
+						bestDistance = distance;
+						selectedNode = node;
 
+					}
 				}
 			}
 		}
-		if (selectedNode != null || nearbyNodes.size() > 30)
-		{
-			return selectedNode;
-		}
 
+		return selectedNode;
+
+	}
+
+	private RrtNode<T> checkall(T pose, double bestDistance, RrtNode<T> selectedNode)
+	{
 		for (RrtNode<T> node : nodes)
 		{
 			double distance = node.calculateCost(pose);

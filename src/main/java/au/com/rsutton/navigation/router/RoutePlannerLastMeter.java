@@ -21,7 +21,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
-import au.com.rsutton.gradientdescent.PlannerNext;
 import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
@@ -53,7 +52,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	private ProbabilityMapIIFc world;
 
-	private final ProbabilityMap worldFromPointCloud = new ProbabilityMap(5);
+	private final ProbabilityMap worldFromPointCloud = new ProbabilityMap(5, 0.5);
 
 	Logger logger = LogManager.getLogger();
 
@@ -63,7 +62,8 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	// RoutePlannerFinalStage gdPlanner = new RoutePlannerGD();
 
-	RoutePlannerFinalStage gdPlanner = new PlannerNext();
+	// RoutePlannerFinalStage gdPlanner = new PlannerNext();
+	RoutePlannerRRT gdPlanner = new RoutePlannerRRT();
 
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot,
 			RobotPoseSourceTimeTraveling robotPoseSource)
@@ -77,7 +77,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 
 	}
 
-	class PointCloudWrapper
+	private class PointCloudWrapper
 	{
 		private PointCloudMessage message;
 		private DistanceXY xy;
@@ -252,7 +252,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 		DistanceXY pos = robotPoseSource.getXyPosition();
 		double heading = robotPoseSource.getHeading();
 
-		ProbabilityMap localMap = new ProbabilityMap(BLOCK_SIZE);
+		ProbabilityMap localMap = new ProbabilityMap(BLOCK_SIZE, 0.5);
 
 		double x = pos.getX().convert(DistanceUnit.CM);
 		double y = pos.getY().convert(DistanceUnit.CM);
@@ -316,15 +316,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 			LogManager.getLogger()
 					.error("Local Route plan took " + timer.elapsed(TimeUnit.MILLISECONDS) + "ms for radius " + radius);
 
-			try
-			{
-
-				gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner, world);
-			} catch (InterruptedException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			gdPlanner.plan(robotPoseSource.findInstant(System.currentTimeMillis()), newLocalPlanner, world);
 
 		} else
 		{
@@ -387,7 +379,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	public void onMessage(Angle deltaHeading, Distance deltaDistance, boolean bump, Distance absoluteTotalDistance)
 	{
 		// these messages are not needed here
-		gdPlanner.setAbsoluteTotalDistance(absoluteTotalDistance);
+		// gdPlanner.setAbsoluteTotalDistance(absoluteTotalDistance);
 	}
 
 	void setStatus(RoutePlannerStatus status)
@@ -397,21 +389,15 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	}
 
 	@Override
-	public DataSourceMap getGdPointSource()
-	{
-		return (DataSourceMap) gdPlanner;
-	}
-
-	@Override
 	public double getTurnRadius()
 	{
-		return gdPlanner.getTurnRadius();
+		return 0;
 	}
 
 	@Override
 	public int getDirection()
 	{
-		return gdPlanner.getDirection();
+		return 0;
 	}
 
 }

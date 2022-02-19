@@ -4,7 +4,7 @@ import java.util.List;
 
 import au.com.rsutton.units.Angle;
 
-public interface ParticleFilterObservationSet
+interface ParticleFilterObservationSet
 {
 
 	List<ScanObservation> getObservations();

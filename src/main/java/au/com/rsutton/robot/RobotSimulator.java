@@ -59,9 +59,18 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 	private RobotLocationDeltaMessagePump messsagePump;
 
-	public RobotSimulator(ProbabilityMapIIFc map)
+	public RobotSimulator(ProbabilityMapIIFc map, int x, int y)
 	{
 		this.map = map;
+		this.x = x;
+		this.y = y;
+
+		while (map.get(x, y) > 0.5)
+		{
+			this.x = (Math.random() * (map.getMaxX() - map.getMinX())) + map.getMinX();
+			this.y = (Math.random() * (map.getMaxY() - map.getMinY())) + map.getMinY();
+			logger.warn("Looking for an un-occupied location to start the simulator");
+		}
 
 		messsagePump = new RobotLocationDeltaMessagePump(this);
 
@@ -70,7 +79,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 	volatile boolean bump = false;
 
-	public double move(double distance)
+	private double move(double distance)
 	{
 		if (freeze)
 		{

@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class RrtNode<T extends Pose<T>>
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+
+public class RrtNode<T extends Pose<T>>
 {
 	static final AtomicInteger seed = new AtomicInteger();
 
@@ -100,9 +102,9 @@ class RrtNode<T extends Pose<T>>
 
 	}
 
-	public T getRandomPointInMapSpace(Array2d<Integer> map, int steps)
+	public T getRandomPointInMapSpace(ProbabilityMapIIFc map, RttPhase rttPhase)
 	{
-		return pose.getRandomPointInMapSpace(map, steps);
+		return pose.getRandomPointInMapSpace(map, rttPhase);
 	}
 
 	public T moveTowards(T pose2)

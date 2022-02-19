@@ -40,8 +40,6 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 
 	volatile double nearestObsticle;
 
-	private PointCloudProcessor pointCloudProcessor = null;
-
 	public void configure(Config config) throws Exception
 	{
 
@@ -166,15 +164,6 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 	public void shutdown()
 	{
 		roomba630.shutdown();
-		if (pointCloudProcessor != null)
-		{
-			pointCloudProcessor.stop();
-		}
-	}
-
-	public void startDepthCamera()
-	{
-		pointCloudProcessor = new PointCloudProcessor();
 
 	}
 

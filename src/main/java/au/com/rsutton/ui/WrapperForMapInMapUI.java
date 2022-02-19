@@ -6,7 +6,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-public class WrapperForMapInMapUI implements DataSourceMap
+class WrapperForMapInMapUI implements DataSourceMap
 {
 
 	private DataSourcePoint map;

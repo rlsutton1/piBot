@@ -1,6 +1,6 @@
 package au.com.rsutton.gradientdescent;
 
-public class CollisionException extends Exception
+class CollisionException extends Exception
 {
 	CollisionException(String message)
 	{

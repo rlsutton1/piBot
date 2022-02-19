@@ -22,14 +22,14 @@ import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.Speed;
 
-public class SubMapBuilder implements RobotLocationDeltaListener
+class SubMapBuilder implements RobotLocationDeltaListener
 {
 
 	double maxUsableDistance = 1000;
 
 	private MapDrawingWindow panel;
 
-	ProbabilityMapIIFc world = new ProbabilityMap(5);
+	ProbabilityMapIIFc world = new ProbabilityMap(5, 0.5);
 
 	Stopwatch targetAge = Stopwatch.createStarted();
 

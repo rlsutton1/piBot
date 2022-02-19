@@ -2,7 +2,7 @@ package au.com.rsutton.ui;
 
 import java.awt.Graphics2D;
 
-public interface DataSourcePaintRegion
+interface DataSourcePaintRegion
 {
 
 	void paint(Graphics2D graphics);

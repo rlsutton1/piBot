@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.array;
 
-public class Sparse2dSegmentBase<T> implements Segment<T>
+class Sparse2dSegmentBase<T> implements Segment<T>
 {
 
 	private Object[][] map;

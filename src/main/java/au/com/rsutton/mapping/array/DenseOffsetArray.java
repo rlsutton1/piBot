@@ -1,6 +1,6 @@
 package au.com.rsutton.mapping.array;
 
-public class DenseOffsetArray<T> implements SparseArray<T>
+class DenseOffsetArray<T> implements SparseArray<T>
 {
 
 	private int minX;

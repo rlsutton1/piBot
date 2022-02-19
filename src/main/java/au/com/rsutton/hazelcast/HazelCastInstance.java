@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
@@ -35,15 +34,13 @@ public enum HazelCastInstance
 
 		config = new Config();
 		config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(true);
-		TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
-		tcpIpConfig.setEnabled(true);
-		for (int i = 2; i < 30; i++)
-		{
-			tcpIpConfig.addMember("192.168.0." + i);
-		}
-		tcpIpConfig.addMember("10.10.0.41");
-		tcpIpConfig.addMember("192.168.43.14");
-		tcpIpConfig.addMember("192.168.43.160");
+		// TcpIpConfig tcpIpConfig =
+		// config.getNetworkConfig().getJoin().getTcpIpConfig();
+		// tcpIpConfig.setEnabled(true);
+		// for (int i = 2; i < 30; i++)
+		// {
+		// tcpIpConfig.addMember("192.168.0." + i);
+		// }
 
 		h = Hazelcast.newHazelcastInstance(config);
 

@@ -59,7 +59,6 @@ public class Main
 		{
 			Config config = new Config();
 			RoombaRobot robot = new RoombaRobot();
-			robot.startDepthCamera();
 			robot.configure(config);
 		}
 		if (ch == '1')

@@ -60,4 +60,6 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 
 	void save(File file);
 
+	void setValue(double x, double y, double value);
+
 }

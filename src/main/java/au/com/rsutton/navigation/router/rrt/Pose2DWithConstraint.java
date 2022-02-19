@@ -3,6 +3,7 @@ package au.com.rsutton.navigation.router.rrt;
 import java.util.Random;
 
 import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 
 public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 {
@@ -26,7 +27,7 @@ public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 
 	}
 
-	private double distanceTo(Pose2DWithConstraint otherPose)
+	public double distanceTo(Pose2DWithConstraint otherPose)
 	{
 		double dx = x - otherPose.x;
 		double dy = y - otherPose.y;
@@ -111,22 +112,31 @@ public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 	}
 
 	@Override
-	public Pose2DWithConstraint getRandomPointInMapSpace(Array2d<Integer> map2, int steps)
+	public Pose2DWithConstraint getRandomPointInMapSpace(ProbabilityMapIIFc map2, RttPhase rttPhase)
 	{
 
-		double x = (rand.nextDouble() * map2.getMaxX());
-		double y = (rand.nextDouble() * map2.getMaxY());
+		int dx = map2.getMaxX() - map2.getMinX();
+		int dy = map2.getMaxY() - map2.getMinY();
 
-		// increasing chance of reverse as the number of steps increases
-		double progress = (399_999.0 - steps) / 400_000.0;
+		double x = (rand.nextDouble() * dx) + map2.getMinX();
+		double y = (rand.nextDouble() * dy) + map2.getMinY();
 
-		if (steps < 100)
+		double reverseThreshold = 1.0;
+		if (rttPhase == RttPhase.START)
 		{
-			// for cases where it's only possible to start in reverse!
-			progress = 0.99;
+			// NO OP
+		} else if (rttPhase == RttPhase.NORMAL)
+		{
+			reverseThreshold = 0.98;
+		} else if (rttPhase == RttPhase.LONG)
+		{
+			reverseThreshold = 0.90;
+		} else if (rttPhase == RttPhase.OPTIMIZE)
+		{
+			reverseThreshold = 1.0;
 		}
 
-		return new Pose2DWithConstraint(x, y, (Math.random() * 360), Math.random() > progress);
+		return new Pose2DWithConstraint(x, y, (Math.random() * 360), Math.random() > reverseThreshold);
 
 	}
 
@@ -208,4 +218,10 @@ public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 		theta = theta + 180;
 		return this;
 	}
+
+	public Double getTheta()
+	{
+		return theta;
+	}
+
 }

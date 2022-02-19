@@ -2,6 +2,8 @@ package au.com.rsutton.navigation.router.rrt;
 
 import java.util.Random;
 
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+
 public class Pose2D implements Pose<Pose2D>
 {
 
@@ -18,7 +20,7 @@ public class Pose2D implements Pose<Pose2D>
 	}
 
 	@Override
-	public Pose2D getRandomPointInMapSpace(Array2d<Integer> map2, int steps)
+	public Pose2D getRandomPointInMapSpace(ProbabilityMapIIFc map2, RttPhase rttPhase)
 	{
 
 		double x = (rand.nextDouble() * map2.getMaxX());

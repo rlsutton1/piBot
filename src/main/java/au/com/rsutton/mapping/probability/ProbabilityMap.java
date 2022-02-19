@@ -27,17 +27,13 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 	private SparseArray<Double> world;
 	private double defaultValue = 0.5;
 
-	public ProbabilityMap(int blockSize)
+	public ProbabilityMap(int blockSize, double defaultValue)
 	{
 
 		world = new Dynamic2dSparseArray<>(defaultValue);
+		this.defaultValue = defaultValue;
 
 		this.blockSize = blockSize;
-	}
-
-	public void setDefaultValue(double defaultValue)
-	{
-		this.defaultValue = defaultValue;
 	}
 
 	/*
@@ -469,6 +465,7 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 
 	}
 
+	@Override
 	public void setValue(double x, double y, double value)
 	{
 		world.set((int) x / blockSize, (int) y / blockSize, value);

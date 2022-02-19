@@ -16,7 +16,6 @@ import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.ui.DataSourceMap;
 
 public class RoutePlannerImpl implements RoutePlanner
 {
@@ -41,7 +40,7 @@ public class RoutePlannerImpl implements RoutePlanner
 
 	private int robotRadius = 15;
 
-	class RouteDataPoint
+	private class RouteDataPoint
 	{
 		public RouteDataPoint(int totalCost)
 		{
@@ -124,8 +123,8 @@ public class RoutePlannerImpl implements RoutePlanner
 	 */
 	ProbabilityMapIIFc createAugmentedMap(ProbabilityMapIIFc source)
 	{
-		ProbabilityMap matchMap = new ProbabilityMap(5);
-		matchMap.setDefaultValue(0.5);
+		ProbabilityMap matchMap = new ProbabilityMap(5, 0.5);
+
 		matchMap.erase();
 		int radius = robotRadius + minimumClearance;
 
@@ -414,12 +413,6 @@ public class RoutePlannerImpl implements RoutePlanner
 	public double getDistanceToTarget(int pfX, int pfY)
 	{
 		return new Vector3D(pfX - targetX, pfY - targetY, 0).getNorm();
-	}
-
-	@Override
-	public DataSourceMap getGdPointSource()
-	{
-		throw new RuntimeException("NOt implemented");
 	}
 
 	@Override

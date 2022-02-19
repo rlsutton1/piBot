@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.JPanel;
 
-public class MapUI extends JPanel
+class MapUI extends JPanel
 {
 
 	private static final long serialVersionUID = 1L;

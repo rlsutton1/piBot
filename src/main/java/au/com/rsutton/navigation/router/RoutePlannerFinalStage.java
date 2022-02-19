@@ -7,7 +7,7 @@ import au.com.rsutton.units.Distance;
 public interface RoutePlannerFinalStage
 {
 
-	void plan(RobotPoseInstant findInstant, RoutePlannerImpl newLocalPlanner, ProbabilityMapIIFc world)
+	void plan(RobotPoseInstant findInstant, RoutePlanner newLocalPlanner, ProbabilityMapIIFc world)
 			throws InterruptedException;
 
 	double getTurnRadius();

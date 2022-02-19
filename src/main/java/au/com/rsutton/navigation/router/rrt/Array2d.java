@@ -1,6 +1,6 @@
 package au.com.rsutton.navigation.router.rrt;
 
-public class Array2d<T>
+class Array2d<T>
 {
 
 	private Object[][] backingArray;

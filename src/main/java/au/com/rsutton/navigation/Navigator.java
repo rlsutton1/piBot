@@ -3,7 +3,6 @@ package au.com.rsutton.navigation;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,35 +20,35 @@ import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
+import au.com.rsutton.mapping.particleFilter.Pose;
 import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RouteOption;
-import au.com.rsutton.navigation.router.RoutePlanner;
-import au.com.rsutton.navigation.router.RoutePlannerLastMeter;
+import au.com.rsutton.navigation.router.RoutePlannerRRT;
+import au.com.rsutton.navigation.router.nextgen.NextGenRouter;
+import au.com.rsutton.navigation.router.nextgen.NextGenRouter.DirectionAndAngle;
+import au.com.rsutton.navigation.router.nextgen.PathPlannerAndFollowerIfc;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
-import au.com.rsutton.units.Time;
 
 public class Navigator implements Runnable, NavigatorControl
 {
-
-	private static final int BEZIER_SAMPLING_DISTANCE = 5;
 
 	private final int MAX_SPEED;
 
 	Logger logger = LogManager.getLogger();
 
 	private RobotPoseSource pf;
-	private RoutePlanner routePlanner;
+	private PathPlannerAndFollowerIfc routePlanner;
 	private RobotInterface robot;
 	private MapDrawingWindow ui;
 	private ScheduledExecutorService pool;
@@ -61,34 +60,29 @@ public class Navigator implements Runnable, NavigatorControl
 	double lastAngle;
 	private boolean reachedDestination = false;
 
-	/**
-	 * if target heading is null, any orientation will do
-	 */
-	private Double targetHeading;
-
-	double speed = 0;
+	Speed speed = Speed.ZERO;
 
 	private volatile int stuckCounter = 0;
 
 	// private Double initialHeading = null;
 
-	public Navigator(ProbabilityMapIIFc map2, RobotPoseSourceTimeTraveling pf, RobotInterface robot, int maxSpeed)
+	public Navigator(ProbabilityMapIIFc map, RobotPoseSourceTimeTraveling pf, RobotInterface robot, int maxSpeed)
 	{
 		this.MAX_SPEED = maxSpeed;
 		ui = new MapDrawingWindow("Navigator", 600, 0, 250, true);
-		ui.addDataSource(map2, new Color(255, 255, 255));
+		ui.addDataSource(map, new Color(255, 255, 255));
 
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
-		routePlanner = new RoutePlannerLastMeter(map2, robot, pf);
+		routePlanner = new NextGenRouter(map, robot, pf);
 
-		// add data source from depth camera
-		ui.addDataSource((DataSourceMap) routePlanner);
+		// add data source
+		// ui.addDataSource((DataSourceMap) routePlanner);
 
 		this.robot = robot;
 
-		setupRoutePlanner(map2);
+		setupRoutePlanner(map);
 
 		setupRobotListener();
 
@@ -115,7 +109,7 @@ public class Navigator implements Runnable, NavigatorControl
 				return;
 			}
 			robot.freeze(false);
-			speed = MAX_SPEED;
+			speed = Speed.cmPerSec(50);
 
 			double std = pf.getStdDev();
 
@@ -135,105 +129,50 @@ public class Navigator implements Runnable, NavigatorControl
 				}
 				lastAngle = pf.getHeading();
 
-				ExpansionPoint next = new ExpansionPoint(pfX, pfY, 0, null);
-
-				List<Point2D> vals = new LinkedList<>();
-
-				double turnRadius = Roomba630.STRAIGHT;
-
-				ExpansionPoint current = next;
-				// get a point on the route 25 steps from where we are, we
-				// look ahead (25 steps) so our heading remains reasonably
-				// stable
-				next = routePlanner.getRouteForLocation(pfX, pfY);
-
-				if (current.equals(next))
-				{
-					robot.freeze(true);
-					new DataLogValue("Navigator routing", "cant route", DataLogLevel.ERROR).publish();
-					stuckCounter++;
-					return;
-				}
-				stuckCounter = 0;
-				new DataLogValue("Navigator routing", "routing", DataLogLevel.INFO).publish();
-
-				addPointBehindRobotForBezier(vals);
-
-				int i = 0;
-				int lookAheadCM = 300;
-				for (; i < lookAheadCM; i++)
-				{
-					next = routePlanner.getRouteForLocation(next.getX(), next.getY());
-					if (i == 0 || i % BEZIER_SAMPLING_DISTANCE == 0)
-					{
-						vals.add(new Point2D.Double(next.getX(), next.getY()));
-					}
-				}
-				vals.add(new Point2D.Double(next.getX(), next.getY()));
-
-				try
-				{
-					Bezier bezier = Bezier.createBezier(vals);
-
-					turnRadius = bezier.getRadiusAtPosition(0 + (1.0 / vals.size()), (1.0 / (vals.size() + 1)) * 2.0);
-					turnRadius /= 2.0;
-
-				} catch (Exception e)
-				{
-					e.printStackTrace();
-				}
-
-				turnRadius = -routePlanner.getTurnRadius();
-
-				int direction = routePlanner.getDirection();
-
-				double distanceToTarget = routePlanner.getDistanceToTarget(pfX, pfY);
+				DirectionAndAngle directionAndAngle = routePlanner.getNextStep();
+				Distance distanceToTarget = routePlanner.getDistanceToTarget();
 
 				// slow as we approach the target
-				speed = Math.min(Math.max(3, distanceToTarget), speed);
+				speed = Speed.cmPerSec(
+						Math.min(Math.max(3, distanceToTarget.convert(DistanceUnit.CM)), speed.getCmPerSec()));
 
-				if (distanceToTarget > 20)
+				if (distanceToTarget.convert(DistanceUnit.CM) > 20)
 				{
 					// follow the route to the target
-					if (direction < 0)
+					if (directionAndAngle.isReverse())
 					{
-						speed = -5;
+						speed = Speed.cmPerSec(-5);
 					}
 
-					speed = setHeadingWithObsticleAvoidance(turnRadius, speed * direction);
-					robot.setSpeed(new Speed(new Distance(speed, DistanceUnit.CM), Time.perSecond()));
+					logger.warn("Calculating radius of arc to send to roomba");
+					int radius = Roomba630.STRAIGHT;
+					double angleDifference = directionAndAngle.getAngle().difference(pf.getHeading(),
+							AngleUnits.DEGREES);
+					if (Math.abs(angleDifference) > 0)
+					{
+						radius = (int) RoutePlannerRRT.getRadiusOfArc(angleDifference, 1);
+					}
+					speed = setHeadingWithObsticleAvoidance(radius, speed);
+					robot.setSpeed(speed);
 					System.out.println("1 Set speed to " + speed);
 				} else
 				{
 					// we have arrived at our target location
-					speed = 0;
-					if (targetHeading != null
-							&& Math.abs(HeadingHelper.getChangeInHeading(lastAngle, targetHeading)) > 5)
-					{
-						// turn on the spot to set our heading
-						double da = -HeadingHelper.getChangeInHeading(targetHeading, lastAngle);
-						robot.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
-						System.out.println("2 Set speed to " + speed);
-						robot.setTurnRadius(Math.signum(da));
-
-					} else
-					{
-						System.out.println("3 Set speed to 0");
-						// were done, stop and shutdown
-						stopped = true;
-						speed = 0;
-						reachedDestination = true;
-						robot.freeze(true);
-						Thread.sleep(500);
-					}
+					System.out.println("3 Set speed to 0");
+					// were done, stop and shutdown
+					stopped = true;
+					speed = Speed.ZERO;
+					reachedDestination = true;
+					robot.freeze(true);
+					Thread.sleep(500);
 				}
 
 			} else
 			{
 				// particle filter isn't localised, just turn on the spot
-				speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0), 10);
+				speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0), Speed.cmPerSec(10));
 				robot.setStraight("Nav - unlocal");
-				robot.setSpeed(new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond()));
+				robot.setSpeed(Speed.ZERO);
 
 			}
 		} catch (Exception e)
@@ -260,7 +199,7 @@ public class Navigator implements Runnable, NavigatorControl
 		}
 	}
 
-	double setHeadingWithObsticleAvoidance(double desiredTurnRadius, double desiredSpeed)
+	Speed setHeadingWithObsticleAvoidance(double desiredTurnRadius, Speed speed2)
 	{
 		double setRadis = desiredTurnRadius;
 
@@ -269,7 +208,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 			robot.setStraight("NAV set Head");
 			new DataLogValue("Desired Turn Radius", "Straight NAV", DataLogLevel.INFO).publish();
-			return desiredSpeed;
+			return speed2;
 		}
 		if (Math.abs(desiredTurnRadius) < 1)
 		{
@@ -289,7 +228,7 @@ public class Navigator implements Runnable, NavigatorControl
 			maxSpeed = 10;
 		}
 
-		return Math.min(desiredSpeed, maxSpeed);
+		return Speed.cmPerSec(Math.min(speed2.getCmPerSec(), maxSpeed));
 	}
 
 	private void setupRobotListener()
@@ -318,8 +257,7 @@ public class Navigator implements Runnable, NavigatorControl
 
 					for (int i = 0; i < 3000; i++)
 					{
-						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
-								(int) y);
+						ExpansionPoint next = routePlanner.getLocationOfStepAt(new Distance(i, DistanceUnit.CM));
 
 						points.add(new Point(next.getX(), next.getY()));
 
@@ -349,66 +287,21 @@ public class Navigator implements Runnable, NavigatorControl
 			@Override
 			public List<Point> getOccupiedPoints()
 			{
-
-				// determine the route from the current possition
-				DistanceXY pos = pf.getXyPosition();
-				double x = pos.getX().convert(DistanceUnit.CM);
-				double y = pos.getY().convert(DistanceUnit.CM);
-
-				List<Point2D> vals = new LinkedList<>();
-
-				addPointBehindRobotForBezier(vals);
-
-				List<Point> points2 = new LinkedList<>();
 				List<Point> points = new LinkedList<>();
 				if (routePlanner.hasPlannedRoute())
 				{
 
 					for (int i = 0; i < 3000; i++)
 					{
-						ExpansionPoint next = routePlanner.getRouteForLocation((int) x, (int) y);
+						ExpansionPoint next = routePlanner.getLocationOfStepAt(new Distance(i, DistanceUnit.CM));
 						points.add(new Point(next.getX(), next.getY()));
-
-						if (i % BEZIER_SAMPLING_DISTANCE == 0)
-						{
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
-						}
-
-						double dx = (x - next.getX());
-						x -= dx;
-						double dy = (y - next.getY());
-						y -= dy;
-						if (dx == 0 && dy == 0)
-						{
-							// reached the target
-							vals.add(new Point2D.Double(next.getX(), next.getY()));
-							break;
-						}
 					}
-
-					for (double i = 0; i <= 1.0; i += 0.01)
-					{
-						Point2D t = Bezier.parabolic2D(vals, i);
-						points2.add(new Point((int) t.getX(), (int) t.getY()));
-					}
-
 				}
-
-				return points2;
+				return points;
 			}
 
 		}, new Color(255, 0, 0));
 
-		ui.addDataSource(routePlanner.getGdPointSource());
-	}
-
-	private void addPointBehindRobotForBezier(List<Point2D> vals)
-	{
-		Vector3D currentPos = new Vector3D(pfX, pfY, 0);
-		Vector3D behind = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(pf.getHeading()))
-				.applyTo(new Vector3D(0, -50, 0)).add(currentPos);
-		vals.add(new Point2D.Double(behind.getX(), behind.getY()));
-		vals.add(new Point2D.Double(pfX, pfY));
 	}
 
 	private void setupDataSources(MapDrawingWindow ui, final RobotPoseSource pf)
@@ -465,12 +358,10 @@ public class Navigator implements Runnable, NavigatorControl
 	}
 
 	@Override
-	public void calculateRouteTo(int x, int y, Double heading, RouteOption routeOption)
+	public void calculateRouteTo(Pose pose)
 	{
-		reachedDestination = !routePlanner.createRoute(x, y, routeOption);
-		targetHeading = heading;
+		reachedDestination = !routePlanner.planPath(pose);
 		stuckCounter = 0;
-
 	}
 
 	@Override
