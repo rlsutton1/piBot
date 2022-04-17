@@ -1,18 +1,17 @@
-package au.com.rsutton.kalman;
+package au.com.rsutton.robot;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterListener;
 import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
-import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
-import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.DistanceXY;
+import au.com.rsutton.units.HeadingHelper;
 
 public class RobotPoseSourceTimeTraveling implements RobotPoseSource, ParticleFilterListener
 {

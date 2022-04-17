@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping;
+package au.com.rsutton.maps;
 
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;

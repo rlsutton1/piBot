@@ -11,16 +11,16 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling.RobotPoseInstant;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.rrt.NodeListener;
 import au.com.rsutton.navigation.router.rrt.Pose2DWithConstraint;
 import au.com.rsutton.navigation.router.rrt.RrtBi;
 import au.com.rsutton.navigation.router.rrt.RrtNode;
 import au.com.rsutton.navigation.router.rrt.Visualization;
+import au.com.rsutton.robot.RobotPoseSourceTimeTraveling.RobotPoseInstant;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.DistanceXY;
 
 public class RoutePlannerRRT
 {
@@ -45,11 +45,6 @@ public class RoutePlannerRRT
 	public RoutePlannerRRT()
 	{
 
-	}
-
-	public int getScale()
-	{
-		return scale;
 	}
 
 	public int getXoffset()

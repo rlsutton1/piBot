@@ -23,19 +23,17 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Stopwatch;
 
-import au.com.rsutton.angle.AngleUtil;
-import au.com.rsutton.angle.WeightedAngle;
 import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
+import au.com.rsutton.mapping.StartPosition;
 import au.com.rsutton.mapping.array.Dynamic2dSparseArrayFactory;
 import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotLocationDeltaListener;
 import au.com.rsutton.robot.lidar.LidarObservation;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -43,10 +41,14 @@ import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
+import au.com.rsutton.units.AngleUtil;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.DistanceXY;
+import au.com.rsutton.units.Pose;
+import au.com.rsutton.units.WeightedAngle;
 
-class ParticleFilterImpl implements ParticleFilterIfc
+public class ParticleFilterImpl implements ParticleFilterIfc
 {
 
 	private static final double MINIMUM_MEANINGFUL_RATING = 0.0001;
@@ -693,7 +695,7 @@ class ParticleFilterImpl implements ParticleFilterIfc
 	@Override
 	public void removeListener(ParticleFilterListener listener)
 	{
-		listener = null;
+		this.listener = null;
 
 	}
 

@@ -1,10 +1,8 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.units;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 
 public class Pose
 {

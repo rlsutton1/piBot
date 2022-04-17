@@ -1,4 +1,4 @@
-package au.com.rsutton.angle;
+package au.com.rsutton.units;
 
 import java.util.List;
 

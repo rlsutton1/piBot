@@ -1,13 +1,10 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.robot;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.SetMotion;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
-import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
@@ -15,7 +12,7 @@ import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
 import au.com.rsutton.units.Time;
 
-class RobotImple implements RobotInterface
+public class RobotImple implements RobotInterface
 {
 
 	double turnRadius = 0;

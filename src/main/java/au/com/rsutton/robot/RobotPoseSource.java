@@ -1,6 +1,7 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.robot;
 
-import au.com.rsutton.navigation.feature.DistanceXY;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
+import au.com.rsutton.units.DistanceXY;
 
 public interface RobotPoseSource
 {

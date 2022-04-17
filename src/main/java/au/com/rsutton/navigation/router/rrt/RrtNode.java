@@ -49,11 +49,14 @@ public class RrtNode<T extends Pose<T>>
 		{
 			this.parent.children.remove(id);
 		}
-		parent.children.put(id, this);
 
 		this.parent = parent;
 		this.cost = cost;
-		this.pose.updateParent(parent.pose);
+		if (parent != null)
+		{
+			parent.children.put(id, this);
+			this.pose.updateParent(parent.pose);
+		}
 	}
 
 	RrtNode(T pose, RrtNode<T> parent, double cost)

@@ -1,8 +1,8 @@
 package au.com.rsutton.mapping.particleFilter;
 
 import au.com.rsutton.hazelcast.LidarScan;
-import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.DistanceXY;
 
 public interface ParticleFilterListener
 {

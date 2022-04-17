@@ -1,4 +1,4 @@
-package au.com.rsutton.navigation.feature;
+package au.com.rsutton.robot;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Logger;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
@@ -15,6 +14,7 @@ import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.HeadingHelper;
 
 public class RobotLocationDeltaMessagePump
 {

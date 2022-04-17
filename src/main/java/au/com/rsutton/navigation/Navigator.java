@@ -16,20 +16,17 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
-import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
-import au.com.rsutton.mapping.particleFilter.Pose;
-import au.com.rsutton.mapping.particleFilter.RobotPoseSource;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.DistanceXY;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RoutePlannerRRT;
 import au.com.rsutton.navigation.router.nextgen.NextGenRouter;
 import au.com.rsutton.navigation.router.nextgen.NextGenRouter.DirectionAndAngle;
 import au.com.rsutton.navigation.router.nextgen.PathPlannerAndFollowerIfc;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotPoseSource;
+import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
 import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
@@ -38,6 +35,9 @@ import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.DistanceXY;
+import au.com.rsutton.units.HeadingHelper;
+import au.com.rsutton.units.Pose;
 import au.com.rsutton.units.Speed;
 
 public class Navigator implements Runnable, NavigatorControl

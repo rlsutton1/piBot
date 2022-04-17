@@ -10,6 +10,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.units.Pose;
 
 public class Particle
 {

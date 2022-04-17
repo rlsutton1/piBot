@@ -1,4 +1,4 @@
-package au.com.rsutton.robot.rover;
+package au.com.rsutton.robot;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;

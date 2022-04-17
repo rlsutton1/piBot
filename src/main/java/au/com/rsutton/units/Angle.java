@@ -4,8 +4,6 @@ import java.io.Serializable;
 
 import com.google.common.base.Preconditions;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
-
 public class Angle implements Serializable
 {
 	/**

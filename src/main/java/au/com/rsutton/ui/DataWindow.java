@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.ui;
 
 import java.awt.Dimension;
 

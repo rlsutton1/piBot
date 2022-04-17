@@ -22,8 +22,6 @@ import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaMessagePump;
 import au.com.rsutton.robot.lidar.LidarObservation;
 import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.ui.DataSourceMap;

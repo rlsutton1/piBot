@@ -95,7 +95,7 @@ class RRT<T extends Pose<T>>
 		{
 			writeSolution(solution);
 			solution.calculateCost(target);
-			notifySolution(this, solution, Color.RED, targetNode, nodeListener);
+			notifySolution(solution, Color.RED, targetNode, nodeListener);
 		}
 
 		dumpMap();
@@ -168,7 +168,7 @@ class RRT<T extends Pose<T>>
 						bestPath = pathCost;
 						System.out.println("Solution improved " + cost);
 						System.out.println("New path cost " + pathCost);
-						notifySolution(this, solution, Color.RED, targetNode, nodeListener);
+						notifySolution(solution, Color.RED, targetNode, nodeListener);
 					}
 
 				}
@@ -196,8 +196,8 @@ class RRT<T extends Pose<T>>
 		return steps;
 	}
 
-	static public <T extends Pose<T>> void notifySolution(RRT<T> rrt, RrtNode<T> solution, Color color,
-			RrtNode<T> targetNode, NodeListener<T> nodeListener)
+	static public <T extends Pose<T>> void notifySolution(RrtNode<T> solution, Color color, RrtNode<T> targetNode,
+			NodeListener<T> nodeListener)
 	{
 		System.out.println("solution " + solution);
 		System.out.println("target " + targetNode);
@@ -289,24 +289,21 @@ class RRT<T extends Pose<T>>
 			return Collections.emptyList();
 		}
 
-		List<List<RrtNode<T>>> shortList = getNearbyNodes((int) newParent.getX(), (int) newParent.getY(), 20);
+		List<RrtNode<T>> shortList = getNearbyNodes((int) newParent.getX(), (int) newParent.getY(), 20);
 
 		List<RrtNode<T>> candidates = new LinkedList<>();
-		for (List<RrtNode<T>> list : shortList)
+
+		for (RrtNode<T> node : shortList)
 		{
+			double oldCost = getPathCost(node.getParent(), nodes.size() + 10);
+			double newCost = getPathCost(newParent, nodes.size() + 10);
 
-			for (RrtNode<T> node : list)
+			double oldDistance = node.calculateCost(node.getParent());
+			double newDistance = node.calculateCost(newParent);
+
+			if (newDistance <= 1 && newDistance + newCost < oldDistance + oldCost)
 			{
-				double oldCost = getPathCost(node.getParent(), nodes.size() + 10);
-				double newCost = getPathCost(newParent, nodes.size() + 10);
-
-				double oldDistance = node.calculateCost(node.getParent());
-				double newDistance = node.calculateCost(newParent);
-
-				if (newDistance <= 1 && newDistance + newCost < oldDistance + oldCost)
-				{
-					candidates.add(node);
-				}
+				candidates.add(node);
 			}
 		}
 		return candidates;
@@ -346,12 +343,12 @@ class RRT<T extends Pose<T>>
 	// return shortList;
 	// }
 
-	public List<List<RrtNode<T>>> getNearbyNodes(int x, int y, int minReturn)
+	public List<RrtNode<T>> getNearbyNodes(int x, int y, int minReturn)
 	{
 
 		int maxRadius = Math.max(map.getMaxX(), map.getMaxY());
 
-		List<List<RrtNode<T>>> shortList = new LinkedList<>();
+		List<RrtNode<T>> shortList = new LinkedList<>();
 
 		int total = addNodeToList(shortList, x, y);
 		for (int r = 1; r < maxRadius; r++)
@@ -375,7 +372,7 @@ class RRT<T extends Pose<T>>
 		return shortList;
 	}
 
-	private int addNodeToList(List<List<RrtNode<T>>> shortList, int xp, int yp)
+	private int addNodeToList(List<RrtNode<T>> shortList, int xp, int yp)
 	{
 		int ret = 0;
 		if (xp >= 0 && yp >= 0 && xp < map.getMaxX() && yp < map.getMaxY())
@@ -383,7 +380,7 @@ class RRT<T extends Pose<T>>
 			List<RrtNode<T>> list = nodeMap.get(xp, yp);
 			if (list != null && !list.isEmpty())
 			{
-				shortList.add(list);
+				shortList.addAll(list);
 				ret = list.size();
 			}
 		}
@@ -496,21 +493,18 @@ class RRT<T extends Pose<T>>
 			return checkall(pose, bestDistance, selectedNode);
 		}
 
-		List<List<RrtNode<T>>> nearbyNodes = getNearbyNodes((int) pose.getX(), (int) pose.getY(), 30);
+		List<RrtNode<T>> nearbyNodes = getNearbyNodes((int) pose.getX(), (int) pose.getY(), 30);
 
-		for (List<RrtNode<T>> list : nearbyNodes)
+		for (RrtNode<T> node : nearbyNodes)
 		{
-			for (RrtNode<T> node : list)
+			double distance = node.calculateCost(pose);
+			if (distance < bestDistance)
 			{
-				double distance = node.calculateCost(pose);
-				if (distance < bestDistance)
+				if (node.canConnect(pose))
 				{
-					if (node.canConnect(pose))
-					{
-						bestDistance = distance;
-						selectedNode = node;
+					bestDistance = distance;
+					selectedNode = node;
 
-					}
 				}
 			}
 		}

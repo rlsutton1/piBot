@@ -4,10 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.hazelcast.LidarScan;
-import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
-import au.com.rsutton.mapping.particleFilter.Pose;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
@@ -16,10 +13,13 @@ import au.com.rsutton.navigation.router.RoutePlannerRRT;
 import au.com.rsutton.navigation.router.rrt.Pose2DWithConstraint;
 import au.com.rsutton.navigation.router.rrt.RrtNode;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotLocationDeltaListener;
+import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.Pose;
 
 public class NextGenRouter implements PathPlannerAndFollowerIfc
 {
@@ -99,13 +99,14 @@ public class NextGenRouter implements PathPlannerAndFollowerIfc
 
 		RrtNode<Pose2DWithConstraint> node = path;
 		double traveled = 0;
+		int ctr = 0;
 		while (traveled < distance)
 		{
-
+			ctr++;
 			RrtNode<Pose2DWithConstraint> parent = node.getParent();
 			if (parent == null)
 			{
-
+				logger.error("ctr=" + ctr + " traveled=" + traveled);
 				return null;
 			}
 
@@ -134,12 +135,21 @@ public class NextGenRouter implements PathPlannerAndFollowerIfc
 				break;
 			}
 
-			traveled += (parent.getPose().distanceTo(node.getPose()) * map.getBlockSize() * rrtPlanner.getScale());
+			traveled += (parent.getPose().distanceTo(node.getPose()) * map.getBlockSize());
 			node = parent;
 		}
 
-		return new ExpansionPoint(((int) node.getX() * map.getBlockSize()) - rrtPlanner.getXoffset(),
-				((int) node.getY() * map.getBlockSize()) - rrtPlanner.getYoffset(), 0, null);
+		return new ExpansionPoint((int) convertX(node.getX()), (int) convertY(node.getY()), 0, null);
+	}
+
+	private double convertX(double x)
+	{
+		return (x - rrtPlanner.getXoffset()) * map.getBlockSize();
+	}
+
+	private double convertY(double y)
+	{
+		return (y - rrtPlanner.getYoffset()) * map.getBlockSize();
 	}
 
 	@Override

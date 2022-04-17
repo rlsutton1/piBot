@@ -1,9 +1,9 @@
 package au.com.rsutton.navigation.router.nextgen;
 
-import au.com.rsutton.mapping.particleFilter.Pose;
 import au.com.rsutton.navigation.router.ExpansionPoint;
 import au.com.rsutton.navigation.router.nextgen.NextGenRouter.DirectionAndAngle;
 import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.Pose;
 
 /**
  * The expected flow is that planPath will be called.

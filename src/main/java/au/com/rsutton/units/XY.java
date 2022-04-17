@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping;
+package au.com.rsutton.units;
 
 public class XY implements Comparable<XY>
 {

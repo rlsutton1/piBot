@@ -1,4 +1,4 @@
-package au.com.rsutton.navigation.feature;
+package au.com.rsutton.robot;
 
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.units.Angle;

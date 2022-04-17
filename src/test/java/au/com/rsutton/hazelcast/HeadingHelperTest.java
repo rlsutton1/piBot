@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
+import au.com.rsutton.units.HeadingHelper;
 
 public class HeadingHelperTest
 {

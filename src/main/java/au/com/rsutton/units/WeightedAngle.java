@@ -1,4 +1,4 @@
-package au.com.rsutton.angle;
+package au.com.rsutton.units;
 
 public class WeightedAngle
 {

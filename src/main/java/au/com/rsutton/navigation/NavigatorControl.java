@@ -1,6 +1,6 @@
 package au.com.rsutton.navigation;
 
-import au.com.rsutton.mapping.particleFilter.Pose;
+import au.com.rsutton.units.Pose;
 
 public interface NavigatorControl
 {

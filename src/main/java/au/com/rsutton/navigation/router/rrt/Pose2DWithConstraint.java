@@ -2,8 +2,8 @@ package au.com.rsutton.navigation.router.rrt;
 
 import java.util.Random;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.units.HeadingHelper;
 
 public class Pose2DWithConstraint implements Pose<Pose2DWithConstraint>
 {

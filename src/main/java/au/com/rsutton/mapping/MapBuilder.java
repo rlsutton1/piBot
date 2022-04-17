@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.mapping;
 
 import java.io.File;
 import java.util.HashSet;
@@ -18,28 +18,36 @@ import org.apache.logging.log4j.core.config.Configurator;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.hazelcast.LidarScan;
-import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
-import au.com.rsutton.mapping.BoxMapBuilder;
-import au.com.rsutton.mapping.KitchenMapBuilder;
-import au.com.rsutton.mapping.XY;
+import au.com.rsutton.mapping.particleFilter.Particle;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterIfc;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterImpl;
+import au.com.rsutton.mapping.particleFilter.ParticleFilterStatus;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.maps.BoxMapBuilder;
+import au.com.rsutton.maps.KitchenMapBuilder;
 import au.com.rsutton.navigation.Navigator;
 import au.com.rsutton.navigation.NavigatorControl;
-import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
+import au.com.rsutton.robot.RobotImple;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotLocationDeltaListener;
+import au.com.rsutton.robot.RobotPoseSource;
+import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
 import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.CoordinateClickListener;
+import au.com.rsutton.ui.DataWindow;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.VideoWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.DistanceXY;
+import au.com.rsutton.units.Pose;
 import au.com.rsutton.units.Speed;
 import au.com.rsutton.units.Time;
+import au.com.rsutton.units.XY;
 
 public class MapBuilder
 {

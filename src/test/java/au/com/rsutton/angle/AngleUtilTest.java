@@ -7,6 +7,9 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.com.rsutton.units.AngleUtil;
+import au.com.rsutton.units.WeightedAngle;
+
 public class AngleUtilTest
 {
 

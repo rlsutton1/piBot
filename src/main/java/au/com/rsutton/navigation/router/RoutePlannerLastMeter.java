@@ -25,19 +25,19 @@ import au.com.rsutton.hazelcast.DataLogLevel;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.PointCloudMessage;
-import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling;
-import au.com.rsutton.kalman.RobotPoseSourceTimeTraveling.RobotPoseInstant;
 import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.DistanceXY;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotLocationDeltaListener;
+import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
+import au.com.rsutton.robot.RobotPoseSourceTimeTraveling.RobotPoseInstant;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
+import au.com.rsutton.units.DistanceXY;
 
 public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaListener, DataSourceMap
 {

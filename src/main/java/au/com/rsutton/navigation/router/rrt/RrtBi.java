@@ -1,6 +1,8 @@
 package au.com.rsutton.navigation.router.rrt;
 
 import java.awt.Color;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -12,8 +14,8 @@ import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 public class RrtBi<T extends Pose<T>>
 {
 
-	private RrtNode<T> solution1 = null;
-	private RrtNode<T> solution2 = null;
+	private RrtNode<T> solution = null;
+
 	private double bestPath = Double.MAX_VALUE;
 
 	RRT<T> rrt1;
@@ -25,18 +27,18 @@ public class RrtBi<T extends Pose<T>>
 
 	static Random rand;
 
-	public RrtBi(T start, T target, ProbabilityMapIIFc map, NodeListener<T> nodeListener)
+	public RrtBi(T rrt1Start, T rrt1Target, ProbabilityMapIIFc map, NodeListener<T> nodeListener)
 	{
 		this.map = map;
-		this.targetNode = new RrtNode<>(target, null, 0);
+		this.targetNode = new RrtNode<>(rrt1Target, null, 0);
 
 		this.nodeListener = nodeListener;
 
-		rrt1 = new RRT<>(start, target, map, getNodeListener(true));
+		rrt1 = new RRT<>(rrt1Start, rrt1Target, map, getNodeListener(true));
 
-		T start2 = start.copy().invertDirection();
-		T target2 = target.copy().invertDirection();
-		rrt2 = new RRT<>(target2, start2, map, getNodeListener(false));
+		T rrt2Target = rrt1Start.copy().invertDirection();
+		T rrt2Start = rrt1Target.copy().invertDirection();
+		rrt2 = new RRT<>(rrt2Start, rrt2Target, map, getNodeListener(false));
 
 	}
 
@@ -50,16 +52,6 @@ public class RrtBi<T extends Pose<T>>
 
 				nodeListener.added(newNode, color, forcePaint);
 
-				// TODO: check for rrt1 meeting rrt2
-				List<List<RrtNode<T>>> nearNodes;
-				if (isRrt1)
-				{
-					nearNodes = rrt2.getNearbyNodes((int) newNode.getX(), (int) newNode.getY(), 100);
-				} else
-				{
-					nearNodes = rrt1.getNearbyNodes((int) newNode.getX(), (int) newNode.getY(), 100);
-				}
-
 				if (rrt1.hasSolution())
 				{
 
@@ -68,8 +60,8 @@ public class RrtBi<T extends Pose<T>>
 					{
 						bestPath = cost;
 						System.out.println("Found better path " + cost);
-						solution1 = rrt1.getSolution();
-						solution2 = null;
+						solution = rrt1.getSolution();
+
 						found = true;
 					}
 				}
@@ -82,35 +74,42 @@ public class RrtBi<T extends Pose<T>>
 					{
 						bestPath = cost;
 						System.out.println("Found better path " + cost);
-						solution1 = rrt2.getSolution();
-						solution2 = null;
+						solution = rrt2.getSolution();
+
 						found = true;
 					}
 				}
 
-				for (List<RrtNode<T>> list : nearNodes)
+				// check for rrt1 meeting rrt2
+				// TODO: merge solutions
+				List<RrtNode<T>> nearNodes;
+				if (isRrt1)
 				{
-					for (RrtNode<T> nearNode : list)
+					nearNodes = rrt2.getNearbyNodes((int) newNode.getX(), (int) newNode.getY(), 100);
+				} else
+				{
+					nearNodes = rrt1.getNearbyNodes((int) newNode.getX(), (int) newNode.getY(), 100);
+				}
+
+				for (RrtNode<T> nearNode : nearNodes)
+				{
+
+					if (newNode.canBridge(nearNode) && newNode.calculateCost(nearNode) < 0.75)
 					{
 
-						if (newNode.canBridge(nearNode) && newNode.calculateCost(nearNode) < 0.75)
+						double cost = RRT.getPathCost(newNode, 1000) + RRT.getPathCost(nearNode, 1000);
+						if (cost < bestPath)
 						{
+							// dfg this needs work
+							mergePaths(nearNode, newNode);
+							System.out.println("Found better path " + cost);
+							bestPath = cost;
+							// both have a solution
 
-							double cost = RRT.getPathCost(newNode, 1000) + RRT.getPathCost(nearNode, 1000);
-							if (cost < bestPath)
-							{
-								System.out.println("Found better path " + cost);
-								solution1 = newNode;
-								solution2 = nearNode;
-								bestPath = cost;
-								if (found == false)
-								{
-									RRT.notifySolution(null, solution1, Color.RED, targetNode, nodeListener);
-									RRT.notifySolution(null, solution2, Color.RED, targetNode, nodeListener);
-								}
-								found = true;
-							}
-
+							solution = rrt1.getSolution();
+							RRT.notifySolution(newNode, Color.RED, targetNode, nodeListener);
+							RRT.notifySolution(nearNode, Color.RED, targetNode, nodeListener);
+							found = true;
 						}
 					}
 				}
@@ -131,8 +130,8 @@ public class RrtBi<T extends Pose<T>>
 
 		rrt2.changeTarget(start2);
 
-		solution1 = null;
-		solution2 = null;
+		solution = null;
+
 		found = false;
 		oneOnly = true;
 
@@ -179,28 +178,77 @@ public class RrtBi<T extends Pose<T>>
 
 		System.out.println("Solution cost is " + bestPath);
 
-		if (solution1 != null)
+		if (solution != null)
 		{
-			RRT.notifySolution(null, solution1, Color.RED, targetNode, nodeListener);
+			RRT.notifySolution(solution, Color.RED, targetNode, nodeListener);
+			return solution;
 		}
 
-		if (solution2 != null)
+		throw new RuntimeException("Failed");
+		// result = mergePaths(rrt1.getSolution(), rrt2.getSolution());
+
+	}
+
+	// TODO: test this
+	RrtNode<T> mergePaths(RrtNode<T> path1, RrtNode<T> path2)
+	{
+
+		// build both paths into a list
+		List<RrtNode<T>> tempPath = new LinkedList<>();
+		RrtNode<T> p1 = path1;
+		while (p1 != null)
 		{
-			RRT.notifySolution(null, solution2, Color.RED, targetNode, nodeListener);
+			tempPath.add(p1);
+			p1 = p1.getParent();
 		}
 
-		if (solution1 != null)
+		RrtNode<T> p2 = path2;
+		while (p2 != null)
 		{
-			return solution1;
+			tempPath.add(p2);
+			p2 = p2.getParent();
 		}
 
-		if (solution2 != null)
+		// reconstruct a single path
+		RrtNode<T> mergedPath = null;
+		for (RrtNode<T> node : tempPath)
 		{
-			return solution2;
+			RrtNode<T> copy = node.copy();
+			copy.setParent(mergedPath, 0);
+			mergedPath = copy;
 		}
 
-		return rrt1.getSolution();
+		return mergedPath;
 
+	}
+
+	// TODO: test this
+	RrtNode<T> reversePath(RrtNode<T> path)
+	{
+
+		// build the path into a list
+		List<RrtNode<T>> tempPath = new LinkedList<>();
+		RrtNode<T> p1 = path;
+		while (p1 != null)
+		{
+			tempPath.add(p1);
+			p1 = p1.getParent();
+		}
+
+		// reverse it
+
+		Collections.reverse(tempPath);
+
+		// reconstruct the path
+		RrtNode<T> reversedPath = null;
+		for (RrtNode<T> node : tempPath)
+		{
+			RrtNode<T> copy = node.copy();
+			copy.setParent(reversedPath, 0);
+			reversedPath = copy;
+		}
+
+		return reversedPath;
 	}
 
 }

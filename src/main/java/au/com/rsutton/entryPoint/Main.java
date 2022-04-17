@@ -6,10 +6,10 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.SetMotion;
-import au.com.rsutton.mapping.particleFilter.DataWindow;
-import au.com.rsutton.mapping.particleFilter.MapBuilder;
+import au.com.rsutton.mapping.MapBuilder;
 import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.robot.roomba.RoombaRobot;
+import au.com.rsutton.ui.DataWindow;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.VideoWindow;
 import au.com.rsutton.units.Distance;

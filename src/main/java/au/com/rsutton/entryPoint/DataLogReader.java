@@ -6,11 +6,11 @@ import java.io.ObjectInputStream;
 
 import com.hazelcast.core.Message;
 
-import au.com.rsutton.entryPoint.controllers.HeadingHelper;
 import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.hazelcast.ImageMessage;
 import au.com.rsutton.hazelcast.PointCloudMessage;
 import au.com.rsutton.hazelcast.RobotTelemetry;
+import au.com.rsutton.units.HeadingHelper;
 
 public class DataLogReader
 {

@@ -1,9 +1,6 @@
-package au.com.rsutton.navigation.feature;
+package au.com.rsutton.units;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import au.com.rsutton.units.Distance;
-import au.com.rsutton.units.DistanceUnit;
 
 public class DistanceXY
 {

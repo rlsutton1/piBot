@@ -1,6 +1,4 @@
-package au.com.rsutton.entryPoint.controllers;
-
-import au.com.rsutton.angle.AngleUtil;
+package au.com.rsutton.units;
 
 public class HeadingHelper
 {

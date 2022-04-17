@@ -1,4 +1,4 @@
-package au.com.rsutton.mapping.particleFilter;
+package au.com.rsutton.mapping;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -10,11 +10,12 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.base.Stopwatch;
 
 import au.com.rsutton.hazelcast.LidarScan;
+import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.feature.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotInterface;
+import au.com.rsutton.robot.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
