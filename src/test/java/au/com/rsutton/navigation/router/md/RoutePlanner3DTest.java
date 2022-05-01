@@ -18,12 +18,12 @@ public class RoutePlanner3DTest
 		MoveTemplate softLeft = planner.moveTemplateFactory(5, planner.angleFactory(-5));
 		MoveTemplate hardRight = planner.moveTemplateFactory(20, planner.angleFactory(10));
 		MoveTemplate hardLeft = planner.moveTemplateFactory(20, planner.angleFactory(-10));
-		MoveTemplate reverseLeft = planner.moveTemplateFactory(100, planner.angleFactory(170));
-		MoveTemplate reverseRight = planner.moveTemplateFactory(100, planner.angleFactory(190));
+		MoveTemplate reverseLeft = planner.moveTemplateFactory(200, planner.angleFactory(170));
+		MoveTemplate reverseRight = planner.moveTemplateFactory(200, planner.angleFactory(190));
 
 		MoveTemplate[] moveTemplates = new MoveTemplate[] {
 				straight, softRight, softLeft, hardRight, hardLeft, //
-				// reverseLeft, reverseRight,
+				reverseLeft, reverseRight,
 
 		};
 
@@ -38,7 +38,10 @@ public class RoutePlanner3DTest
 				// reverseRight,
 
 		};
-		planner.dumpFrom(30, 10, planner.angleFactory(270));
+		for (int i = 0; i < 360; i++)
+		{
+			planner.dumpFrom(30, 10, planner.angleFactory(i));
+		}
 
 		// planner.dumpMap();
 	}

@@ -50,7 +50,7 @@ public class RoutePlanner3D
 	{
 
 		target = new InternalPose(x, y, angle);
-		Expansion start = new Expansion(x, y, angle);
+		Expansion start = new Expansion(x, y, angle, 0);
 		List<Expansion> work = new LinkedList<>();
 		work.add(start);
 		int ctr = 0;
@@ -62,12 +62,12 @@ public class RoutePlanner3D
 			if (move != null)
 			{
 				ProposedMove next = move.getProposedPose(job);
-				if (next != null && isWithinBounds(next))
+				if (next != null && next.isWithinBounds())
 				{
 
 					if (next.isBetter(plan))
 					{
-						next.setCostOfPose(next.getCostOfProposedMove(), plan, move);
+						next.setCostOfPose(next.getCost(), plan, move);
 						work.add(next);
 					}
 
@@ -82,64 +82,19 @@ public class RoutePlanner3D
 		}
 		System.out.println("steps " + ctr);
 
-	}
+		int unroutable = 0;
+		for (int i = 0; i < x; i++)
+			for (int j = 0; j < y; j++)
+				for (int k = 0; k < plan[i][j].length; k++)
+				{
+					if (plan[i][j][k].cost == Integer.MAX_VALUE)
+					{
+						unroutable++;
+						System.out.println("UR " + i + " " + j + " " + rotationToAngle(k));
+					}
+				}
+		System.out.println("Unroutable " + unroutable);
 
-	int angleToRotation(int angle)
-	{
-		return angle / rotationFraction;
-	}
-
-	int rotationToAngle(int rotation)
-	{
-		return rotation * rotationFraction;
-	}
-
-	Angle angleFactory(int degrees)
-	{
-		return new Angle(degrees);
-	}
-
-	class Angle
-	{
-		final int angle;
-
-		@Override
-		public String toString()
-		{
-			return "Angle [angle=" + angle + "]";
-		}
-
-		Angle(int angle)
-		{
-			int tmp = angle % 360;
-			if (tmp < 0)
-			{
-				tmp += 360;
-			}
-
-			this.angle = tmp;
-
-		}
-
-		Angle invert()
-		{
-			return new Angle(angle - 180);
-		}
-
-		Angle add(Angle angle)
-		{
-			return new Angle(this.angle + angle.angle);
-		}
-
-		int delta(Angle angle)
-		{
-			return new Angle(this.angle - angle.angle).angle;
-		}
-
-		public int getRotation()
-		{
-			return angleToRotation(angle);
-		}
 	}
 
 	void dumpMap()
@@ -181,8 +136,6 @@ public class RoutePlanner3D
 
 			if (step != null && step.move != null)
 			{
-				double currentCost = step.cost;
-				System.out.println(ctr + " " + currentPose + " = " + currentCost + " " + step.move);
 
 				Angle angle = new Angle(currentPose.angle.angle - step.move.angleDelta.angle);
 				Vector3D uv = getUnitVector(angle);
@@ -190,8 +143,7 @@ public class RoutePlanner3D
 
 				InternalPose nextPose = new InternalPose(position.getX(), position.getY(), angle);
 
-				// TODO: magic number 5
-				if (!isWithinBounds(nextPose) || isAtGoal(nextPose))
+				if (!nextPose.isWithinBounds() || nextPose.isAtGoal())
 				{
 					System.out.println("at goal or out of bounds");
 					break;
@@ -217,7 +169,13 @@ public class RoutePlanner3D
 			System.out.print("" + (y1 % 10));
 			for (int x1 = 0; x1 < maxX; x1++)
 			{
-				if (result[x1][y1] > 0)
+				if (x1 == x && y1 == y)
+				{
+					System.out.print("S");
+				} else if (x1 == (int) target.x && y1 == (int) target.y)
+				{
+					System.out.print("T");
+				} else if (result[x1][y1] > 0)
 				{
 					System.out.print(".");
 				} else
@@ -229,68 +187,50 @@ public class RoutePlanner3D
 		}
 	}
 
-	private boolean isAtGoal(InternalPose nextPose)
+	int rotationToAngle(int rotation)
 	{
-		double tmp = Math.abs(target.x - nextPose.x) + Math.abs(target.y - nextPose.y);
-
-		System.out.println("Distance to target " + tmp);
-
-		return tmp < 5;
-
+		return rotation * rotationFraction;
 	}
 
-	InternalPose getBestPoseValue(double x, double y, Angle angle)
+	Angle angleFactory(int degrees)
 	{
-		InternalPose result = null;
-		double best = Integer.MAX_VALUE;
-		if (x >= 0 && x < maxX && y >= 0 && y < maxY)
-		{
-			for (int r = 0; r < plan[(int) x][(int) y].length; r++)
+		return new Angle(degrees);
+	}
 
+	class Angle
+	{
+		private final int angle;
+
+		Angle(int angle)
+		{
+			int tmp = angle % 360;
+			if (tmp < 0)
 			{
-
-				Angle toTry = new Angle(rotationToAngle(r));
-				double cost = plan[(int) x][(int) y][r].cost;
-				if (cost < best)
-				{
-					result = new InternalPose(x, y, toTry);
-					best = cost;
-				}
+				tmp += 360;
 			}
+
+			this.angle = tmp;
+
 		}
-		return result;
+
+		Angle invert()
+		{
+			return new Angle(angle - 180);
+		}
+
+		int getRotation()
+		{
+			return angle / rotationFraction;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "Angle [angle=" + angle + "]";
+		}
 	}
 
-	private boolean isWithinBounds(InternalPose next)
-	{
-		return next.x >= 0 && next.x < maxX && next.y >= 0 && next.y < maxY;
-	}
-
-	static class ProposedMove extends Expansion
-	{
-
-		ProposedMove(double x, double y, Angle angle)
-		{
-			super(x, y, angle);
-		}
-
-		public boolean isBetter(Step[][][] plan)
-		{
-			return getCostOfPose(plan) > getCostOfProposedMove();
-		}
-
-		ProposedMove addCost(double toAdd)
-		{
-			value += toAdd;
-			return this;
-		}
-
-		int getCostOfProposedMove()
-		{
-			return value;
-		}
-
-	}
+	
 
 	static Map<Integer, Vector3D> unitVectorCache = new HashMap<>();
 
@@ -319,16 +259,11 @@ public class RoutePlanner3D
 
 	public class MoveTemplate
 	{
-		@Override
-		public String toString()
-		{
-			return "MoveTemplate [cost=" + cost + ", angleDelta=" + angleDelta + "]";
-		}
 
-		final int cost;
+		final double cost;
 		final Angle angleDelta;
 
-		public MoveTemplate(int cost, Angle angleDelta)
+		public MoveTemplate(double cost, Angle angleDelta)
 		{
 			this.cost = cost;
 			this.angleDelta = angleDelta;
@@ -340,39 +275,48 @@ public class RoutePlanner3D
 			Angle angle = new Angle(current.angle.angle + angleDelta.angle);
 
 			Vector3D vector = getUnitVector(angle);
-
-			ProposedMove proposed = getProposedMove(current, angle, vector);
-
-			return proposed.addCost(current.value + cost);
-
-		}
-
-		private ProposedMove getProposedMove(Expansion current, Angle angle, Vector3D vector)
-		{
 			// calc new xy
 			double x = vector.getX() + current.x;
 			double y = vector.getY() + current.y;
 
-			ProposedMove proposed = new ProposedMove(x, y, angle);
-			return proposed;
+			return new ProposedMove(x, y, angle, current.cost + cost);
+
 		}
 
-		public MoveTemplate invert()
+		@Override
+		public String toString()
 		{
-			return new MoveTemplate(cost, new Angle(angleDelta.angle * -1));
+			return "MoveTemplate [cost=" + cost + ", angleDelta=" + angleDelta + "]";
 		}
-	}
 
-	static public class Expansion extends InternalPose
+	}
+	
+	class ProposedMove extends Expansion
 	{
 
-		int value;
-
-		int usedMoveIndex = 0;
-
-		Expansion(InternalPose pose)
+		ProposedMove(double x, double y, Angle angle, double cost)
 		{
-			super(pose.x, pose.y, pose.angle);
+			super(x, y, angle, cost);
+		}
+
+		public boolean isBetter(Step[][][] plan)
+		{
+			return getCostOfPose(plan) > cost;
+		}
+
+	}
+
+	public class Expansion extends InternalPose
+	{
+
+		protected final double cost;
+
+		private int usedMoveIndex = 0;
+
+		Expansion(double x, double y, Angle angle, double cost)
+		{
+			super(x, y, angle);
+			this.cost = cost;
 		}
 
 		public MoveTemplate getNextMove(MoveTemplate[] moveTemplates)
@@ -387,20 +331,15 @@ public class RoutePlanner3D
 			return null;
 		}
 
-		Expansion(double x, double y, Angle angle)
+		double getCost()
 		{
-			super(x, y, angle);
+			return cost;
 		}
 
 	}
 
-	static class InternalPose
+	class InternalPose
 	{
-		@Override
-		public String toString()
-		{
-			return "InternalPose [x=" + x + ", y=" + y + ", rotation=" + angle + "]";
-		}
 
 		double x;
 		double y;
@@ -428,6 +367,28 @@ public class RoutePlanner3D
 			plan[(int) x][(int) y][angle.getRotation()].cost = value;
 			plan[(int) x][(int) y][angle.getRotation()].move = move;
 		}
+
+		boolean isWithinBounds()
+		{
+			return x >= 0 && x < maxX && y >= 0 && y < maxY;
+		}
+
+		boolean isAtGoal()
+		{
+			double tmp = Math.abs(target.x - x) + Math.abs(target.y - y);
+
+			// System.out.println("Distance to target " + tmp);
+
+			return tmp < 2;
+
+		}
+
+		@Override
+		public String toString()
+		{
+			return "InternalPose [x=" + x + ", y=" + y + ", rotation=" + angle + "]";
+		}
+
 	}
 
 }
