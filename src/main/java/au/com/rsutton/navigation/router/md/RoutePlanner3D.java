@@ -19,7 +19,7 @@ public class RoutePlanner3D
 	private int rotationFraction;
 	private InternalPose target;
 
-	RoutePlanner3D(int x, int y, int rotations)
+	public RoutePlanner3D(int x, int y, int rotations)
 	{
 		this.maxX = x;
 		this.maxY = y;
@@ -40,13 +40,13 @@ public class RoutePlanner3D
 		System.out.println("expect " + (x * y * rotations));
 	}
 
-	class Step
+	private class Step
 	{
 		double cost = Integer.MAX_VALUE;
 		MoveTemplate move = null;
 	}
 
-	void plan(int x, int y, Angle angle, MoveTemplate[] moveTemplates)
+	public void plan(int x, int y, Angle angle, MoveTemplate[] moveTemplates)
 	{
 
 		target = new InternalPose(x, y, angle);
@@ -57,34 +57,35 @@ public class RoutePlanner3D
 		while (!work.isEmpty())
 		{
 			ctr++;
-			ProposedPose job = work.remove(0);
+			ProposedPose priorPose = work.remove(0);
 			for (MoveTemplate move : moveTemplates)
 			{
-				ProposedPose proposedPose = move.getProposedPose(job);
-				if (proposedPose.isWithinBounds() && proposedPose.isBetter(plan))
+				ProposedPose proposedPose = move.getProposedPose(priorPose);
+				if (proposedPose.isWithinBounds() && proposedPose.isBetterThanExisting())
 				{
-					proposedPose.addToPlan(move, plan);
+					proposedPose.addToPlan(move);
 					work.add(proposedPose);
 				}
 			}
 		}
 		System.out.println("steps " + (ctr * moveTemplates.length));
 
-		dumpUnroutable(x, y);
+		dumpUnroutable();
 
 	}
 
-	private void dumpUnroutable(int x, int y)
+	private void dumpUnroutable()
 	{
 		int unroutable = 0;
-		for (int i = 0; i < x; i++)
-			for (int j = 0; j < y; j++)
-				for (int k = 0; k < plan[i][j].length; k++)
+		for (int i = 0; i < plan.length; i++)
+			for (int j = 0; j < plan[0].length; j++)
+				for (int k = 0; k < plan[0][0].length; k++)
 				{
 					if (plan[i][j][k].cost == Integer.MAX_VALUE)
 					{
 						unroutable++;
-						System.out.println("UR " + i + " " + j + " " + rotationToAngle(k));
+						// System.out.println("UR " + i + " " + j + " " +
+						// rotationToAngle(k));
 					}
 				}
 		System.out.println("Unroutable " + unroutable);
@@ -125,7 +126,7 @@ public class RoutePlanner3D
 		Step step = null;
 		do
 		{
-			step = currentPose.getStep(plan);
+			step = currentPose.getStep();
 
 			if (step != null && step.move != null)
 			{
@@ -185,12 +186,12 @@ public class RoutePlanner3D
 		}
 	}
 
-	int rotationToAngle(int rotation)
+	private int rotationToAngle(int rotation)
 	{
 		return rotation * rotationFraction;
 	}
 
-	Angle angleFactory(int degrees)
+	public Angle angleFactory(int degrees)
 	{
 		return new Angle(degrees);
 	}
@@ -248,7 +249,7 @@ public class RoutePlanner3D
 		return vector;
 	}
 
-	MoveTemplate moveTemplateFactory(int cost, Angle angle)
+	public MoveTemplate moveTemplateFactory(int cost, Angle angle)
 	{
 		return new MoveTemplate(cost, angle);
 	}
@@ -287,7 +288,7 @@ public class RoutePlanner3D
 
 	}
 
-	public class ProposedPose extends InternalPose
+	class ProposedPose extends InternalPose
 	{
 
 		protected final double proposedCost;
@@ -298,15 +299,16 @@ public class RoutePlanner3D
 			this.proposedCost = proposedCost;
 		}
 
-		public boolean isBetter(Step[][][] plan)
+		public boolean isBetterThanExisting()
 		{
 			return plan[(int) x][(int) y][angle.getRotation()].cost > proposedCost;
 		}
 
-		void addToPlan(MoveTemplate move, Step[][][] plan)
+		void addToPlan(MoveTemplate move)
 		{
-			plan[(int) x][(int) y][angle.getRotation()].cost = proposedCost;
-			plan[(int) x][(int) y][angle.getRotation()].move = move;
+			Step step = plan[(int) x][(int) y][angle.getRotation()];
+			step.cost = proposedCost;
+			step.move = move;
 		}
 
 	}
@@ -318,14 +320,14 @@ public class RoutePlanner3D
 		double y;
 		Angle angle;
 
-		InternalPose(double x, double y, Angle rotation)
+		InternalPose(double x, double y, Angle angle)
 		{
 			this.x = x;
 			this.y = y;
-			this.angle = rotation;
+			this.angle = angle;
 		}
 
-		Step getStep(Step[][][] plan)
+		Step getStep()
 		{
 			return plan[(int) x][(int) y][angle.getRotation()];
 		}
