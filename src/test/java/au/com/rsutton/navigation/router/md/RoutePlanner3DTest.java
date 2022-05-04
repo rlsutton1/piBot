@@ -11,7 +11,7 @@ public class RoutePlanner3DTest
 	public void test()
 	{
 
-		RoutePlanner3D planner = new RoutePlanner3D(100, 50, 72);
+		RoutePlanner3D planner = new RoutePlanner3D(100, 100, 72);
 
 		MoveTemplate straight = planner.moveTemplateFactory(1, planner.angleFactory(0));
 		MoveTemplate softRight = planner.moveTemplateFactory(5, planner.angleFactory(5));
@@ -38,7 +38,7 @@ public class RoutePlanner3DTest
 				// reverseRight,
 
 		};
-		for (int i = 0; i < 360; i++)
+		for (int i = 0; i < 360; i += 10)
 		{
 			planner.dumpFrom(30, 10, planner.angleFactory(i));
 		}

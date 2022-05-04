@@ -50,38 +50,32 @@ public class RoutePlanner3D
 	{
 
 		target = new InternalPose(x, y, angle);
-		Expansion start = new Expansion(x, y, angle, 0);
-		List<Expansion> work = new LinkedList<>();
+		ProposedPose start = new ProposedPose(x, y, angle, 0);
+		List<ProposedPose> work = new LinkedList<>();
 		work.add(start);
 		int ctr = 0;
 		while (!work.isEmpty())
 		{
 			ctr++;
-			Expansion job = work.remove(0);
-			MoveTemplate move = job.getNextMove(moveTemplates);
-			if (move != null)
+			ProposedPose job = work.remove(0);
+			for (MoveTemplate move : moveTemplates)
 			{
-				ProposedMove next = move.getProposedPose(job);
-				if (next != null && next.isWithinBounds())
+				ProposedPose proposedPose = move.getProposedPose(job);
+				if (proposedPose.isWithinBounds() && proposedPose.isBetter(plan))
 				{
-
-					if (next.isBetter(plan))
-					{
-						next.setCostOfPose(next.getCost(), plan, move);
-						work.add(next);
-					}
-
-				}
-				if (next != null)
-				{
-					// requeue the job, it may have more moves
-					work.add(job);
+					proposedPose.addToPlan(move, plan);
+					work.add(proposedPose);
 				}
 			}
-
 		}
-		System.out.println("steps " + ctr);
+		System.out.println("steps " + (ctr * moveTemplates.length));
 
+		dumpUnroutable(x, y);
+
+	}
+
+	private void dumpUnroutable(int x, int y)
+	{
 		int unroutable = 0;
 		for (int i = 0; i < x; i++)
 			for (int j = 0; j < y; j++)
@@ -94,7 +88,6 @@ public class RoutePlanner3D
 					}
 				}
 		System.out.println("Unroutable " + unroutable);
-
 	}
 
 	void dumpMap()
@@ -163,6 +156,11 @@ public class RoutePlanner3D
 
 		} while (step != null);
 
+		dumpPath(x, y, result);
+	}
+
+	private void dumpPath(int x, int y, int[][] result)
+	{
 		for (int y1 = 0; y1 < maxY; y1++)
 
 		{
@@ -230,8 +228,6 @@ public class RoutePlanner3D
 		}
 	}
 
-	
-
 	static Map<Integer, Vector3D> unitVectorCache = new HashMap<>();
 
 	static Vector3D getUnitVector(Angle angle)
@@ -269,7 +265,7 @@ public class RoutePlanner3D
 			this.angleDelta = angleDelta;
 		}
 
-		ProposedMove getProposedPose(Expansion current)
+		ProposedPose getProposedPose(ProposedPose current)
 		{
 
 			Angle angle = new Angle(current.angle.angle + angleDelta.angle);
@@ -279,7 +275,7 @@ public class RoutePlanner3D
 			double x = vector.getX() + current.x;
 			double y = vector.getY() + current.y;
 
-			return new ProposedMove(x, y, angle, current.cost + cost);
+			return new ProposedPose(x, y, angle, current.proposedCost + cost);
 
 		}
 
@@ -290,50 +286,27 @@ public class RoutePlanner3D
 		}
 
 	}
-	
-	class ProposedMove extends Expansion
+
+	public class ProposedPose extends InternalPose
 	{
 
-		ProposedMove(double x, double y, Angle angle, double cost)
+		protected final double proposedCost;
+
+		ProposedPose(double x, double y, Angle angle, double proposedCost)
 		{
-			super(x, y, angle, cost);
+			super(x, y, angle);
+			this.proposedCost = proposedCost;
 		}
 
 		public boolean isBetter(Step[][][] plan)
 		{
-			return getCostOfPose(plan) > cost;
+			return plan[(int) x][(int) y][angle.getRotation()].cost > proposedCost;
 		}
 
-	}
-
-	public class Expansion extends InternalPose
-	{
-
-		protected final double cost;
-
-		private int usedMoveIndex = 0;
-
-		Expansion(double x, double y, Angle angle, double cost)
+		void addToPlan(MoveTemplate move, Step[][][] plan)
 		{
-			super(x, y, angle);
-			this.cost = cost;
-		}
-
-		public MoveTemplate getNextMove(MoveTemplate[] moveTemplates)
-		{
-			if (usedMoveIndex < moveTemplates.length)
-			{
-				MoveTemplate move = moveTemplates[usedMoveIndex++];
-
-				return move;
-			}
-
-			return null;
-		}
-
-		double getCost()
-		{
-			return cost;
+			plan[(int) x][(int) y][angle.getRotation()].cost = proposedCost;
+			plan[(int) x][(int) y][angle.getRotation()].move = move;
 		}
 
 	}
@@ -352,20 +325,9 @@ public class RoutePlanner3D
 			this.angle = rotation;
 		}
 
-		double getCostOfPose(Step[][][] plan)
-		{
-			return plan[(int) x][(int) y][angle.getRotation()].cost;
-		}
-
 		Step getStep(Step[][][] plan)
 		{
 			return plan[(int) x][(int) y][angle.getRotation()];
-		}
-
-		void setCostOfPose(double value, Step[][][] plan, MoveTemplate move)
-		{
-			plan[(int) x][(int) y][angle.getRotation()].cost = value;
-			plan[(int) x][(int) y][angle.getRotation()].move = move;
 		}
 
 		boolean isWithinBounds()
