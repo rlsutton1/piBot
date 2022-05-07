@@ -11,7 +11,7 @@ public class RoutePlanner3DTest
 	public void test()
 	{
 
-		RoutePlanner3D planner = new RoutePlanner3D(100, 100, 72);
+		RoutePlanner3D planner = new RoutePlanner3D(50, 40, 72);
 
 		MoveTemplate straight = planner.moveTemplateFactory(1, planner.angleFactory(0));
 		MoveTemplate softRight = planner.moveTemplateFactory(5, planner.angleFactory(5));

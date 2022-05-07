@@ -1,5 +1,8 @@
 package au.com.rsutton.navigation.router;
 
+import au.com.rsutton.navigation.NextMove;
+import au.com.rsutton.units.Distance;
+
 public interface RoutePlanner
 {
 
@@ -16,10 +19,12 @@ public interface RoutePlanner
 
 	boolean hasPlannedRoute();
 
-	double getDistanceToTarget(int pfX, int pfY);
+	Distance getDistanceToTarget(int pfX, int pfY);
 
 	double getTurnRadius();
 
 	int getDirection();
+
+	NextMove getNextMove(int pfX, int pfY, double heading);
 
 }

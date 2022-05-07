@@ -70,8 +70,8 @@ public class RoombaRobot implements RPLidarAdaptorListener, MessageListener<SetM
 
 		if (obsticleNear)
 		{
+			// TODO:
 			// turn on the spot!
-			command.setTurnRadius((long) Math.signum(command.getTurnRadius()));
 		}
 
 		// cap speed based on distance to nearest obstacle

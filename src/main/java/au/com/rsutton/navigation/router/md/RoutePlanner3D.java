@@ -121,7 +121,7 @@ public class RoutePlanner3D
 
 		Vector3D position = new Vector3D(x, y, 0);
 
-		InternalPose currentPose = new InternalPose(position.getX(), position.getY(), initialAngle.invert());
+		InternalPose currentPose = new InternalPose(position.getX(), position.getY(), initialAngle);
 		int ctr = 0;
 		MoveTemplate move = null;
 		do
@@ -133,7 +133,7 @@ public class RoutePlanner3D
 
 				Angle angle = new Angle(currentPose.angle.angle - move.angleDelta.angle);
 				Vector3D uv = getUnitVector(angle);
-				position = position.subtract(uv);
+				position = position.add(uv);
 
 				InternalPose nextPose = new InternalPose((int) position.getX(), (int) position.getY(), angle);
 
@@ -163,7 +163,11 @@ public class RoutePlanner3D
 	public MoveTemplate getNextMove(int x, int y, Angle angle)
 	{
 
-		InternalPose currentPose = new InternalPose(x, y, angle);
+		// we use the inverted angle because we are following the map
+		// back(wards) towards the origin
+		Angle invertedAngle = angle.invert();
+
+		InternalPose currentPose = new InternalPose(x, y, invertedAngle);
 		Step step = currentPose.getStep();
 
 		if (step != null && step.move != null)
@@ -350,8 +354,10 @@ public class RoutePlanner3D
 		{
 			double tmp = Math.abs(target.x - x) + Math.abs(target.y - y);
 
-			// System.out.println("Distance to target " + tmp);
-			double tmp2 = Math.abs(new Angle(target.angle.angle - angle.angle).angle);
+			// we use the inverted angle because we are following the map
+			// back(wards) towards the origin
+			Angle invertedAngle = angle.invert();
+			double tmp2 = Math.abs(new Angle(target.angle.angle - invertedAngle.angle).angle);
 
 			return tmp < 2 && tmp2 < 20;
 

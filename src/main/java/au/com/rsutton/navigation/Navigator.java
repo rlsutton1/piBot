@@ -1,3 +1,4 @@
+
 package au.com.rsutton.navigation;
 
 import java.awt.Color;
@@ -16,14 +17,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import au.com.rsutton.hazelcast.DataLogLevel;
-import au.com.rsutton.hazelcast.DataLogValue;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RoutePlannerRRT;
-import au.com.rsutton.navigation.router.nextgen.NextGenRouter;
-import au.com.rsutton.navigation.router.nextgen.NextGenRouter.DirectionAndAngle;
-import au.com.rsutton.navigation.router.nextgen.PathPlannerAndFollowerIfc;
+import au.com.rsutton.navigation.router.RouteOption;
+import au.com.rsutton.navigation.router.RoutePlanner;
+import au.com.rsutton.navigation.router.RoutePlannerLastMeter;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotPoseSource;
 import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
@@ -32,23 +30,21 @@ import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.ui.DataSourcePoint;
 import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
+import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.DistanceXY;
-import au.com.rsutton.units.HeadingHelper;
 import au.com.rsutton.units.Pose;
 import au.com.rsutton.units.Speed;
 
 public class Navigator implements Runnable, NavigatorControl
 {
 
-	private final int MAX_SPEED;
-
 	Logger logger = LogManager.getLogger();
 
 	private RobotPoseSource pf;
-	private PathPlannerAndFollowerIfc routePlanner;
+	private RoutePlanner routePlanner;
 	private RobotInterface robot;
 	private MapDrawingWindow ui;
 	private ScheduledExecutorService pool;
@@ -64,6 +60,8 @@ public class Navigator implements Runnable, NavigatorControl
 
 	private volatile int stuckCounter = 0;
 
+	private int MAX_SPEED;
+
 	// private Double initialHeading = null;
 
 	public Navigator(ProbabilityMapIIFc map, RobotPoseSourceTimeTraveling pf, RobotInterface robot, int maxSpeed)
@@ -75,7 +73,7 @@ public class Navigator implements Runnable, NavigatorControl
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
-		routePlanner = new NextGenRouter(map, robot, pf);
+		routePlanner = new RoutePlannerLastMeter(map, robot, pf);
 
 		// add data source
 		// ui.addDataSource((DataSourceMap) routePlanner);
@@ -129,30 +127,23 @@ public class Navigator implements Runnable, NavigatorControl
 				}
 				lastAngle = pf.getHeading();
 
-				DirectionAndAngle directionAndAngle = routePlanner.getNextStep();
-				Distance distanceToTarget = routePlanner.getDistanceToTarget();
+				NextMove nextMove = routePlanner.getNextMove(pfX, pfY, pf.getHeading());
 
 				// slow as we approach the target
-				speed = Speed.cmPerSec(
-						Math.min(Math.max(3, distanceToTarget.convert(DistanceUnit.CM)), speed.getCmPerSec()));
+				speed = Speed.cmPerSec(Math.min(Math.max(3, nextMove.distanceToTarget().convert(DistanceUnit.CM)),
+						speed.getCmPerSec()));
 
-				if (distanceToTarget.convert(DistanceUnit.CM) > 20)
+				if (nextMove.distanceToTarget().convert(DistanceUnit.CM) > 20)
 				{
 					// follow the route to the target
-					if (directionAndAngle.isReverse())
+					if (nextMove.isReverse())
 					{
 						speed = Speed.cmPerSec(-5);
 					}
 
 					logger.warn("Calculating radius of arc to send to roomba");
-					int radius = Roomba630.STRAIGHT;
-					double angleDifference = directionAndAngle.getAngle().difference(pf.getHeading(),
-							AngleUnits.DEGREES);
-					if (Math.abs(angleDifference) > 0)
-					{
-						radius = (int) RoutePlannerRRT.getRadiusOfArc(angleDifference, 1);
-					}
-					speed = setHeadingWithObsticleAvoidance(radius, speed);
+					Angle steeringAngle = nextMove.getSteeringAngle();
+					robot.setSteeringAngle(steeringAngle);
 					robot.setSpeed(speed);
 					System.out.println("1 Set speed to " + speed);
 				} else
@@ -170,8 +161,7 @@ public class Navigator implements Runnable, NavigatorControl
 			} else
 			{
 				// particle filter isn't localised, just turn on the spot
-				speed = setHeadingWithObsticleAvoidance(HeadingHelper.normalizeHeading(0), Speed.cmPerSec(10));
-				robot.setStraight("Nav - unlocal");
+				robot.setSteeringAngle(new Angle(0, AngleUnits.DEGREES));
 				robot.setSpeed(Speed.ZERO);
 
 			}
@@ -197,38 +187,6 @@ public class Navigator implements Runnable, NavigatorControl
 			// almost straight in and change the sign
 			currentRadius = (Roomba630.STRAIGHT - 1) * Math.signum(newRadius);
 		}
-	}
-
-	Speed setHeadingWithObsticleAvoidance(double desiredTurnRadius, Speed speed2)
-	{
-		double setRadis = desiredTurnRadius;
-
-		if (Math.abs(desiredTurnRadius) >= Roomba630.STRAIGHT || desiredTurnRadius == 0)
-		{
-
-			robot.setStraight("NAV set Head");
-			new DataLogValue("Desired Turn Radius", "Straight NAV", DataLogLevel.INFO).publish();
-			return speed2;
-		}
-		if (Math.abs(desiredTurnRadius) < 1)
-		{
-			setRadis = Math.signum(desiredTurnRadius);
-		}
-		setRadis = -1.0 * setRadis;
-		new DataLogValue("Desired Turn Radius", "" + setRadis, DataLogLevel.INFO).publish();
-		adjustRadius(setRadis);
-		robot.setTurnRadius(currentRadius);
-
-		// cap speed so we dont exceed maxturnsPerSecond
-		double maxTurnsPerSecond = 0.25;
-
-		double maxSpeed = maxTurnsPerSecond * 2 * Math.PI * Math.abs(desiredTurnRadius);
-		if (maxSpeed < 10)
-		{
-			maxSpeed = 10;
-		}
-
-		return Speed.cmPerSec(Math.min(speed2.getCmPerSec(), maxSpeed));
 	}
 
 	private void setupRobotListener()
@@ -257,7 +215,8 @@ public class Navigator implements Runnable, NavigatorControl
 
 					for (int i = 0; i < 3000; i++)
 					{
-						ExpansionPoint next = routePlanner.getLocationOfStepAt(new Distance(i, DistanceUnit.CM));
+						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
+								(int) y);
 
 						points.add(new Point(next.getX(), next.getY()));
 
@@ -360,7 +319,8 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public void calculateRouteTo(Pose pose)
 	{
-		reachedDestination = !routePlanner.planPath(pose);
+		reachedDestination = !routePlanner.createRoute((int) pose.getX(), (int) pose.getY(),
+				RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
 		stuckCounter = 0;
 	}
 

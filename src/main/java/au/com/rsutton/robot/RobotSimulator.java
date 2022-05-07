@@ -23,7 +23,6 @@ import au.com.rsutton.hazelcast.RobotTelemetry;
 import au.com.rsutton.mapping.particleFilter.Particle;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
 import au.com.rsutton.robot.lidar.LidarObservation;
-import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.ui.DataSourceMap;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
@@ -52,8 +51,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	private double rspeed;
 	private List<RobotLocationDeltaListener> listeners = new CopyOnWriteArrayList<>();
 	boolean freezeSet = false;
-
-	private double turnRadius;
 
 	private RobotLocationDeltaMessagePump messsagePump;
 
@@ -84,31 +81,13 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 			return 0;
 		}
 
-		distance = Math.min(Math.abs(distance), Math.abs(turnRadius / 4.0)) * Math.signum(distance);
-
-		if (Math.abs(distance - 0.0) > 0.2)
-		{
-			// add noise to distance moved
-			distance -= Math.abs(distance * (random.nextGaussian() * 0.5));
-		}
-
-		// degrees turned as a result of this move
-		double turned = Math.toDegrees(distance / turnRadius);
-		if (Math.abs(turned) >= Roomba630.STRAIGHT || Double.isNaN(turned))
-		{
-			turned = 0;
-		} else if (Math.abs(turned) >= 25)
-		{
-			turned = Math.signum(turned) * 25;
-		}
-
 		Vector3D unit = new Vector3D(0, distance, 0);
 		Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(heading));
 
 		Vector3D location = new Vector3D(x, y, 0);
 		Vector3D newLocation = location.add(rotation.applyTo(unit));
 
-		heading += turned;
+		heading += (steeringAngle.getDegrees() / 5.0) * distance;
 
 		double nx = newLocation.getX();
 		double ny = newLocation.getY();
@@ -226,27 +205,6 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void setTurnRadius(double turnRadius)
-	{
-		double minTurnRadius = 5;
-
-		turnRadius = -1.0 * turnRadius;
-
-		if (Math.abs(turnRadius) < minTurnRadius)
-		{
-			// lower limit for the simulator is 30cm, as the simulators math is
-			// broken at small radius
-			turnRadius = Math.signum(turnRadius) * minTurnRadius;
-		}
-
-		new DataLogValue("Simulator-Requested turnRadius", "" + turnRadius, DataLogLevel.INFO).publish();
-
-		this.turnRadius = turnRadius;
-		logger.info("Requested turnRadius " + turnRadius);
-
-	}
-
-	@Override
 	public void publishUpdate()
 	{
 		if (!freezeSet)
@@ -263,6 +221,8 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	double hz = 6.0;
+
+	private Angle steeringAngle;
 
 	@Override
 	public void run()
@@ -362,11 +322,11 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 	}
 
 	@Override
-	public void setStraight(String calledBy)
+	public void setSteeringAngle(Angle normalizeHeading)
 	{
-		turnRadius = Roomba630.STRAIGHT;
-
-		new DataLogValue("Simulator-Requested turnRadius", "STRAIGHT " + calledBy, DataLogLevel.INFO).publish();
+		steeringAngle = normalizeHeading;
+		new DataLogValue("Simulator-Requested turnRadius", "" + normalizeHeading.getDegrees(), DataLogLevel.INFO)
+				.publish();
 
 	}
 }

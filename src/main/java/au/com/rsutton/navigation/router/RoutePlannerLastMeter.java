@@ -29,6 +29,7 @@ import au.com.rsutton.mapping.particleFilter.ScanObservation;
 import au.com.rsutton.mapping.probability.Occupancy;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.NextMove;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotLocationDeltaListener;
 import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
@@ -63,7 +64,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	// RoutePlannerFinalStage gdPlanner = new RoutePlannerGD();
 
 	// RoutePlannerFinalStage gdPlanner = new PlannerNext();
-	RoutePlannerRRT gdPlanner = new RoutePlannerRRT();
+	RoutePlannerFinalStage gdPlanner = new ProxyPlanner();
 
 	public RoutePlannerLastMeter(ProbabilityMapIIFc world, RobotInterface robot,
 			RobotPoseSourceTimeTraveling robotPoseSource)
@@ -163,7 +164,7 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	}
 
 	@Override
-	public double getDistanceToTarget(int pfX, int pfY)
+	public Distance getDistanceToTarget(int pfX, int pfY)
 	{
 		RoutePlanner lp = localPlanner.get();
 		if (lp != null)
@@ -398,6 +399,13 @@ public class RoutePlannerLastMeter implements RoutePlanner, RobotLocationDeltaLi
 	public int getDirection()
 	{
 		return 0;
+	}
+
+	@Override
+	public NextMove getNextMove(int pfX, int pfY, double heading)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

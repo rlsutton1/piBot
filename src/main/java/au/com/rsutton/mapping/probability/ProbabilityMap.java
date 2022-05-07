@@ -142,19 +142,6 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 		}
 	}
 
-	List<Vector3D> features = new LinkedList<>();
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see au.com.rsutton.mapping.probability.ProbabilityMapIIFc#getFeatures()
-	 */
-	@Override
-	public List<Vector3D> getFeatures()
-	{
-		return features;
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -170,8 +157,6 @@ public class ProbabilityMap implements DataSourcePoint, ProbabilityMapIIFc
 		// consider every vertex is a feature
 		Vector3D lineStart = new Vector3D(x2, y2, 0);
 		Vector3D lineEnd = new Vector3D(x1, y1, 0);
-		features.add(lineEnd);
-		features.add(lineStart);
 
 		double length = Vector3D.distance(lineStart, lineEnd);
 

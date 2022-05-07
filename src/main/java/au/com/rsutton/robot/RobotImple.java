@@ -5,8 +5,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import au.com.rsutton.hazelcast.LidarScan;
 import au.com.rsutton.hazelcast.SetMotion;
-import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
@@ -15,7 +15,7 @@ import au.com.rsutton.units.Time;
 public class RobotImple implements RobotInterface
 {
 
-	double turnRadius = 0;
+	Angle steeringAngle = new Angle(0, AngleUnits.DEGREES);
 	Speed speed = new Speed(new Distance(0, DistanceUnit.CM), Time.perSecond());
 	private boolean freeze;
 
@@ -66,9 +66,9 @@ public class RobotImple implements RobotInterface
 	}
 
 	@Override
-	public void setTurnRadius(double turnRadius)
+	public void setSteeringAngle(Angle steeringAngle)
 	{
-		this.turnRadius = turnRadius;
+		this.steeringAngle = steeringAngle;
 
 	}
 
@@ -78,7 +78,7 @@ public class RobotImple implements RobotInterface
 		SetMotion motion = new SetMotion();
 		motion.setFreeze(freeze);
 		motion.setSpeed(speed);
-		motion.setTurnRadius((long) turnRadius);
+		motion.setSteeringAngle(steeringAngle);
 		motion.publish();
 
 	}
@@ -112,10 +112,4 @@ public class RobotImple implements RobotInterface
 		return 15;
 	}
 
-	@Override
-	public void setStraight(String calledBy)
-	{
-		turnRadius = Roomba630.STRAIGHT;
-
-	}
 }

@@ -2,6 +2,7 @@ package au.com.rsutton.hazelcast;
 
 import com.google.common.base.Objects;
 
+import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Speed;
 
 public class SetMotion extends MessageBase<SetMotion>
@@ -9,9 +10,9 @@ public class SetMotion extends MessageBase<SetMotion>
 
 	private static final long serialVersionUID = 4595314712852835336L;
 	private Speed speed;
-	private long turnRadius;
 	private long timeStamp;
 	private boolean freeze = false;
+	private Angle steeringAngle;
 
 	public SetMotion()
 	{
@@ -21,11 +22,6 @@ public class SetMotion extends MessageBase<SetMotion>
 	public void setSpeed(Speed speed)
 	{
 		this.speed = speed;
-	}
-
-	public void setTurnRadius(long turnRadius)
-	{
-		this.turnRadius = turnRadius;
 	}
 
 	/**
@@ -43,9 +39,15 @@ public class SetMotion extends MessageBase<SetMotion>
 		return speed;
 	}
 
-	public long getTurnRadius()
+	public void setSteeringAngle(Angle steeringAngle)
 	{
-		return turnRadius;
+		this.steeringAngle = steeringAngle;
+
+	}
+
+	public Angle getSteeringAngle()
+	{
+		return steeringAngle;
 	}
 
 	public long getTimeStamp()
@@ -61,11 +63,13 @@ public class SetMotion extends MessageBase<SetMotion>
 	@Override
 	public String toString()
 	{
-		return Objects.toStringHelper(SetMotion.class).add("Speed", speed).add("turnRadius", turnRadius).toString();
+		return Objects.toStringHelper(SetMotion.class).add("Speed", speed).add("steeringAngle", steeringAngle)
+				.toString();
 	}
 
 	public boolean getFreeze()
 	{
 		return freeze;
 	}
+
 }

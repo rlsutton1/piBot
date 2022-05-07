@@ -20,6 +20,7 @@ import au.com.rsutton.robot.RobotSimulator;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.Speed;
 
@@ -59,7 +60,7 @@ class SubMapBuilder implements RobotLocationDeltaListener
 			TimeUnit.MILLISECONDS.sleep(100);
 			robot.freeze(true);
 			robot.setSpeed(Speed.ZERO);
-			robot.setStraight("SubMapBuilder");
+			robot.setSteeringAngle(new Angle(0, AngleUnits.DEGREES));
 
 			robot.publishUpdate();
 		}

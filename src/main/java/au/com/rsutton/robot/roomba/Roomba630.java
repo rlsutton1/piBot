@@ -43,7 +43,6 @@ public class Roomba630 implements Runnable
 
 	int currentSpeed;
 	int targetSpeed;
-	int turnRadius;
 
 	private volatile long commandExpires;
 	private ScheduledFuture<?> future;
@@ -189,6 +188,7 @@ public class Roomba630 implements Runnable
 	int batteryStats = 0;
 	private boolean bumpLeft = false;
 	private boolean bumpRight = false;
+	private Angle steeringAngle;
 
 	@Override
 	public void run()
@@ -256,7 +256,7 @@ public class Roomba630 implements Runnable
 					}
 					logger.debug("current/target speed " + currentSpeed + " " + targetSpeed);
 
-					roomba.drive(currentSpeed, turnRadius);
+					roomba.drive(currentSpeed, steeringAngle);
 
 				} else
 				{
@@ -375,22 +375,17 @@ public class Roomba630 implements Runnable
 			int speed = (int) command.getSpeed().getSpeed(distUnit, timeUnit);
 
 			// convert to MM
-			int radius = (int) command.getTurnRadius() * 10;
-			if (Math.abs(radius) >= STRAIGHT)
-			{
-				// because 32768 is a special value which is broken by * 10
-				radius = STRAIGHT;
-			}
+			Angle angle = command.getSteeringAngle();
 
-			new DataLogValue("Roomba-Radius", "" + radius, DataLogLevel.INFO).publish();
+			new DataLogValue("Roomba-Radius", "" + angle, DataLogLevel.INFO).publish();
 			new DataLogValue("Roomba-Speed", "" + speed, DataLogLevel.INFO).publish();
 
-			System.out.println("Set radius to " + radius + " speed " + speed);
+			System.out.println("Set radius to " + angle + " speed " + speed);
 			synchronized (sync)
 			{
 
 				targetSpeed = speed;
-				turnRadius = radius;
+				steeringAngle = angle;
 
 			}
 		}

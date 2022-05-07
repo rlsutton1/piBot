@@ -1,5 +1,6 @@
 package au.com.rsutton.robot;
 
+import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.Speed;
 
 public interface RobotInterface
@@ -9,7 +10,7 @@ public interface RobotInterface
 
 	void setSpeed(Speed speed);
 
-	void setTurnRadius(double normalizeHeading);
+	void setSteeringAngle(Angle normalizeHeading);
 
 	void publishUpdate();
 
@@ -18,7 +19,5 @@ public interface RobotInterface
 	void removeMessageListener(RobotLocationDeltaListener listener);
 
 	double getPlatformRadius();
-
-	void setStraight(String calledBy);
 
 }

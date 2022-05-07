@@ -4,8 +4,6 @@ import java.awt.Point;
 import java.io.File;
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import au.com.rsutton.ui.DataSourcePoint;
 
 public interface ProbabilityMapIIFc extends DataSourcePoint
@@ -28,8 +26,6 @@ public interface ProbabilityMapIIFc extends DataSourcePoint
 	 * @param gausianRadius
 	 */
 	void updatePoint(int x, int y, Occupancy occupied, double certainty, int gausianRadius);
-
-	List<Vector3D> getFeatures();
 
 	void drawLine(double x1, double y1, double x2, double y2, Occupancy occupancy, double certainty, int radius);
 

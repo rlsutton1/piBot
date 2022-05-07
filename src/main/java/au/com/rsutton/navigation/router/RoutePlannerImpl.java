@@ -16,6 +16,9 @@ import au.com.rsutton.mapping.array.Dynamic2dSparseArray;
 import au.com.rsutton.mapping.array.SparseArray;
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.NextMove;
+import au.com.rsutton.units.Distance;
+import au.com.rsutton.units.DistanceUnit;
 
 public class RoutePlannerImpl implements RoutePlanner
 {
@@ -410,9 +413,9 @@ public class RoutePlannerImpl implements RoutePlanner
 	 * @see au.com.rsutton.navigation.router.Route#getDistanceToTarget(int, int)
 	 */
 	@Override
-	public double getDistanceToTarget(int pfX, int pfY)
+	public Distance getDistanceToTarget(int pfX, int pfY)
 	{
-		return new Vector3D(pfX - targetX, pfY - targetY, 0).getNorm();
+		return new Distance(new Vector3D(pfX - targetX, pfY - targetY, 0).getNorm(), DistanceUnit.CM);
 	}
 
 	@Override
@@ -425,5 +428,12 @@ public class RoutePlannerImpl implements RoutePlanner
 	public int getDirection()
 	{
 		return 1;
+	}
+
+	@Override
+	public NextMove getNextMove(int pfX, int pfY, double heading)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

@@ -7,11 +7,12 @@ import java.util.concurrent.TimeUnit;
 import au.com.rsutton.config.Config;
 import au.com.rsutton.hazelcast.SetMotion;
 import au.com.rsutton.mapping.MapBuilder;
-import au.com.rsutton.robot.roomba.Roomba630;
 import au.com.rsutton.robot.roomba.RoombaRobot;
 import au.com.rsutton.ui.DataWindow;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.VideoWindow;
+import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.Speed;
@@ -69,7 +70,7 @@ public class Main
 
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
-			setMotion.setTurnRadius(-1);
+			setMotion.setSteeringAngle(new Angle(0, AngleUnits.DEGREES));
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
@@ -87,7 +88,7 @@ public class Main
 
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
-			setMotion.setTurnRadius(1);
+			setMotion.setSteeringAngle(new Angle(10, AngleUnits.DEGREES));
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
@@ -105,7 +106,7 @@ public class Main
 
 			SetMotion setMotion = new SetMotion();
 			setMotion.setSpeed(new Speed(new Distance(10, DistanceUnit.CM), Time.perSecond()));
-			setMotion.setTurnRadius(Roomba630.STRAIGHT);
+			setMotion.setSteeringAngle(new Angle(0, AngleUnits.DEGREES));
 			setMotion.publish();
 
 			TimeUnit.SECONDS.sleep(3);
@@ -125,7 +126,7 @@ public class Main
 			{
 				SetMotion setMotion = new SetMotion();
 				setMotion.setSpeed(new Speed(new Distance(5, DistanceUnit.CM), Time.perSecond()));
-				setMotion.setTurnRadius(1);
+				setMotion.setSteeringAngle(new Angle(-10, AngleUnits.DEGREES));
 				setMotion.publish();
 
 				TimeUnit.SECONDS.sleep(1);

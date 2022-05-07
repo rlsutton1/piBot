@@ -41,6 +41,7 @@ import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.ui.VideoWindow;
 import au.com.rsutton.ui.WrapperForObservedMapInMapUI;
 import au.com.rsutton.units.Angle;
+import au.com.rsutton.units.AngleUnits;
 import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.DistanceXY;
@@ -222,7 +223,7 @@ public class MapBuilder
 					for (int i = 0; i < 40; i++)
 					{
 						robot.setSpeed(new Speed(new Distance(-10, DistanceUnit.CM), Time.perSecond()));
-						robot.setStraight("crash -backup");
+						robot.setSteeringAngle(new Angle(0, AngleUnits.DEGREES));
 						robot.freeze(false);
 						robot.publishUpdate();
 						TimeUnit.MILLISECONDS.sleep(100);
@@ -302,11 +303,11 @@ public class MapBuilder
 			}
 
 			@Override
-			public void setTurnRadius(double turnRadius)
+			public void setSteeringAngle(Angle steeringAngle)
 			{
 				if (!navigatorSuspended)
 				{
-					robot2.setTurnRadius(turnRadius);
+					robot2.setSteeringAngle(steeringAngle);
 				} else
 				{
 					logger.warn("Suspended");
@@ -343,12 +344,6 @@ public class MapBuilder
 				return robot2.getPlatformRadius();
 			}
 
-			@Override
-			public void setStraight(String calledBy)
-			{
-				robot2.setStraight("MapBuilder 12");
-
-			}
 		};
 	}
 
