@@ -16,7 +16,7 @@ public class RoutePlanner3D
 	private int maxY;
 	private int maxX;
 
-	private int rotationFraction;
+	private int angleArraySize;
 	private InternalPose target;
 
 	public RoutePlanner3D(int x, int y, int rotations)
@@ -24,8 +24,8 @@ public class RoutePlanner3D
 		this.maxX = x;
 		this.maxY = y;
 
-		this.rotationFraction = 360 / rotations;
-		if (360 / rotationFraction != rotations)
+		this.angleArraySize = 360 / rotations;
+		if (360 / angleArraySize != rotations)
 		{
 			throw new RuntimeException("rotations must be a factor of 360");
 		}
@@ -123,23 +123,23 @@ public class RoutePlanner3D
 
 		InternalPose currentPose = new InternalPose(position.getX(), position.getY(), initialAngle.invert());
 		int ctr = 0;
-		Step step = null;
+		MoveTemplate move = null;
 		do
 		{
-			step = currentPose.getStep();
+			move = getNextMove((int) currentPose.x, (int) currentPose.y, currentPose.angle);
 
-			if (step != null && step.move != null)
+			if (move != null)
 			{
 
-				Angle angle = new Angle(currentPose.angle.angle - step.move.angleDelta.angle);
+				Angle angle = new Angle(currentPose.angle.angle - move.angleDelta.angle);
 				Vector3D uv = getUnitVector(angle);
 				position = position.subtract(uv);
 
-				InternalPose nextPose = new InternalPose(position.getX(), position.getY(), angle);
+				InternalPose nextPose = new InternalPose((int) position.getX(), (int) position.getY(), angle);
 
-				if (!nextPose.isWithinBounds() || nextPose.isAtGoal())
+				if (nextPose.isAtGoal())// || !nextPose.isWithinBounds()
 				{
-					System.out.println("at goal or out of bounds");
+					System.out.println("at goal");
 					break;
 				}
 
@@ -155,9 +155,23 @@ public class RoutePlanner3D
 				break;
 			}
 
-		} while (step != null);
+		} while (move != null);
 
 		dumpPath(x, y, result);
+	}
+
+	public MoveTemplate getNextMove(int x, int y, Angle angle)
+	{
+
+		InternalPose currentPose = new InternalPose(x, y, angle);
+		Step step = currentPose.getStep();
+
+		if (step != null && step.move != null)
+		{
+			return step.move;
+		}
+		return null;
+
 	}
 
 	private void dumpPath(int x, int y, int[][] result)
@@ -186,11 +200,6 @@ public class RoutePlanner3D
 		}
 	}
 
-	private int rotationToAngle(int rotation)
-	{
-		return rotation * rotationFraction;
-	}
-
 	public Angle angleFactory(int degrees)
 	{
 		return new Angle(degrees);
@@ -217,9 +226,9 @@ public class RoutePlanner3D
 			return new Angle(angle - 180);
 		}
 
-		int getRotation()
+		int asArrayIndex()
 		{
-			return angle / rotationFraction;
+			return angle / angleArraySize;
 		}
 
 		@Override
@@ -301,12 +310,12 @@ public class RoutePlanner3D
 
 		public boolean isBetterThanExisting()
 		{
-			return plan[(int) x][(int) y][angle.getRotation()].cost > proposedCost;
+			return plan[(int) x][(int) y][angle.asArrayIndex()].cost > proposedCost;
 		}
 
 		void addToPlan(MoveTemplate move)
 		{
-			Step step = plan[(int) x][(int) y][angle.getRotation()];
+			Step step = plan[(int) x][(int) y][angle.asArrayIndex()];
 			step.cost = proposedCost;
 			step.move = move;
 		}
@@ -329,7 +338,7 @@ public class RoutePlanner3D
 
 		Step getStep()
 		{
-			return plan[(int) x][(int) y][angle.getRotation()];
+			return plan[(int) x][(int) y][angle.asArrayIndex()];
 		}
 
 		boolean isWithinBounds()
@@ -342,8 +351,9 @@ public class RoutePlanner3D
 			double tmp = Math.abs(target.x - x) + Math.abs(target.y - y);
 
 			// System.out.println("Distance to target " + tmp);
+			double tmp2 = Math.abs(new Angle(target.angle.angle - angle.angle).angle);
 
-			return tmp < 2;
+			return tmp < 2 && tmp2 < 20;
 
 		}
 
