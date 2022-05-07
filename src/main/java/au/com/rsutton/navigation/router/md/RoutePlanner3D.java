@@ -19,10 +19,13 @@ public class RoutePlanner3D
 	private int angleArraySize;
 	private InternalPose target;
 
-	public RoutePlanner3D(int x, int y, int rotations)
+	private int[][] map;
+
+	public RoutePlanner3D(int[][] map, int rotations)
 	{
-		this.maxX = x;
-		this.maxY = y;
+		this.maxX = map.length;
+		this.maxY = map[0].length;
+		this.map = map;
 
 		this.angleArraySize = 360 / rotations;
 		if (360 / angleArraySize != rotations)
@@ -30,14 +33,14 @@ public class RoutePlanner3D
 			throw new RuntimeException("rotations must be a factor of 360");
 		}
 
-		plan = new Step[x][y][rotations];
-		for (int i = 0; i < x; i++)
-			for (int j = 0; j < y; j++)
+		plan = new Step[maxX][maxY][rotations];
+		for (int i = 0; i < maxX; i++)
+			for (int j = 0; j < maxY; j++)
 				for (int k = 0; k < rotations; k++)
 				{
 					plan[i][j][k] = new Step();
 				}
-		System.out.println("expect " + (x * y * rotations));
+		System.out.println("expect " + (maxX * maxY * rotations));
 	}
 
 	private class Step
@@ -195,6 +198,9 @@ public class RoutePlanner3D
 				} else if (result[x1][y1] > 0)
 				{
 					System.out.print(".");
+				} else if (map[x1][y1] == Integer.MAX_VALUE)
+				{
+					System.out.print("*");
 				} else
 				{
 					System.out.print(" ");
@@ -347,7 +353,7 @@ public class RoutePlanner3D
 
 		boolean isWithinBounds()
 		{
-			return x >= 0 && x < maxX && y >= 0 && y < maxY;
+			return x >= 0 && x < maxX && y >= 0 && y < maxY && map[(int) x][(int) y] < Integer.MAX_VALUE;
 		}
 
 		boolean isAtGoal()
