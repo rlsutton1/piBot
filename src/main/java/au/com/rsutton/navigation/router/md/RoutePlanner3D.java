@@ -120,7 +120,7 @@ public class RoutePlanner3D
 	void dumpFrom(int x, int y, Angle initialAngle)
 	{
 
-		int[][] result = new int[maxX][maxY];
+		String[][] result = new String[maxX][maxY];
 
 		Vector3D position = new Vector3D(x, y, 0);
 
@@ -135,6 +135,9 @@ public class RoutePlanner3D
 			{
 
 				Angle angle = new Angle(currentPose.angle.angle - move.angleDelta.angle);
+
+				// add noise with sight bias
+				angle = new Angle((int) (angle.angle + ((Math.random() * 10) - 6)));
 				Vector3D uv = getUnitVector(angle);
 				position = position.add(uv);
 
@@ -146,8 +149,8 @@ public class RoutePlanner3D
 					break;
 				}
 
-				result[(int) position.getX()][(int) position.getY()] = ctr;// (int)
-																			// (nextPose.getCostOfPose(plan));
+				result[(int) position.getX()][(int) position.getY()] = move.name;// (int)
+				// (nextPose.getCostOfPose(plan));
 
 				currentPose = nextPose;
 
@@ -181,7 +184,7 @@ public class RoutePlanner3D
 
 	}
 
-	private void dumpPath(int x, int y, int[][] result)
+	private void dumpPath(int x, int y, String[][] result)
 	{
 		for (int y1 = 0; y1 < maxY; y1++)
 
@@ -195,9 +198,9 @@ public class RoutePlanner3D
 				} else if (x1 == (int) target.x && y1 == (int) target.y)
 				{
 					System.out.print("T");
-				} else if (result[x1][y1] > 0)
+				} else if (result[x1][y1] != null)
 				{
-					System.out.print(".");
+					System.out.print(result[x1][y1]);
 				} else if (map[x1][y1] == Integer.MAX_VALUE)
 				{
 					System.out.print("*");
@@ -268,21 +271,23 @@ public class RoutePlanner3D
 		return vector;
 	}
 
-	public MoveTemplate moveTemplateFactory(int cost, Angle angle)
+	public MoveTemplate moveTemplateFactory(int cost, Angle angle, String name)
 	{
-		return new MoveTemplate(cost, angle);
+		return new MoveTemplate(cost, angle, name);
 	}
 
 	public class MoveTemplate
 	{
 
-		final double cost;
+		final double moveCost;
 		final Angle angleDelta;
+		String name;
 
-		public MoveTemplate(double cost, Angle angleDelta)
+		public MoveTemplate(double cost, Angle angleDelta, String name)
 		{
-			this.cost = cost;
+			this.moveCost = cost;
 			this.angleDelta = angleDelta;
+			this.name = name;
 		}
 
 		ProposedPose getProposedPose(ProposedPose current)
@@ -295,14 +300,23 @@ public class RoutePlanner3D
 			double x = vector.getX() + current.x;
 			double y = vector.getY() + current.y;
 
-			return new ProposedPose(x, y, angle, current.proposedCost + cost);
+			ProposedPose proposed = new ProposedPose(x, y, angle, current.proposedCost + moveCost);
+			if (proposed.isWithinBounds())
+			{
+				int positionCost = map[(int) x][(int) y];
+				proposed.proposedCost += positionCost;
+			} else
+			{
+				proposed.proposedCost = Integer.MAX_VALUE;
+			}
+			return proposed;
 
 		}
 
 		@Override
 		public String toString()
 		{
-			return "MoveTemplate [cost=" + cost + ", angleDelta=" + angleDelta + "]";
+			return "MoveTemplate [cost=" + moveCost + ", angleDelta=" + angleDelta + "]";
 		}
 
 	}
@@ -310,7 +324,7 @@ public class RoutePlanner3D
 	class ProposedPose extends InternalPose
 	{
 
-		protected final double proposedCost;
+		protected double proposedCost;
 
 		ProposedPose(double x, double y, Angle angle, double proposedCost)
 		{
