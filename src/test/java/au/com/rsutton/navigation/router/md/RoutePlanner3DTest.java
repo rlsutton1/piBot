@@ -30,7 +30,7 @@ public class RoutePlanner3DTest
 		};
 
 		System.out.println("Start plan");
-		planner.plan(60, 10, new RPAngle(90), moveTemplates);
+		planner.plan(new RpPose(60, 10, new RPAngle(90)), moveTemplates);
 
 		System.out.println("Start dump");
 

@@ -50,11 +50,11 @@ public class RoutePlanner3D implements PlannerIfc
 	}
 
 	@Override
-	public void plan(int x, int y, RPAngle angle, MoveTemplate[] moveTemplates)
+	public void plan(RpPose target, MoveTemplate[] moveTemplates)
 	{
 
-		target = new RpPose(x, y, angle);
-		ProposedPose start = new ProposedPose(x, y, angle, 0);
+		this.target = target;
+		ProposedPose start = new ProposedPose(target, 0);
 		List<ProposedPose> work = new LinkedList<>();
 		work.add(start);
 		int ctr = 0;
@@ -124,7 +124,7 @@ public class RoutePlanner3D implements PlannerIfc
 		MoveTemplate move = null;
 		do
 		{
-			move = getNextMove((int) robot.getPose().getX(), (int) robot.getPose().getY(), robot.getPose().getAngle());
+			move = getNextMove(robot.getPose());
 			if (move != null)
 			{
 				robot.performMove(move);
@@ -152,14 +152,14 @@ public class RoutePlanner3D implements PlannerIfc
 	}
 
 	@Override
-	public MoveTemplate getNextMove(int x, int y, RPAngle angle)
+	public MoveTemplate getNextMove(RpPose target)
 	{
 
 		// we use the inverted angle because we are following the map
 		// back(wards) towards the origin
-		RPAngle invertedAngle = angle.invert();
+		RPAngle invertedAngle = target.getAngle().invert();
 
-		InternalPose currentPose = new InternalPose(x, y, invertedAngle);
+		InternalPose currentPose = new InternalPose(target.getX(), target.getY(), invertedAngle);
 		Step step = currentPose.getStep();
 
 		if (step != null && step.move != null)
@@ -283,6 +283,12 @@ public class RoutePlanner3D implements PlannerIfc
 		ProposedPose(double x, double y, RPAngle angle, double proposedCost)
 		{
 			super(x, y, angle);
+			this.proposedCost = proposedCost;
+		}
+
+		public ProposedPose(RpPose target, double proposedCost)
+		{
+			super(target.getX(), target.getY(), target.getAngle());
 			this.proposedCost = proposedCost;
 		}
 
