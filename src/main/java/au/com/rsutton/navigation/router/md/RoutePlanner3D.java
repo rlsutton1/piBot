@@ -286,9 +286,9 @@ public class RoutePlanner3D implements PlannerIfc
 			this.proposedCost = proposedCost;
 		}
 
-		public ProposedPose(RpPose target, double proposedCost)
+		public ProposedPose(RpPose pose, double proposedCost)
 		{
-			super(target.getX(), target.getY(), target.getAngle());
+			super(pose);
 			this.proposedCost = proposedCost;
 		}
 
@@ -313,7 +313,7 @@ public class RoutePlanner3D implements PlannerIfc
 
 		InternalPose(RpPose pose)
 		{
-			super(pose.getX(), pose.getY(), pose.getAngle());
+			super(pose);
 			angleArrayIndex = pose.getAngle().getDegrees() / angleArraySize;
 		}
 

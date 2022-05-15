@@ -4,6 +4,11 @@ public class RPAngle
 {
 	private final int degrees;
 
+	RPAngle(RPAngle angle)
+	{
+		this(angle.degrees);
+	}
+
 	RPAngle(int degrees)
 	{
 		int tmp = degrees % 360;

@@ -11,7 +11,14 @@ public class RpPose
 	{
 		this.x = x;
 		this.y = y;
-		this.angle = angle;
+		this.angle = new RPAngle(angle);
+	}
+
+	RpPose(RpPose pose)
+	{
+		y = pose.y;
+		x = pose.x;
+		angle = new RPAngle(pose.angle);
 	}
 
 	public double getX()
