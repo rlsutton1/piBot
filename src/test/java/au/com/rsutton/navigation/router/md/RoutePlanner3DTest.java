@@ -42,7 +42,7 @@ public class RoutePlanner3DTest
 		};
 		for (int i = 0; i < 360; i += 45)
 		{
-			planner.dumpFrom(30, 125, new RPAngle(i));
+			planner.dumpFrom(new RpPose(30, 125, new RPAngle(i)));
 		}
 
 		// planner.dumpMap();

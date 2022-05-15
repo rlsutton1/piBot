@@ -17,7 +17,7 @@ public class RoutePlanner3D implements PlannerIfc
 	private int maxX;
 
 	private int angleArraySize;
-	private InternalPose target;
+	private RpPose target;
 
 	private int[][] map;
 
@@ -53,7 +53,7 @@ public class RoutePlanner3D implements PlannerIfc
 	public void plan(int x, int y, RPAngle angle, MoveTemplate[] moveTemplates)
 	{
 
-		target = new InternalPose(x, y, angle);
+		target = new RpPose(x, y, angle);
 		ProposedPose start = new ProposedPose(x, y, angle, 0);
 		List<ProposedPose> work = new LinkedList<>();
 		work.add(start);
@@ -116,10 +116,10 @@ public class RoutePlanner3D implements PlannerIfc
 		}
 	}
 
-	void dumpFrom(int x, int y, RPAngle initialAngle)
+	void dumpFrom(RpPose startingPose)
 	{
 		String[][] result = new String[maxX][maxY];
-		Robot robot = new Robot(new InternalPose(x, y, initialAngle));
+		RobotMoveSimulator robot = new RobotMoveSimulator(startingPose);
 		int ctr = 0;
 		MoveTemplate move = null;
 		do
@@ -128,12 +128,12 @@ public class RoutePlanner3D implements PlannerIfc
 			if (move != null)
 			{
 				robot.performMove(move);
-				if (robot.getPose().isAtGoal())
+				if (new InternalPose(robot.getPose()).isAtGoal())
 				{
 					System.out.println("at goal");
 					break;
 				}
-				if (!robot.getPose().isWithinBounds())
+				if (!new InternalPose(robot.getPose()).isWithinBounds())
 				{
 					System.out.println("out of bounds");
 					break;
@@ -148,38 +148,7 @@ public class RoutePlanner3D implements PlannerIfc
 
 		} while (move != null);
 
-		dumpPath(x, y, result);
-	}
-
-	class Robot
-	{
-		InternalPose internalPose;
-
-		Robot(InternalPose pose)
-		{
-			internalPose = pose;
-		}
-
-		void performMove(MoveTemplate move)
-		{
-			Angle newAngle = new Angle(internalPose.getAngle().getDegrees() - move.angleDelta.getDegrees());
-			Vector3D uv = getUnitVector(newAngle);
-			Vector3D location = new Vector3D(internalPose.getX(), internalPose.getY(), 0);
-			if (move.forward)
-			{
-				location = location.add(uv);
-			} else
-			{
-				location = location.subtract(uv);
-			}
-
-			internalPose = new InternalPose(location.getX(), location.getY(), newAngle);
-		}
-
-		InternalPose getPose()
-		{
-			return internalPose;
-		}
+		dumpPath((int) startingPose.getX(), (int) startingPose.getY(), result);
 	}
 
 	@Override
@@ -335,6 +304,12 @@ public class RoutePlanner3D implements PlannerIfc
 	{
 
 		protected int angleArrayIndex;
+
+		InternalPose(RpPose pose)
+		{
+			super(pose.getX(), pose.getY(), pose.getAngle());
+			angleArrayIndex = pose.getAngle().getDegrees() / angleArraySize;
+		}
 
 		InternalPose(double x, double y, RPAngle angle)
 		{
