@@ -18,10 +18,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
-import au.com.rsutton.navigation.router.ExpansionPoint;
-import au.com.rsutton.navigation.router.RouteOption;
 import au.com.rsutton.navigation.router.RoutePlanner;
-import au.com.rsutton.navigation.router.RoutePlannerLastMeter;
+import au.com.rsutton.navigation.router.md.MoveTemplate;
+import au.com.rsutton.navigation.router.md.RPAngle;
+import au.com.rsutton.navigation.router.md.RobotMoveSimulator;
+import au.com.rsutton.navigation.router.md.RoutePlannerAdapter;
+import au.com.rsutton.navigation.router.md.RpPose;
 import au.com.rsutton.robot.RobotInterface;
 import au.com.rsutton.robot.RobotPoseSource;
 import au.com.rsutton.robot.RobotPoseSourceTimeTraveling;
@@ -32,7 +34,6 @@ import au.com.rsutton.ui.DataSourceStatistic;
 import au.com.rsutton.ui.MapDrawingWindow;
 import au.com.rsutton.units.Angle;
 import au.com.rsutton.units.AngleUnits;
-import au.com.rsutton.units.Distance;
 import au.com.rsutton.units.DistanceUnit;
 import au.com.rsutton.units.DistanceXY;
 import au.com.rsutton.units.Pose;
@@ -62,6 +63,8 @@ public class Navigator implements Runnable, NavigatorControl
 
 	private int MAX_SPEED;
 
+	private ProbabilityMapIIFc world;
+
 	// private Double initialHeading = null;
 
 	public Navigator(ProbabilityMapIIFc map, RobotPoseSourceTimeTraveling pf, RobotInterface robot, int maxSpeed)
@@ -73,7 +76,9 @@ public class Navigator implements Runnable, NavigatorControl
 		this.pf = pf;
 		setupDataSources(ui, pf);
 
-		routePlanner = new RoutePlannerLastMeter(map, robot, pf);
+		this.world = map;
+
+		routePlanner = new RoutePlannerAdapter();
 
 		// add data source
 		// ui.addDataSource((DataSourceMap) routePlanner);
@@ -127,22 +132,19 @@ public class Navigator implements Runnable, NavigatorControl
 				}
 				lastAngle = pf.getHeading();
 
-				NextMove nextMove = routePlanner.getNextMove(pfX, pfY, pf.getHeading());
+				MoveTemplate nextMove = routePlanner.getNextMove(pfX, pfY, pf.getHeading());
 
-				// slow as we approach the target
-				speed = Speed.cmPerSec(Math.min(Math.max(3, nextMove.distanceToTarget().convert(DistanceUnit.CM)),
-						speed.getCmPerSec()));
-
-				if (nextMove.distanceToTarget().convert(DistanceUnit.CM) > 20)
+				if (nextMove != null)
 				{
+
 					// follow the route to the target
-					if (nextMove.isReverse())
+					if (!nextMove.isForward())
 					{
 						speed = Speed.cmPerSec(-5);
 					}
 
 					logger.warn("Calculating radius of arc to send to roomba");
-					Angle steeringAngle = nextMove.getSteeringAngle();
+					Angle steeringAngle = new Angle(nextMove.getAngleDelta().getDegrees(), AngleUnits.DEGREES);
 					robot.setSteeringAngle(steeringAngle);
 					robot.setSpeed(speed);
 					System.out.println("1 Set speed to " + speed);
@@ -209,29 +211,17 @@ public class Navigator implements Runnable, NavigatorControl
 				double x = pos.getX().convert(DistanceUnit.CM);
 				double y = pos.getY().convert(DistanceUnit.CM);
 
+				RobotMoveSimulator simulator = new RobotMoveSimulator(
+						new RpPose(x, y, new RPAngle((int) pf.getHeading())));
+
 				List<Point> points = new LinkedList<>();
 				if (routePlanner.hasPlannedRoute())
 				{
-
-					for (int i = 0; i < 3000; i++)
-					{
-						ExpansionPoint next = ((RoutePlannerLastMeter) routePlanner).getMasterRouteForLocation((int) x,
-								(int) y);
-
-						points.add(new Point(next.getX(), next.getY()));
-
-						double dx = (x - next.getX());
-						x -= dx;
-						double dy = (y - next.getY());
-						y -= dy;
-						if (dx == 0 && dy == 0)
-						{
-							// reached the target
-							points.add(new Point(next.getX(), next.getY()));
-							break;
-						}
-
-					}
+					MoveTemplate move = routePlanner.getNextMove((int) simulator.getPose().getX(),
+							(int) simulator.getPose().getY(), simulator.getPose().getAngle().getDegrees());
+					while (move != null)
+						points.add(new Point((int) simulator.getPose().getX(), (int) simulator.getPose().getY()));
+					simulator.performMove(move);
 
 				}
 
@@ -239,27 +229,6 @@ public class Navigator implements Runnable, NavigatorControl
 			}
 
 		}, new Color(0, 255, 0));
-
-		ui.addDataSource(new DataSourcePoint()
-		{
-
-			@Override
-			public List<Point> getOccupiedPoints()
-			{
-				List<Point> points = new LinkedList<>();
-				if (routePlanner.hasPlannedRoute())
-				{
-
-					for (int i = 0; i < 3000; i++)
-					{
-						ExpansionPoint next = routePlanner.getLocationOfStepAt(new Distance(i, DistanceUnit.CM));
-						points.add(new Point(next.getX(), next.getY()));
-					}
-				}
-				return points;
-			}
-
-		}, new Color(255, 0, 0));
 
 	}
 
@@ -319,8 +288,9 @@ public class Navigator implements Runnable, NavigatorControl
 	@Override
 	public void calculateRouteTo(Pose pose)
 	{
-		reachedDestination = !routePlanner.createRoute((int) pose.getX(), (int) pose.getY(),
-				RouteOption.ROUTE_THROUGH_CLEAR_SPACE_ONLY);
+		routePlanner.createPlannerForMap(world);
+		routePlanner.plan((int) pose.getX(), (int) pose.getY(), 0.0);
+		reachedDestination = routePlanner.getNextMove(pfX, pfY, pf.getHeading()) == null;
 		stuckCounter = 0;
 	}
 

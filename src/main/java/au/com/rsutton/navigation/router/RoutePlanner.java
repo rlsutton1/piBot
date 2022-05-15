@@ -1,30 +1,17 @@
 package au.com.rsutton.navigation.router;
 
-import au.com.rsutton.navigation.NextMove;
-import au.com.rsutton.units.Distance;
+import au.com.rsutton.mapping.probability.ProbabilityMapIIFc;
+import au.com.rsutton.navigation.router.md.MoveTemplate;
 
 public interface RoutePlanner
 {
 
-	/**
-	 * 
-	 * @param toX
-	 * @param toY
-	 * @param routeOption
-	 * @return true if a route was successfully built
-	 */
-	boolean createRoute(int toX, int toY, RouteOption routeOption);
+	public void createPlannerForMap(ProbabilityMapIIFc probabilityMap);
 
-	ExpansionPoint getRouteForLocation(int x, int y);
+	public void plan(int x, int y, double heading);
 
-	boolean hasPlannedRoute();
+	MoveTemplate getNextMove(int pfX, int pfY, double heading);
 
-	Distance getDistanceToTarget(int pfX, int pfY);
-
-	double getTurnRadius();
-
-	int getDirection();
-
-	NextMove getNextMove(int pfX, int pfY, double heading);
+	public boolean hasPlannedRoute();
 
 }

@@ -4,12 +4,12 @@ public class RPAngle
 {
 	private final int degrees;
 
-	RPAngle(RPAngle angle)
+	public RPAngle(RPAngle angle)
 	{
 		this(angle.degrees);
 	}
 
-	RPAngle(int degrees)
+	public RPAngle(int degrees)
 	{
 		int tmp = degrees % 360;
 		if (tmp < 0)

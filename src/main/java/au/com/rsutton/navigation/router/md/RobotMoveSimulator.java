@@ -6,12 +6,12 @@ public class RobotMoveSimulator
 {
 	RpPose internalPose;
 
-	RobotMoveSimulator(RpPose pose)
+	public RobotMoveSimulator(RpPose pose)
 	{
 		internalPose = pose;
 	}
 
-	void performMove(MoveTemplate move)
+	public void performMove(MoveTemplate move)
 	{
 		RPAngle newAngle = new RPAngle(internalPose.getAngle().getDegrees() - move.angleDelta.getDegrees());
 		Vector3D uv = RoutePlanner3D.getUnitVector(newAngle);
@@ -27,7 +27,7 @@ public class RobotMoveSimulator
 		internalPose = new RpPose(location.getX(), location.getY(), newAngle);
 	}
 
-	RpPose getPose()
+	public RpPose getPose()
 	{
 		return internalPose;
 	}

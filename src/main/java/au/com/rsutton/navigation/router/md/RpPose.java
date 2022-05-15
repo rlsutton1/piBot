@@ -7,14 +7,14 @@ public class RpPose
 	final private double y;
 	final private RPAngle angle;
 
-	RpPose(double x, double y, RPAngle angle)
+	public RpPose(double x, double y, RPAngle angle)
 	{
 		this.x = x;
 		this.y = y;
 		this.angle = new RPAngle(angle);
 	}
 
-	RpPose(RpPose pose)
+	public RpPose(RpPose pose)
 	{
 		y = pose.y;
 		x = pose.x;
