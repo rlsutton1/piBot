@@ -17,12 +17,12 @@ public class RoutePlanner3DTest
 
 		RoutePlanner3D planner = new RoutePlanner3D(map, 72);
 
-		MoveTemplate straight = planner.moveTemplateFactory(1, planner.angleFactory(0), "F", true);
-		MoveTemplate softRight = planner.moveTemplateFactory(5, planner.angleFactory(5), "l", true);
-		MoveTemplate softLeft = planner.moveTemplateFactory(5, planner.angleFactory(-5), "r", true);
-		MoveTemplate hardRight = planner.moveTemplateFactory(20, planner.angleFactory(10), "L", true);
-		MoveTemplate hardLeft = planner.moveTemplateFactory(20, planner.angleFactory(-10), "R", true);
-		MoveTemplate reverse = planner.moveTemplateFactory(100, planner.angleFactory(0), "B", true);
+		MoveTemplate straight = planner.moveTemplateFactory(1, new RPAngle(0), "F", true);
+		MoveTemplate softRight = planner.moveTemplateFactory(5, new RPAngle(5), "l", true);
+		MoveTemplate softLeft = planner.moveTemplateFactory(5, new RPAngle(-5), "r", true);
+		MoveTemplate hardRight = planner.moveTemplateFactory(20, new RPAngle(10), "L", true);
+		MoveTemplate hardLeft = planner.moveTemplateFactory(20, new RPAngle(-10), "R", true);
+		MoveTemplate reverse = planner.moveTemplateFactory(100, new RPAngle(0), "B", true);
 
 		MoveTemplate[] moveTemplates = new MoveTemplate[] {
 				straight, softRight, softLeft, hardRight, hardLeft, //

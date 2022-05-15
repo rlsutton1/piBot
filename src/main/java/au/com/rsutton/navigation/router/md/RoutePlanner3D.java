@@ -162,7 +162,7 @@ public class RoutePlanner3D implements PlannerIfc
 
 		void performMove(MoveTemplate move)
 		{
-			Angle newAngle = new Angle(internalPose.angle.degrees - move.angleDelta.degrees);
+			Angle newAngle = new Angle(internalPose.angle.getDegrees() - move.angleDelta.getDegrees());
 			Vector3D uv = getUnitVector(newAngle);
 			Vector3D location = new Vector3D(internalPose.x, internalPose.y, 0);
 			if (move.forward)
@@ -235,46 +235,29 @@ public class RoutePlanner3D implements PlannerIfc
 		return new Angle(degrees);
 	}
 
-	public class Angle
+	public class Angle extends RPAngle
 	{
-		private final int degrees;
 
 		Angle(int degrees)
 		{
-			int tmp = degrees % 360;
-			if (tmp < 0)
-			{
-				tmp += 360;
-			}
-
-			this.degrees = tmp;
-
+			super(degrees);
 		}
 
-		public double getRadians()
+		@Override
+		public Angle invert()
 		{
-			return Math.toRadians(degrees);
-		}
-
-		Angle invert()
-		{
-			return new Angle(degrees - 180);
+			return new Angle(getDegrees() - 180);
 		}
 
 		int asArrayIndex()
 		{
-			return degrees / angleArraySize;
-		}
-
-		public int getDegrees()
-		{
-			return degrees;
+			return getDegrees() / angleArraySize;
 		}
 
 		@Override
 		public String toString()
 		{
-			return "Angle [angle=" + degrees + "]";
+			return "Angle [angle=" + getDegrees() + "]";
 		}
 	}
 
@@ -283,22 +266,22 @@ public class RoutePlanner3D implements PlannerIfc
 	static Vector3D getUnitVector(Angle angle)
 	{
 
-		Vector3D vector = unitVectorCache.get(angle.degrees);
+		Vector3D vector = unitVectorCache.get(angle.getDegrees());
 		if (vector == null)
 		{
 			// unit vector
 			vector = new Vector3D(1, 0, 0);
 
 			// rotate
-			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle.degrees));
+			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle.getDegrees()));
 			vector = rotation.applyTo(vector);
-			unitVectorCache.put(angle.degrees, vector);
+			unitVectorCache.put(angle.getDegrees(), vector);
 
 		}
 		return vector;
 	}
 
-	public MoveTemplate moveTemplateFactory(int cost, Angle angle, String name, boolean forward)
+	public MoveTemplate moveTemplateFactory(int cost, RPAngle angle, String name, boolean forward)
 	{
 		return new MoveTemplate(cost, angle, name, forward);
 	}
@@ -307,11 +290,11 @@ public class RoutePlanner3D implements PlannerIfc
 	{
 
 		final double moveCost;
-		final Angle angleDelta;
+		final RPAngle angleDelta;
 		final String name;
 		final boolean forward;
 
-		public MoveTemplate(double cost, Angle angleDelta, String name, boolean forward)
+		public MoveTemplate(double cost, RPAngle angleDelta, String name, boolean forward)
 		{
 			this.moveCost = cost;
 			this.angleDelta = angleDelta;
@@ -324,7 +307,7 @@ public class RoutePlanner3D implements PlannerIfc
 			return forward;
 		}
 
-		public Angle getAngleDelta()
+		public RPAngle getAngleDelta()
 		{
 			return angleDelta;
 		}
@@ -332,7 +315,7 @@ public class RoutePlanner3D implements PlannerIfc
 		ProposedPose getProposedPose(ProposedPose current)
 		{
 
-			Angle angle = new Angle(current.angle.degrees + angleDelta.degrees);
+			Angle angle = new Angle(current.angle.getDegrees() + angleDelta.getDegrees());
 
 			Vector3D unitVector = getUnitVector(angle);
 
@@ -423,7 +406,7 @@ public class RoutePlanner3D implements PlannerIfc
 			// we use the inverted angle because we are following the map
 			// back(wards) towards the origin
 			Angle invertedAngle = angle.invert();
-			double tmp2 = Math.abs(new Angle(target.angle.degrees - invertedAngle.degrees).degrees);
+			double tmp2 = Math.abs(new Angle(target.angle.getDegrees() - invertedAngle.getDegrees()).getDegrees());
 
 			return tmp < 2 && tmp2 < 20;
 
