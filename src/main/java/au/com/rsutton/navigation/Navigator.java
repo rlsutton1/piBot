@@ -220,8 +220,13 @@ public class Navigator implements Runnable, NavigatorControl
 					MoveTemplate move = routePlanner.getNextMove((int) simulator.getPose().getX(),
 							(int) simulator.getPose().getY(), simulator.getPose().getAngle().getDegrees());
 					while (move != null)
+					{
 						points.add(new Point((int) simulator.getPose().getX(), (int) simulator.getPose().getY()));
-					simulator.performMove(move);
+						simulator.performMove(move);
+						move = routePlanner.getNextMove((int) simulator.getPose().getX(),
+								(int) simulator.getPose().getY(), simulator.getPose().getAngle().getDegrees());
+
+					}
 
 				}
 

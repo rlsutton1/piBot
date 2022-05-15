@@ -222,7 +222,7 @@ public class RobotSimulator implements DataSourceMap, RobotInterface, Runnable, 
 
 	double hz = 6.0;
 
-	private Angle steeringAngle;
+	private Angle steeringAngle = new Angle(0, AngleUnits.DEGREES);
 
 	@Override
 	public void run()

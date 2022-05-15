@@ -9,6 +9,9 @@ public class RoutePlannerAdapter implements RoutePlanner
 	private RoutePlanner3D planner;
 	private MoveTemplate[] moveTemplates;
 	private boolean planned = false;
+	private int xOffset;
+	private int yOffset;
+	private int blockSize;
 
 	public RoutePlannerAdapter()
 	{
@@ -36,6 +39,9 @@ public class RoutePlannerAdapter implements RoutePlanner
 
 		planned = false;
 		planner = new RoutePlanner3D(map, 72);
+		xOffset = probabilityMap.getMinX();
+		yOffset = probabilityMap.getMinY();
+		blockSize = probabilityMap.getBlockSize();
 
 	}
 
@@ -49,7 +55,9 @@ public class RoutePlannerAdapter implements RoutePlanner
 	@Override
 	public MoveTemplate getNextMove(int x, int y, double heading)
 	{
-		return planner.getNextMove(new RpPose(x, y, new RPAngle((int) heading)));
+		int tx = (x - xOffset) / blockSize;
+		int ty = (y - yOffset) / blockSize;
+		return planner.getNextMove(new RpPose(tx, ty, new RPAngle((int) heading)));
 	}
 
 	private int[][] convertProbabilityMapToArray(ProbabilityMapIIFc map1)
