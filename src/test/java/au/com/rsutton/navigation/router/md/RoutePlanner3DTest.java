@@ -4,7 +4,6 @@ import org.junit.Test;
 
 import au.com.rsutton.mapping.probability.ProbabilityMap;
 import au.com.rsutton.maps.KitchenMapBuilder;
-import au.com.rsutton.navigation.router.md.RoutePlanner3D.MoveTemplate;
 
 public class RoutePlanner3DTest
 {
@@ -17,12 +16,12 @@ public class RoutePlanner3DTest
 
 		RoutePlanner3D planner = new RoutePlanner3D(map, 72);
 
-		MoveTemplate straight = planner.moveTemplateFactory(1, new RPAngle(0), "F", true);
-		MoveTemplate softRight = planner.moveTemplateFactory(5, new RPAngle(5), "l", true);
-		MoveTemplate softLeft = planner.moveTemplateFactory(5, new RPAngle(-5), "r", true);
-		MoveTemplate hardRight = planner.moveTemplateFactory(20, new RPAngle(10), "L", true);
-		MoveTemplate hardLeft = planner.moveTemplateFactory(20, new RPAngle(-10), "R", true);
-		MoveTemplate reverse = planner.moveTemplateFactory(100, new RPAngle(0), "B", true);
+		MoveTemplate straight = new MoveTemplate(1, new RPAngle(0), "F", true);
+		MoveTemplate softRight = new MoveTemplate(5, new RPAngle(5), "l", true);
+		MoveTemplate softLeft = new MoveTemplate(5, new RPAngle(-5), "r", true);
+		MoveTemplate hardRight = new MoveTemplate(20, new RPAngle(10), "L", true);
+		MoveTemplate hardLeft = new MoveTemplate(20, new RPAngle(-10), "R", true);
+		MoveTemplate reverse = new MoveTemplate(100, new RPAngle(0), "B", true);
 
 		MoveTemplate[] moveTemplates = new MoveTemplate[] {
 				straight, softRight, softLeft, hardRight, hardLeft, //
@@ -31,7 +30,7 @@ public class RoutePlanner3DTest
 		};
 
 		System.out.println("Start plan");
-		planner.plan(60, 10, planner.angleFactory(90), moveTemplates);
+		planner.plan(60, 10, new RPAngle(90), moveTemplates);
 
 		System.out.println("Start dump");
 
@@ -41,9 +40,9 @@ public class RoutePlanner3DTest
 				// reverseRight,
 
 		};
-		for (int i = 0; i < 360; i += 10)
+		for (int i = 0; i < 360; i += 45)
 		{
-			planner.dumpFrom(30, 125, planner.angleFactory(i));
+			planner.dumpFrom(30, 125, new RPAngle(i));
 		}
 
 		// planner.dumpMap();

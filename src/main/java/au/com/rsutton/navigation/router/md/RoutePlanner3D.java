@@ -50,7 +50,7 @@ public class RoutePlanner3D implements PlannerIfc
 	}
 
 	@Override
-	public void plan(int x, int y, Angle angle, MoveTemplate[] moveTemplates)
+	public void plan(int x, int y, RPAngle angle, MoveTemplate[] moveTemplates)
 	{
 
 		target = new InternalPose(x, y, angle);
@@ -64,7 +64,7 @@ public class RoutePlanner3D implements PlannerIfc
 			ProposedPose priorPose = work.remove(0);
 			for (MoveTemplate move : moveTemplates)
 			{
-				ProposedPose proposedPose = move.getProposedPose(priorPose);
+				ProposedPose proposedPose = getProposedPose(move, priorPose, map);
 				if (proposedPose.isWithinBounds() && proposedPose.isBetterThanExisting())
 				{
 					proposedPose.addToPlan(move);
@@ -116,7 +116,7 @@ public class RoutePlanner3D implements PlannerIfc
 		}
 	}
 
-	void dumpFrom(int x, int y, Angle initialAngle)
+	void dumpFrom(int x, int y, RPAngle initialAngle)
 	{
 		String[][] result = new String[maxX][maxY];
 		Robot robot = new Robot(new InternalPose(x, y, initialAngle));
@@ -124,7 +124,7 @@ public class RoutePlanner3D implements PlannerIfc
 		MoveTemplate move = null;
 		do
 		{
-			move = getNextMove((int) robot.getPose().x, (int) robot.getPose().y, robot.getPose().angle);
+			move = getNextMove((int) robot.getPose().getX(), (int) robot.getPose().getY(), robot.getPose().getAngle());
 			if (move != null)
 			{
 				robot.performMove(move);
@@ -138,7 +138,7 @@ public class RoutePlanner3D implements PlannerIfc
 					System.out.println("out of bounds");
 					break;
 				}
-				result[(int) robot.getPose().x][(int) robot.getPose().y] = move.name;
+				result[(int) robot.getPose().getX()][(int) robot.getPose().getY()] = move.name;
 			}
 			ctr++;
 			if (ctr > 2000)
@@ -162,9 +162,9 @@ public class RoutePlanner3D implements PlannerIfc
 
 		void performMove(MoveTemplate move)
 		{
-			Angle newAngle = new Angle(internalPose.angle.getDegrees() - move.angleDelta.getDegrees());
+			Angle newAngle = new Angle(internalPose.getAngle().getDegrees() - move.angleDelta.getDegrees());
 			Vector3D uv = getUnitVector(newAngle);
-			Vector3D location = new Vector3D(internalPose.x, internalPose.y, 0);
+			Vector3D location = new Vector3D(internalPose.getX(), internalPose.getY(), 0);
 			if (move.forward)
 			{
 				location = location.add(uv);
@@ -183,12 +183,12 @@ public class RoutePlanner3D implements PlannerIfc
 	}
 
 	@Override
-	public MoveTemplate getNextMove(int x, int y, Angle angle)
+	public MoveTemplate getNextMove(int x, int y, RPAngle angle)
 	{
 
 		// we use the inverted angle because we are following the map
 		// back(wards) towards the origin
-		Angle invertedAngle = angle.invert();
+		RPAngle invertedAngle = angle.invert();
 
 		InternalPose currentPose = new InternalPose(x, y, invertedAngle);
 		Step step = currentPose.getStep();
@@ -212,7 +212,7 @@ public class RoutePlanner3D implements PlannerIfc
 				if (x1 == x && y1 == y)
 				{
 					System.out.print("S");
-				} else if (x1 == (int) target.x && y1 == (int) target.y)
+				} else if (x1 == (int) target.getX() && y1 == (int) target.getY())
 				{
 					System.out.print("T");
 				} else if (result[x1][y1] != null)
@@ -228,11 +228,6 @@ public class RoutePlanner3D implements PlannerIfc
 			}
 			System.out.println("");
 		}
-	}
-
-	public Angle angleFactory(int degrees)
-	{
-		return new Angle(degrees);
 	}
 
 	public class Angle extends RPAngle
@@ -263,7 +258,7 @@ public class RoutePlanner3D implements PlannerIfc
 
 	static Map<Integer, Vector3D> unitVectorCache = new HashMap<>();
 
-	static Vector3D getUnitVector(Angle angle)
+	static Vector3D getUnitVector(RPAngle angle)
 	{
 
 		Vector3D vector = unitVectorCache.get(angle.getDegrees());
@@ -281,72 +276,33 @@ public class RoutePlanner3D implements PlannerIfc
 		return vector;
 	}
 
-	public MoveTemplate moveTemplateFactory(int cost, RPAngle angle, String name, boolean forward)
-	{
-		return new MoveTemplate(cost, angle, name, forward);
-	}
-
-	public class MoveTemplate
+	ProposedPose getProposedPose(MoveTemplate template, ProposedPose current, int map[][])
 	{
 
-		final double moveCost;
-		final RPAngle angleDelta;
-		final String name;
-		final boolean forward;
+		RPAngle angle = new RPAngle(current.getAngle().getDegrees() + template.angleDelta.getDegrees());
 
-		public MoveTemplate(double cost, RPAngle angleDelta, String name, boolean forward)
+		Vector3D unitVector = RoutePlanner3D.getUnitVector(angle);
+
+		int directionMultiplier = 1;
+		if (!template.forward)
 		{
-			this.moveCost = cost;
-			this.angleDelta = angleDelta;
-			this.name = name;
-			this.forward = forward;
+			directionMultiplier = -1;
 		}
 
-		public boolean isForward()
+		// calc new xy
+		double x = (unitVector.getX() * directionMultiplier) + current.getX();
+		double y = (unitVector.getY() * directionMultiplier) + current.getY();
+
+		ProposedPose proposed = new ProposedPose(x, y, angle, current.proposedCost + template.moveCost);
+		if (proposed.isWithinBounds())
 		{
-			return forward;
-		}
-
-		public RPAngle getAngleDelta()
+			int positionCost = map[(int) x][(int) y];
+			proposed.proposedCost += positionCost;
+		} else
 		{
-			return angleDelta;
+			proposed.proposedCost = Integer.MAX_VALUE;
 		}
-
-		ProposedPose getProposedPose(ProposedPose current)
-		{
-
-			Angle angle = new Angle(current.angle.getDegrees() + angleDelta.getDegrees());
-
-			Vector3D unitVector = getUnitVector(angle);
-
-			int directionMultiplier = 1;
-			if (!forward)
-			{
-				directionMultiplier = -1;
-			}
-
-			// calc new xy
-			double x = (unitVector.getX() * directionMultiplier) + current.x;
-			double y = (unitVector.getY() * directionMultiplier) + current.y;
-
-			ProposedPose proposed = new ProposedPose(x, y, angle, current.proposedCost + moveCost);
-			if (proposed.isWithinBounds())
-			{
-				int positionCost = map[(int) x][(int) y];
-				proposed.proposedCost += positionCost;
-			} else
-			{
-				proposed.proposedCost = Integer.MAX_VALUE;
-			}
-			return proposed;
-
-		}
-
-		@Override
-		public String toString()
-		{
-			return "MoveTemplate [cost=" + moveCost + ", angleDelta=" + angleDelta + "]";
-		}
+		return proposed;
 
 	}
 
@@ -355,7 +311,7 @@ public class RoutePlanner3D implements PlannerIfc
 
 		protected double proposedCost;
 
-		ProposedPose(double x, double y, Angle angle, double proposedCost)
+		ProposedPose(double x, double y, RPAngle angle, double proposedCost)
 		{
 			super(x, y, angle);
 			this.proposedCost = proposedCost;
@@ -363,50 +319,48 @@ public class RoutePlanner3D implements PlannerIfc
 
 		public boolean isBetterThanExisting()
 		{
-			return plan[(int) x][(int) y][angle.asArrayIndex()].cost > proposedCost;
+			return plan[(int) getX()][(int) getY()][angleArrayIndex].cost > proposedCost;
 		}
 
 		void addToPlan(MoveTemplate move)
 		{
-			Step step = plan[(int) x][(int) y][angle.asArrayIndex()];
+			Step step = plan[(int) getX()][(int) getY()][angleArrayIndex];
 			step.cost = proposedCost;
 			step.move = move;
 		}
 
 	}
 
-	class InternalPose
+	class InternalPose extends RpPose
 	{
 
-		double x;
-		double y;
-		Angle angle;
+		protected int angleArrayIndex;
 
-		InternalPose(double x, double y, Angle angle)
+		InternalPose(double x, double y, RPAngle angle)
 		{
-			this.x = x;
-			this.y = y;
-			this.angle = angle;
+			super(x, y, angle);
+			angleArrayIndex = angle.getDegrees() / angleArraySize;
 		}
 
 		Step getStep()
 		{
-			return plan[(int) x][(int) y][angle.asArrayIndex()];
+			return plan[(int) getX()][(int) getY()][angleArrayIndex];
 		}
 
 		boolean isWithinBounds()
 		{
-			return x >= 0 && x < maxX && y >= 0 && y < maxY && map[(int) x][(int) y] < Integer.MAX_VALUE;
+			return getX() >= 0 && getX() < maxX && getY() >= 0 && getY() < maxY
+					&& map[(int) getX()][(int) getY()] < Integer.MAX_VALUE;
 		}
 
 		boolean isAtGoal()
 		{
-			double tmp = Math.abs(target.x - x) + Math.abs(target.y - y);
+			double tmp = Math.abs(target.getX() - getX()) + Math.abs(target.getY() - getY());
 
 			// we use the inverted angle because we are following the map
 			// back(wards) towards the origin
-			Angle invertedAngle = angle.invert();
-			double tmp2 = Math.abs(new Angle(target.angle.getDegrees() - invertedAngle.getDegrees()).getDegrees());
+			RPAngle invertedAngle = getAngle().invert();
+			double tmp2 = Math.abs(new Angle(target.getAngle().getDegrees() - invertedAngle.getDegrees()).getDegrees());
 
 			return tmp < 2 && tmp2 < 20;
 
@@ -415,7 +369,7 @@ public class RoutePlanner3D implements PlannerIfc
 		@Override
 		public String toString()
 		{
-			return "InternalPose [x=" + x + ", y=" + y + ", rotation=" + angle + "]";
+			return "InternalPose [x=" + getX() + ", y=" + getY() + ", rotation=" + getAngle() + "]";
 		}
 
 	}
