@@ -17,12 +17,12 @@ public class RoutePlanner3DTest
 
 		RoutePlanner3D planner = new RoutePlanner3D(map, 72);
 
-		MoveTemplate straight = planner.moveTemplateFactory(1, planner.angleFactory(0), "F");
-		MoveTemplate softRight = planner.moveTemplateFactory(5, planner.angleFactory(5), "l");
-		MoveTemplate softLeft = planner.moveTemplateFactory(5, planner.angleFactory(-5), "r");
-		MoveTemplate hardRight = planner.moveTemplateFactory(20, planner.angleFactory(10), "L");
-		MoveTemplate hardLeft = planner.moveTemplateFactory(20, planner.angleFactory(-10), "R");
-		MoveTemplate reverse = planner.moveTemplateFactory(200, planner.angleFactory(180), "B");
+		MoveTemplate straight = planner.moveTemplateFactory(1, planner.angleFactory(0), "F", true);
+		MoveTemplate softRight = planner.moveTemplateFactory(5, planner.angleFactory(5), "l", true);
+		MoveTemplate softLeft = planner.moveTemplateFactory(5, planner.angleFactory(-5), "r", true);
+		MoveTemplate hardRight = planner.moveTemplateFactory(20, planner.angleFactory(10), "L", true);
+		MoveTemplate hardLeft = planner.moveTemplateFactory(20, planner.angleFactory(-10), "R", true);
+		MoveTemplate reverse = planner.moveTemplateFactory(100, planner.angleFactory(0), "B", true);
 
 		MoveTemplate[] moveTemplates = new MoveTemplate[] {
 				straight, softRight, softLeft, hardRight, hardLeft, //
@@ -75,7 +75,7 @@ public class RoutePlanner3DTest
 			}
 		}
 
-		double[][] kernal = new double[][] {
+		double[][] costKernal = new double[][] {
 				{
 						0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 },
 				{
@@ -93,58 +93,20 @@ public class RoutePlanner3DTest
 
 		};
 
-		return applyKernalToMatrix(map, kernal);
-	}
-
-	int[][] applyKernalToMatrix(int[][] source, double[][] kernal)
-	{
-		int[][] output = new int[source.length][source[0].length];
-
-		for (int x = 0; x < source.length; x++)
-		{
-			for (int y = 0; y < source[0].length; y++)
-			{
-				output[x][y] = applyKernal(x, y, source, kernal);
-			}
-		}
-
-		return output;
-
-	}
-
-	private int applyKernal(int x, int y, int[][] source, double[][] kernal)
-	{
-		long result = 0;
-
-		int sourceX = source.length;
-		int sourceY = source[0].length;
-
-		int kernalX = kernal.length;
-		int kernalY = kernal[0].length;
-
-		int halfKernalX = kernalX / 2;
-		int halfKernalY = kernalY / 2;
-
-		for (int kernalIdxX = 0; kernalIdxX < kernalX; kernalIdxX++)
-		{
-
-			for (int kernalIdxY = 0; kernalIdxY < kernalY; kernalIdxY++)
-			{
-				int sourceIdxX = (x + kernalIdxX) - halfKernalX;
-				int sourceIdxY = (y + kernalIdxY) - halfKernalY;
-				if (sourceIdxX >= 0 && sourceIdxY >= 0 && sourceIdxX < sourceX && sourceIdxY < sourceY)
+		double[][] configurationSpaceKernal = new double[][] {
 				{
-					result += source[sourceIdxX][sourceIdxY] * kernal[kernalIdxX][kernalIdxY];
-				}
-			}
-		}
+						1, 1, 1, 1, 1 },
+				{
+						1, 1, 1, 1, 1 },
+				{
+						1, 1, 1, 1, 1 },
+				{
+						1, 1, 1, 1, 1 },
+				{
+						1, 1, 1, 1, 1 }, };
 
-		if (result > Integer.MAX_VALUE)
-		{
-			result = Integer.MAX_VALUE;
-		}
-
-		return (int) result;
+		int[][] temp = RoutePlannerAdapter.applyKernal(map, configurationSpaceKernal);
+		return RoutePlannerAdapter.applyKernal(temp, costKernal);
 	}
 
 }

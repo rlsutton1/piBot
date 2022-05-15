@@ -9,7 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-public class RoutePlanner3D
+public class RoutePlanner3D implements PlannerIfc
 {
 
 	Step[][][] plan;
@@ -34,11 +34,11 @@ public class RoutePlanner3D
 		}
 
 		plan = new Step[maxX][maxY][rotations];
-		for (int i = 0; i < maxX; i++)
-			for (int j = 0; j < maxY; j++)
-				for (int k = 0; k < rotations; k++)
+		for (int x = 0; x < maxX; x++)
+			for (int y = 0; y < maxY; y++)
+				for (int angleIndex = 0; angleIndex < rotations; angleIndex++)
 				{
-					plan[i][j][k] = new Step();
+					plan[x][y][angleIndex] = new Step();
 				}
 		System.out.println("expect " + (maxX * maxY * rotations));
 	}
@@ -49,6 +49,7 @@ public class RoutePlanner3D
 		MoveTemplate move = null;
 	}
 
+	@Override
 	public void plan(int x, int y, Angle angle, MoveTemplate[] moveTemplates)
 	{
 
@@ -87,8 +88,6 @@ public class RoutePlanner3D
 					if (plan[i][j][k].cost == Integer.MAX_VALUE)
 					{
 						unroutable++;
-						// System.out.println("UR " + i + " " + j + " " +
-						// rotationToAngle(k));
 					}
 				}
 		System.out.println("Unroutable " + unroutable);
@@ -119,41 +118,27 @@ public class RoutePlanner3D
 
 	void dumpFrom(int x, int y, Angle initialAngle)
 	{
-
 		String[][] result = new String[maxX][maxY];
-
-		Vector3D position = new Vector3D(x, y, 0);
-
-		InternalPose currentPose = new InternalPose(position.getX(), position.getY(), initialAngle);
+		Robot robot = new Robot(new InternalPose(x, y, initialAngle));
 		int ctr = 0;
 		MoveTemplate move = null;
 		do
 		{
-			move = getNextMove((int) currentPose.x, (int) currentPose.y, currentPose.angle);
-
+			move = getNextMove((int) robot.getPose().x, (int) robot.getPose().y, robot.getPose().angle);
 			if (move != null)
 			{
-
-				Angle angle = new Angle(currentPose.angle.angle - move.angleDelta.angle);
-
-				// add noise with sight bias
-				angle = new Angle((int) (angle.angle + ((Math.random() * 10) - 6)));
-				Vector3D uv = getUnitVector(angle);
-				position = position.add(uv);
-
-				InternalPose nextPose = new InternalPose((int) position.getX(), (int) position.getY(), angle);
-
-				if (nextPose.isAtGoal())// || !nextPose.isWithinBounds()
+				robot.performMove(move);
+				if (robot.getPose().isAtGoal())
 				{
 					System.out.println("at goal");
 					break;
 				}
-
-				result[(int) position.getX()][(int) position.getY()] = move.name;// (int)
-				// (nextPose.getCostOfPose(plan));
-
-				currentPose = nextPose;
-
+				if (!robot.getPose().isWithinBounds())
+				{
+					System.out.println("out of bounds");
+					break;
+				}
+				result[(int) robot.getPose().x][(int) robot.getPose().y] = move.name;
 			}
 			ctr++;
 			if (ctr > 2000)
@@ -166,6 +151,38 @@ public class RoutePlanner3D
 		dumpPath(x, y, result);
 	}
 
+	class Robot
+	{
+		InternalPose internalPose;
+
+		Robot(InternalPose pose)
+		{
+			internalPose = pose;
+		}
+
+		void performMove(MoveTemplate move)
+		{
+			Angle newAngle = new Angle(internalPose.angle.degrees - move.angleDelta.degrees);
+			Vector3D uv = getUnitVector(newAngle);
+			Vector3D location = new Vector3D(internalPose.x, internalPose.y, 0);
+			if (move.forward)
+			{
+				location = location.add(uv);
+			} else
+			{
+				location = location.subtract(uv);
+			}
+
+			internalPose = new InternalPose(location.getX(), location.getY(), newAngle);
+		}
+
+		InternalPose getPose()
+		{
+			return internalPose;
+		}
+	}
+
+	@Override
 	public MoveTemplate getNextMove(int x, int y, Angle angle)
 	{
 
@@ -218,36 +235,46 @@ public class RoutePlanner3D
 		return new Angle(degrees);
 	}
 
-	class Angle
+	public class Angle
 	{
-		private final int angle;
+		private final int degrees;
 
-		Angle(int angle)
+		Angle(int degrees)
 		{
-			int tmp = angle % 360;
+			int tmp = degrees % 360;
 			if (tmp < 0)
 			{
 				tmp += 360;
 			}
 
-			this.angle = tmp;
+			this.degrees = tmp;
 
+		}
+
+		public double getRadians()
+		{
+			return Math.toRadians(degrees);
 		}
 
 		Angle invert()
 		{
-			return new Angle(angle - 180);
+			return new Angle(degrees - 180);
 		}
 
 		int asArrayIndex()
 		{
-			return angle / angleArraySize;
+			return degrees / angleArraySize;
+		}
+
+		public int getDegrees()
+		{
+			return degrees;
 		}
 
 		@Override
 		public String toString()
 		{
-			return "Angle [angle=" + angle + "]";
+			return "Angle [angle=" + degrees + "]";
 		}
 	}
 
@@ -256,24 +283,24 @@ public class RoutePlanner3D
 	static Vector3D getUnitVector(Angle angle)
 	{
 
-		Vector3D vector = unitVectorCache.get(angle.angle);
+		Vector3D vector = unitVectorCache.get(angle.degrees);
 		if (vector == null)
 		{
 			// unit vector
 			vector = new Vector3D(1, 0, 0);
 
 			// rotate
-			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle.angle));
+			Rotation rotation = new Rotation(RotationOrder.XYZ, 0, 0, Math.toRadians(angle.degrees));
 			vector = rotation.applyTo(vector);
-			unitVectorCache.put(angle.angle, vector);
+			unitVectorCache.put(angle.degrees, vector);
 
 		}
 		return vector;
 	}
 
-	public MoveTemplate moveTemplateFactory(int cost, Angle angle, String name)
+	public MoveTemplate moveTemplateFactory(int cost, Angle angle, String name, boolean forward)
 	{
-		return new MoveTemplate(cost, angle, name);
+		return new MoveTemplate(cost, angle, name, forward);
 	}
 
 	public class MoveTemplate
@@ -281,24 +308,43 @@ public class RoutePlanner3D
 
 		final double moveCost;
 		final Angle angleDelta;
-		String name;
+		final String name;
+		final boolean forward;
 
-		public MoveTemplate(double cost, Angle angleDelta, String name)
+		public MoveTemplate(double cost, Angle angleDelta, String name, boolean forward)
 		{
 			this.moveCost = cost;
 			this.angleDelta = angleDelta;
 			this.name = name;
+			this.forward = forward;
+		}
+
+		public boolean isForward()
+		{
+			return forward;
+		}
+
+		public Angle getAngleDelta()
+		{
+			return angleDelta;
 		}
 
 		ProposedPose getProposedPose(ProposedPose current)
 		{
 
-			Angle angle = new Angle(current.angle.angle + angleDelta.angle);
+			Angle angle = new Angle(current.angle.degrees + angleDelta.degrees);
 
-			Vector3D vector = getUnitVector(angle);
+			Vector3D unitVector = getUnitVector(angle);
+
+			int directionMultiplier = 1;
+			if (!forward)
+			{
+				directionMultiplier = -1;
+			}
+
 			// calc new xy
-			double x = vector.getX() + current.x;
-			double y = vector.getY() + current.y;
+			double x = (unitVector.getX() * directionMultiplier) + current.x;
+			double y = (unitVector.getY() * directionMultiplier) + current.y;
 
 			ProposedPose proposed = new ProposedPose(x, y, angle, current.proposedCost + moveCost);
 			if (proposed.isWithinBounds())
@@ -377,7 +423,7 @@ public class RoutePlanner3D
 			// we use the inverted angle because we are following the map
 			// back(wards) towards the origin
 			Angle invertedAngle = angle.invert();
-			double tmp2 = Math.abs(new Angle(target.angle.angle - invertedAngle.angle).angle);
+			double tmp2 = Math.abs(new Angle(target.angle.degrees - invertedAngle.degrees).degrees);
 
 			return tmp < 2 && tmp2 < 20;
 
